@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 302 — LLM APIs &amp; SDKs · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Application Engineering</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-302/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-302"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 302 · LLM APIs &amp; SDKs</p>
+    <h1>Ek thin interface, chaar providers — OpenAI, Anthropic, Bedrock, Ollama — aur peeche serving physics jo bill + latency decide karti hai</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-302/</code></span>
+      <span>Default: Ollama · stubs for cloud CI</span>
+      <span>Prereq: APP 301 · CORE 201–204</span>
+    </div>
+
+    <p>
+      APP 301 ne prompts ko product surface banaya. Ab wiring: aapka Python service kisi LLM ko
+      messages bhejta hai, tokens stream karta hai, aur cost/latency pe sochta hai. Market pe
+      har vendor ka SDK thoda alag dikhta hai — OpenAI chat completions, Anthropic Messages,
+      Bedrock <code>Converse</code>/<code>InvokeModel</code>, Ollama HTTP. Agar aap har provider
+      ko seedha controller mein chipkaoge, swap painful ho jaayega. Isliye pehle ek
+      <strong>provider-agnostic thin interface</strong>: <code>complete(messages) → str</code> aur
+      <code>stream_tokens(...)</code> generator. Uske peeche adapters.
+    </p>
+    <p>
+      Doosra half — jo aksar SDK tutorials skip karte hain — <strong>inference-serving
+      intuition</strong>: quantization (kyun Ollama models GGUF/quantized hote hain), KV cache,
+      aur vLLM-class server vs laptop Ollama. Aap daily quantized models chala rahe ho; “Q4”
+      magic word nahi rehna chahiye. Bedrock pe model access enablement bhi yahin hota hai —
+      assume mat karo ki account pe pehle se open hai.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · CORE 201 / 202 / APP 301</span>
+      <p>
+        CORE 201: bill aur context window <em>tokens</em> mein count hote hain. CORE 202: attention
+        ke liye past keys/values reuse = KV cache ka seed. APP 301: message roles + prompt
+        structure. Yahan woh messages HTTP/SDK calls ban jaate hain — aur serving layer decide
+        karti hai kitna RAM, kitna $/1K tokens, kitna time-to-first-token.
+      </p>
+    </div>
+
+    <h2>1. Thin interface — complete + stream_tokens</h2>
+    <p>
+      .NET engineer ke liye socho: <code>IChatClient</code> with
+      <code>Task&lt;string&gt; CompleteAsync(...)</code> aur
+      <code>IAsyncEnumerable&lt;string&gt; StreamAsync(...)</code>. Concrete classes:
+      OpenAI, Anthropic, Bedrock, Ollama. Lab exactly yahi pattern Python mein rakhti hai —
+      Protocol + adapters. Business code messages list pass kare; provider-specific JSON
+      adapters ke andar rahe.
+    </p>
+
+    <figure class="diagram" aria-label="Thin LLM interface over four providers">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · App → thin interface → provider adapters</text>
+        <rect x="250" y="50" width="260" height="56" rx="8" fill="#12172B"/>
+        <text x="380" y="75" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">your service / lab</text>
+        <text x="380" y="94" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">messages: [{role, content}]</text>
+        <text x="380" y="128" fill="#3F8C87" font-size="18" text-anchor="middle">↓</text>
+        <rect x="200" y="140" width="360" height="50" rx="8" fill="#3F8C87"/>
+        <text x="380" y="162" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">LLMClient Protocol</text>
+        <text x="380" y="180" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">complete() · stream_tokens()</text>
+        <text x="380" y="208" fill="#3F8C87" font-size="16" text-anchor="middle">↓</text>
+        <rect x="28" y="220" width="160" height="58" rx="8" fill="#1c2438"/>
+        <text x="108" y="245" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12" font-weight="700">OpenAI</text>
+        <text x="108" y="264" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">chat + stream</text>
+        <rect x="208" y="220" width="160" height="58" rx="8" fill="#1c2438"/>
+        <text x="288" y="245" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12" font-weight="700">Anthropic</text>
+        <text x="288" y="264" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">Messages API</text>
+        <rect x="388" y="220" width="160" height="58" rx="8" fill="#1c2438"/>
+        <text x="468" y="245" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12" font-weight="700">Bedrock</text>
+        <text x="468" y="264" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">boto3 Converse</text>
+        <rect x="568" y="220" width="164" height="58" rx="8" fill="#B8923F"/>
+        <text x="650" y="245" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12" font-weight="700">Ollama</text>
+        <text x="650" y="264" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="10">local · default</text>
+      </svg>
+      <figcaption>Figure 1. Business code thin interface dekhe; cloud SDKs aur Ollama HTTP adapters ke peeche. Lab default Ollama + stubs for CI.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Streaming UX ke liye pehla token jaldi chahiye (TTFT). Batch jobs ke liye poora
+        <code>complete()</code> simpler hai. Dono same messages contract share karen — warna aapke
+        paas do prompt pipelines ban jaayenge.
+      </p>
+    </div>
+
+    <h2>2. OpenAI SDK — chat + streaming</h2>
+    <p>
+      OpenAI Python SDK chat completions (aur newer Responses API) expose karti hai. Classic
+      pattern: <code>client.chat.completions.create(model=..., messages=..., stream=True|False)</code>.
+      Non-stream pe aapko ek full assistant message milta hai; stream pe chunked deltas —
+      har event mein partial <code>content</code> — jo aap UI pe token-by-token paint karte ho.
+      Official streaming guide: stream flag on, phir iterate events / chunks until done.
+    </p>
+    <p>
+      Auth: <code>OPENAI_API_KEY</code> (ya project-scoped keys). Rate limits model + tier pe
+      depend karti hain — TPM/RPM numbers perishable hain. Lab mein OpenAI adapter
+      <strong>stub</strong> hai taaki pytest ko key na chahiye; agar aapke paas key hai to optional
+      live path try kar sakte ho, lekin CI uspe depend nahi karti.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · OpenAI</span>
+      <p>
+        OpenAI, Chat Completions /
+        <a href="https://platform.openai.com/docs/guides/text-generation">text generation</a>
+        and
+        <a href="https://platform.openai.com/docs/guides/streaming-responses">streaming responses</a>
+        guides. Paraphrase: create a chat completion with a <code>messages</code> array; set
+        <code>stream=true</code> (or use the streaming helpers) to receive incremental content
+        deltas instead of waiting for the full completion. Auth and model IDs are documented in
+        the same developer docs surface — check current model names as of August 2026.
+      </p>
+    </div>
+
+    <div class="callout paid">
+      <span class="callout-label">[PAID — approx cost]</span>
+      <p>
+        OpenAI metered: input + output tokens × model price. Exact $/1M tokens change frequently —
+        <em>check current OpenAI pricing docs as of August 2026</em>. Lab cost helper uses
+        clearly fake placeholder rates labeled “replace with current docs”.
+        <strong>Local fallback:</strong> Ollama <code>llama3.2</code> (hardware only).
+      </p>
+    </div>
+
+    <h2>3. Anthropic SDK — Messages API</h2>
+    <p>
+      Anthropic ka primary surface Messages API hai: <code>client.messages.create(...)</code> with
+      <code>model</code>, <code>max_tokens</code>, aur <code>messages</code>. System prompt aksar
+      top-level <code>system</code> field mein jaata hai (OpenAI ke “system role message” se shape
+      thodi alag). Streaming: <code>stream=True</code> / stream helpers se content-block deltas.
+      Lab stub Messages-shaped responses nikalta hai bina network ke.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Anthropic</span>
+      <p>
+        Anthropic,
+        <a href="https://docs.anthropic.com/en/api/messages">Messages API</a>
+        and
+        <a href="https://docs.anthropic.com/en/docs/build-with-claude/streaming">streaming</a>
+        docs. Paraphrase: send user/assistant turns in <code>messages</code>; set
+        <code>max_tokens</code>; optional top-level <code>system</code>; streaming yields
+        incremental text events you concatenate into the final assistant reply.
+      </p>
+    </div>
+
+    <div class="callout paid">
+      <span class="callout-label">[PAID — approx cost]</span>
+      <p>
+        Anthropic Claude calls metered hain (input/output tokens). Pricing + rate limits:
+        <em>check current Anthropic docs as of August 2026</em>.
+        <strong>Local fallback:</strong> same Ollama path as OpenAI labs.
+      </p>
+    </div>
+
+    <h2>4. AWS Bedrock — Claude / Llama / Titan via boto3</h2>
+    <p>
+      Bedrock AWS ke andar foundation models ko API deta hai — aap data plane pe
+      <code>bedrock-runtime</code> client se invoke karte ho. Do important shapes:
+    </p>
+    <ul>
+      <li>
+        <strong>Converse / ConverseStream</strong> — unified messages API across models that
+        support chat-style turns. AWS recommends Converse jab aap multi-model conversation code
+        likh rahe ho (Claude, Llama, aur others jo messages support karte hain).
+      </li>
+      <li>
+        <strong>InvokeModel / InvokeModelWithResponseStream</strong> — model-specific request
+        body (JSON bytes). Titan Text aur kuch older paths yahan common hain; raw control zyada,
+        portability kam.
+      </li>
+    </ul>
+    <p>
+      Python mein typically <code>boto3.client("bedrock-runtime", region_name=...)</code> phir
+      <code>converse(modelId=..., messages=[...])</code>. IAM role ko
+      <code>bedrock:InvokeModel</code> (aur stream ke liye
+      <code>bedrock:InvokeModelWithResponseStream</code>) chahiye — Converse bhi inhi permissions
+      pe ride karta hai.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Bedrock runtime</span>
+      <p>
+        AWS,
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html">Converse API</a>,
+        <a href="https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InvokeModel.html">InvokeModel</a>,
+        and
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html">inference prerequisites</a>.
+        Paraphrase: prefer Converse for a consistent messages interface across supported models;
+        InvokeModel sends a model-specific body; calling Converse requires
+        <code>bedrock:InvokeModel</code> permission (stream variants need the WithResponseStream
+        action).
+      </p>
+    </div>
+
+    <div class="callout paid">
+      <span class="callout-label">[PAID — approx cost]</span>
+      <p>
+        Bedrock on-demand inference metered (per 1K input/output tokens, model-dependent; some
+        provisioned throughput options exist). Region + model ID matter.
+        <em>Check current AWS Bedrock pricing as of August 2026</em>.
+        <strong>Local fallback:</strong> Ollama — lab default; Bedrock adapter stubbed for pytest.
+      </p>
+    </div>
+
+    <h2>5. Bedrock model-access enablement — console walkthrough</h2>
+    <p>
+      Yeh section skip mat karo. Pehli baar Bedrock use karte waqt “AccessDenied” ya
+      “model not enabled / agreement required” type errors common hain. AWS ne October 2025 mein
+      serverless foundation models ke liye <strong>automatic enablement</strong> roll out kiya —
+      purana per-model “Model Access” entitlement dashboard retire ho chuka hai. Matlab: aaj
+      (August 2026) ka playbook “har model pe Request access click” nahi, balki
+      <em>IAM + (Anthropic ke liye) one-time use form + region availability</em> verify karna hai.
+      Phir bhi pehli setup intentional honi chahiye — assume mat karo teammate ne pehle enable kar
+      diya.
+    </p>
+
+    <h3>Prose walkthrough (current docs)</h3>
+    <ol>
+      <li>
+        <strong>Region choose karo.</strong> AWS Console → Amazon Bedrock → confirm aap us region
+        mein ho jahan aapka model list hota hai (e.g. <code>us-east-1</code>). Model IDs region-
+        sensitive hain.
+      </li>
+      <li>
+        <strong>Model Catalog / Playground.</strong> Bedrock console mein Model Catalog se Claude /
+        Llama / Titan family dekho. Playground se ek short prompt try karo — yeh fastest “does
+        this account+region work?” signal hai.
+      </li>
+      <li>
+        <strong>Anthropic one-time form.</strong> Serverless models generally auto-enabled hain,
+        lekin Anthropic models pe pehli use se pehle AWS ek one-time use-case / agreement form
+        maangta hai (console playground se Anthropic model select karke, ya documented APIs).
+        Organization management account se submit karne par member accounts pe bhi enable ho
+        sakta hai — apni org policy check karo.
+      </li>
+      <li>
+        <strong>IAM.</strong> Runtime role/user pe <code>bedrock:InvokeModel</code> aur agar stream
+        chahiye to <code>bedrock:InvokeModelWithResponseStream</code>. SCPs se deny ho to console
+        playground bhi fail karega — security team se pehle clear karo.
+      </li>
+      <li>
+        <strong>Marketplace / third-party exceptions.</strong> Kuch models ab bhi AWS Marketplace
+        agreement / extra steps maang sakte hain. Error message + model card EULA padho; docs
+        “check as of August 2026”.
+      </li>
+      <li>
+        <strong>SDK smoke test.</strong> Local pe AWS creds (<code>aws configure</code> / SSO) ke
+        baad chhota <code>converse</code> call. Fail ho to AccessDenied vs ValidationException
+        alag debug karo.
+      </li>
+    </ol>
+
+    <div class="callout handson">
+      <span class="callout-label">Checklist · Bedrock enablement (screenshot-less)</span>
+      <p>
+        □ Correct region selected in Bedrock console<br />
+        □ Model appears in Model Catalog for that region<br />
+        □ Playground short prompt succeeds (or error read carefully)<br />
+        □ If Anthropic: one-time use form / agreement completed<br />
+        □ IAM allows <code>InvokeModel</code> (+ stream action if needed)<br />
+        □ No org SCP silently denying <code>bedrock:Invoke*</code><br />
+        □ boto3 <code>bedrock-runtime</code> smoke <code>converse</code> works<br />
+        □ Pricing page bookmarked — forecast se pehle August 2026 rates verify<br />
+        □ Local Ollama fallback ready jab cloud blocked ho
+      </p>
+    </div>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Bedrock access</span>
+      <p>
+        AWS What’s New (15 Oct 2025),
+        <a href="https://aws.amazon.com/about-aws/whats-new/2025/10/amazon-bedrock-automatic-enablement-serverless-foundation-models/">automatic enablement of serverless foundation models</a>;
+        AWS Security Blog,
+        <a href="https://aws.amazon.com/blogs/security/simplified-amazon-bedrock-model-access/">Simplified model access in Amazon Bedrock</a>;
+        User Guide
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html">inference prerequisites</a>.
+        Paraphrase: commercial regions mein serverless FMs default accessible; Model Access
+        entitlement page retired; Anthropic still needs a one-time usage form before first use;
+        admins control deny/allow via IAM and SCPs on Invoke* actions.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Purani blog posts ab bhi “Model access → Request model access” dikhati hain. August 2026
+        ke account pe woh UI na mile to panic mat karo — pehle IAM + Anthropic form + region
+        verify karo. Stale screenshots follow mat karo.
+      </p>
+    </div>
+
+    <h2>6. Ollama — local inference (course default)</h2>
+    <p>
+      Ollama laptop/desktop pe models pull karke HTTP API deta hai (<code>localhost:11434</code>).
+      Chat: <code>POST /api/chat</code> with <code>model</code>, <code>messages</code>,
+      <code>stream</code> true/false. Lab ka <code>OllamaClient</code> <strong>real httpx</strong>
+      use karta hai — default provider. Tests MockTransport se HTTP shape verify karti hain;
+      live <code>ollama serve</code> CI ke liye required nahi.
+    </p>
+    <p>
+      Typical course models: <code>llama3.2</code> (chat), baad mein embed ke liye
+      <code>nomic-embed-text</code>. Pull: <code>ollama pull llama3.2</code>. Yeh paid API nahi —
+      aapka cost electricity + disk + RAM.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Ollama</span>
+      <p>
+        Ollama docs —
+        <a href="https://docs.ollama.com/">docs.ollama.com</a>,
+        Chat API
+        <a href="https://docs.ollama.com/api/chat">/api/chat</a>.
+        Paraphrase: local server accepts JSON chat requests with message roles; streaming sends
+        NDJSON chunks until <code>done</code>. Model library pages document pull tags and
+        quantization variants shipped as GGUF-style artifacts.
+      </p>
+    </div>
+
+    <h2>7. Inference-serving intuition (~half lesson)</h2>
+    <p>
+      SDK wrappers soft hain. Asal constraints weights + KV cache memory pe hain. Yeh section
+      aapko daily Ollama usage ko physics se jodta hai.
+    </p>
+
+    <h3>7.1 Quantization — magic word nahi</h3>
+    <p>
+      Training/checkpoint aksar <strong>FP16</strong> (16-bit float) ya BF16 weights store karta
+      hai. Ek parameter ≈ 2 bytes. 7B params ≈ 14 GB sirf weights — aur KV cache + activations
+      alag. <strong>Quantization</strong> weights (kabhi activations) ko kam bits mein represent
+      karti hai: Q8 ≈ 8-bit, Q4 ≈ 4-bit, etc. Rough arithmetic lab mein bhi hai:
+    </p>
+    <p>
+      <code>bytes ≈ num_params × (bits_per_param / 8)</code>
+    </p>
+    <p>
+      7e9 params × 16-bit ≈ 14 GB; same model Q4 pe ≈ 3.5 GB weights. Trade-off: chhota RAM/VRAM
+      footprint, tez disk load, lekin thoda quality loss (task-dependent). Isliye “7B on a 8 GB
+      laptop” possible hota hai — quantized weights ki wajah se, magic ki nahi.
+    </p>
+    <p>
+      <strong>GGUF</strong> (GPT-Generated Unified Format) llama.cpp ecosystem ka common packaging
+      format hai — weights + metadata ek file mein, bahut variants quantized (Q4_K_M, Q5_K_S, …).
+      Ollama library models typically inhi quantized GGUF-style blobs ko pull karti hai. Jab aap
+      <code>ollama pull</code> karte ho, aap aksar pehle se quantized artifact laa rahe ho, full
+      FP16 checkpoint nahi.
+    </p>
+
+    <figure class="diagram" aria-label="Quantization memory trade-off">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Same 7B params: FP16 vs Q4 weight footprint</text>
+        <rect x="60" y="70" width="280" height="160" rx="10" fill="#12172B"/>
+        <text x="200" y="110" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="15" font-weight="700">FP16 / BF16</text>
+        <text x="200" y="145" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="13">7e9 × 2 bytes</text>
+        <text x="200" y="175" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="22" font-weight="700">≈ 14 GB</text>
+        <text x="200" y="205" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">+ KV cache still extra</text>
+        <rect x="420" y="70" width="280" height="160" rx="10" fill="#3F8C87"/>
+        <text x="560" y="110" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="15" font-weight="700">Q4 (≈ 4-bit)</text>
+        <text x="560" y="145" text-anchor="middle" fill="#fff" font-family="JetBrains Mono, monospace" font-size="13">7e9 × 0.5 bytes</text>
+        <text x="560" y="175" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="22" font-weight="700">≈ 3.5 GB</text>
+        <text x="560" y="205" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">fits more laptops · slight loss</text>
+      </svg>
+      <figcaption>Figure 2. Quantization = fewer bits per weight. Ollama GGUF pulls are usually already on the right-hand side. Lab function <code>estimate_weight_memory_bytes</code> yahi arithmetic sikhata hai.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        JPEG images ko compress karta hai; Q4 weights ko. Dono lossy ho sakte hain. Difference:
+        yahan “pixels” neural net parameters hain — aur serving stack (llama.cpp / Ollama) un
+        compressed weights pe matrix multiplies chalata hai, decompress-to-FP16-on-disk nahi
+        (implementation details vary; mental model: low-bit mature hai).
+      </p>
+    </div>
+
+    <h3>7.2 KV cache — kyun long context mehnga padta hai</h3>
+    <p>
+      Autoregressive decode: har naye token pe model past tokens pe attention karta hai. Agar aap
+      pehle ke Key/Value projections discard kar do, har step pe poora prompt dubara process
+      karna padega. <strong>KV cache</strong> un past K/V tensors ko RAM/VRAM mein rakhta hai
+      taaki naya token sirf incremental work kare. Cost: cache sequence length × layers × heads ×
+      dim × dtype bytes — context lambi → memory up. Isliye “128K context” marketing ke peeche
+      serving memory pressure hai, sirf training brag nahi.
+    </p>
+
+    <h3>7.3 vLLM-class server vs laptop Ollama</h3>
+    <p>
+      <strong>Ollama on a laptop:</strong> developer ergonomics — pull model, one process, chat
+      API, often single-user / light concurrency, llama.cpp-class backend, quantized GGUF.
+      Perfect for Gurukul labs aur local prototyping.
+    </p>
+    <p>
+      <strong>vLLM-class production server:</strong> multi-request throughput pe optimize.
+      Continuous batching + efficient KV memory management (PagedAttention: KV ko fixed-size
+      blocks mein page karke fragmentation kam, GPU memory better utilize). Goal: same GPU pe
+      zyada concurrent sequences, high tokens/sec, OpenAI-compatible HTTP often. Yeh “ek student
+      ka laptop chat” nahi — yeh shared inference cluster pattern hai.
+    </p>
+
+    <figure class="diagram" aria-label="Ollama laptop vs vLLM-class serving">
+      <svg viewBox="0 0 760 290" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="290" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 3 · Laptop Ollama vs vLLM-class serving</text>
+        <rect x="40" y="55" width="320" height="200" rx="10" fill="#1c2438"/>
+        <text x="200" y="90" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="15" font-weight="700">Ollama · laptop</text>
+        <text x="200" y="125" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">GGUF / quantized weights</text>
+        <text x="200" y="155" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">simple local HTTP</text>
+        <text x="200" y="185" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">dev &amp; light concurrency</text>
+        <text x="200" y="220" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">course default</text>
+        <rect x="400" y="55" width="320" height="200" rx="10" fill="#3F8C87"/>
+        <text x="560" y="90" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="15" font-weight="700">vLLM-class · GPU cluster</text>
+        <text x="560" y="125" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13">PagedAttention KV blocks</text>
+        <text x="560" y="155" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13">continuous batching</text>
+        <text x="560" y="185" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13">high throughput serving</text>
+        <text x="560" y="220" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">prod inference pattern</text>
+      </svg>
+      <figcaption>Figure 3. Same model family, alag serving job. Ollama = local DX; vLLM-class = maximize GPU tokens/sec under many users.</figcaption>
+    </figure>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Quantization / KV / vLLM</span>
+      <p>
+        llama.cpp / GGUF ecosystem docs and model cards describe quantized GGUF weight formats
+        used by local runners;
+        <a href="https://github.com/ggerganov/ggml/blob/master/docs/gguf.md">GGUF spec notes</a>
+        (format for storing tensors + metadata). vLLM
+        <a href="https://docs.vllm.ai/en/latest/design/paged_attention/">PagedAttention design</a>
+        and the PagedAttention paper: KV cache is the dominant dynamic memory during decode;
+        paging KV into blocks reduces fragmentation and enables higher batch throughput than
+        naive contiguous allocation. Paraphrase carefully: Ollama ≠ vLLM; both may serve similar
+        open weights under very different concurrency assumptions.
+      </p>
+    </div>
+
+    <h2>8. Cost / latency trade-offs across providers</h2>
+    <p>
+      Rough decision frame (numbers nahi — axes):
+    </p>
+    <ul>
+      <li>
+        <strong>Ollama local:</strong> $0 API, privacy friendly, latency = aapka machine, quality
+        = jo quantized model aap pull kar sakte ho, concurrency limited.
+      </li>
+      <li>
+        <strong>OpenAI / Anthropic APIs:</strong> best DX + strong models, metered $, data egress
+        policy matter, rate limits, streaming UX polished.
+      </li>
+      <li>
+        <strong>Bedrock:</strong> AWS IAM/VPC story, multi-model (Claude/Llama/Titan) ek bill pe,
+        region lock-in, enablement/IAM friction pehli baar, enterprise procurement path.
+      </li>
+    </ul>
+    <p>
+      Latency: network RTT + queue + TTFT + decode tokens/sec. Local small Q4 model kabhi-kabhi
+      cloud large model se “snappier” feel karta hai short prompts pe — lekin quality alag game
+      hai. Cost estimator lab helper sirf <em>placeholder</em> rates se arithmetic sikhata hai;
+      production forecast se pehle vendor pages refresh karo.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Streaming on kar ke bhi aap output tokens ka paisa (cloud pe) usually phir bhi dete ho —
+        stream billing cancel nahi karta, sirf UX badalta hai. Aur local pe “free” ka matlab GPU
+        memory pressure free nahi.
+      </p>
+    </div>
+
+    <h2>9. Lab</h2>
+    <p>
+      <code>genai-gurukul-labs/app-302/</code> — implement / use:
+      <code>LLMClient</code> protocol, <code>OllamaClient</code> (httpx), stub adapters for
+      OpenAI / Anthropic / Bedrock, <code>estimate_cost</code> (fake rates),
+      <code>estimate_weight_memory_bytes</code> (fp16 vs q4 arithmetic).
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · app-302</span>
+      <p>
+        Success:
+        <code>GURUKUL_LAB=solution pytest app-302/tests -q</code>
+        (from <code>genai-gurukul-labs</code>, venv active). Cloud keys
+        <strong>not</strong> required. Optional extras (<code>openai</code>,
+        <code>anthropic</code>, <code>boto3</code>) lab README mein — default
+        <code>pip install -r requirements.txt</code> light rehta hai (httpx already there).
+        Live Ollama: <code>ollama pull llama3.2</code> then point
+        <code>OllamaClient</code> at <code>http://127.0.0.1:11434</code>.
+      </p>
+    </div>
+
+    <h2>10. Citations (8b)</h2>
+    <ol>
+      <li>
+        OpenAI streaming / text generation —
+        <a href="https://platform.openai.com/docs/guides/streaming-responses">platform.openai.com/docs/guides/streaming-responses</a>
+        — chat + incremental deltas (paraphrased §2).
+      </li>
+      <li>
+        OpenAI text generation / chat —
+        <a href="https://platform.openai.com/docs/guides/text-generation">platform.openai.com/docs/guides/text-generation</a>
+        — messages-based completions.
+      </li>
+      <li>
+        Anthropic Messages API —
+        <a href="https://docs.anthropic.com/en/api/messages">docs.anthropic.com/en/api/messages</a>
+        — request shape, <code>max_tokens</code>, system field.
+      </li>
+      <li>
+        Anthropic streaming —
+        <a href="https://docs.anthropic.com/en/docs/build-with-claude/streaming">docs.anthropic.com/.../streaming</a>
+        — incremental events.
+      </li>
+      <li>
+        AWS Bedrock Converse —
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html">conversation-inference</a>
+        +
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html">inference-prereq</a>
+        — Converse vs InvokeModel; IAM Invoke* actions.
+      </li>
+      <li>
+        AWS Bedrock model access simplification —
+        <a href="https://aws.amazon.com/about-aws/whats-new/2025/10/amazon-bedrock-automatic-enablement-serverless-foundation-models/">What’s New Oct 2025</a>
+        /
+        <a href="https://aws.amazon.com/blogs/security/simplified-amazon-bedrock-model-access/">Security Blog</a>
+        — auto-enable serverless FMs; Anthropic one-time form; IAM/SCP controls.
+      </li>
+      <li>
+        Ollama docs / Chat API —
+        <a href="https://docs.ollama.com/api/chat">docs.ollama.com/api/chat</a>
+        — local <code>/api/chat</code>, streaming NDJSON.
+      </li>
+      <li>
+        GGUF + vLLM PagedAttention —
+        <a href="https://github.com/ggerganov/ggml/blob/master/docs/gguf.md">GGUF format notes</a>;
+        <a href="https://docs.vllm.ai/en/latest/design/paged_attention/">vLLM PagedAttention</a>
+        — quantized packaging for local runners; paged KV for high-throughput serving.
+      </li>
+    </ol>
+    <p>
+      Pricing aur rate-limit tables perishable hain — kisi bhi forecast se pehle
+      <em>vendor docs check karo as of August 2026</em>. Is lesson ne dollar figures invent nahi
+      kiye; lab rates explicitly fake/placeholder hain.
+    </p>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Thin <code>LLMClient</code> interface kyun? OpenAI messages ko seedha har controller mein kyun nahi?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Providers alag JSON/SDK shapes use karte hain (system field location, stream events,
+            Bedrock modelId). Ek <code>complete</code>/<code>stream_tokens</code> contract business
+            code ko swap-friendly banata hai; adapters isolation dete hain.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> 7B params FP16 vs Q4 pe weight memory roughly kitni, aur Ollama se connection kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            FP16 ≈ 14 GB weights; Q4 ≈ 3.5 GB (params × bits/8). Ollama pulls usually GGUF
+            quantized variants — isliye consumer laptops pe chal paate hain; “7B” name full FP16
+            footprint imply nahi karta.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> August 2026 mein Bedrock pe pehli Claude call se pehle aap kya verify karoge?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Region + Model Catalog/playground; Anthropic one-time use form; IAM
+            <code>InvokeModel</code> (+ stream if needed); org SCPs; phir boto3 smoke
+            <code>converse</code>. Purana “Request model access” UI assume mat karo — auto-enable
+            era, lekin Anthropic form + IAM ab bhi real gates hain.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> KV cache kya store karta hai, aur vLLM-class server Ollama laptop se kaise differ karta hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Past tokens ke Key/Value tensors taaki decode incremental rahe. vLLM-class systems
+            paged KV + continuous batching se multi-user GPU throughput maximize karte hain;
+            laptop Ollama DX/local single-user (or light) quantized serving prioritize karta hai.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 302</h2>
+      <ul class="dod-checklist">
+        <li>Book-like Hinglish; CORE-204 design system; transcript strip; Prev APP 301 / Next APP 303 hrefs</li>
+        <li>≥2 SVG diagrams (interface stack; quantization memory; Ollama vs vLLM)</li>
+        <li>OpenAI, Anthropic, Bedrock (boto3 Converse/Invoke), Ollama covered</li>
+        <li>Bedrock enablement = real section (prose + checklist), not a footnote</li>
+        <li>~half lesson serving intuition: quantization/GGUF, KV cache, vLLM-class vs Ollama</li>
+        <li><code>[PAID — approx cost]</code> labels + Ollama fallback; perishable pricing note (Aug 2026)</li>
+        <li>Lab thin interface + Ollama httpx + cloud stubs + cost + memory helpers; pytest green without keys</li>
+        <li>§ Citations (8b) primary docs paraphrased; formative quiz</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-301-prompt-engineering.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP 301 · Prompt Engineering Mastery</span>
+      </a>
+      <a class="next" href="app-303-context-memory.html">
+        <span class="dir">Next</span>
+        <span class="label">APP 303 · Context &amp; Memory Engineering</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 302</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

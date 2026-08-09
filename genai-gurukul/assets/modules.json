@@ -67,7 +67,7 @@
     "code": "APP 301",
     "slug": "app-301-prompt-engineering",
     "title": "Prompt Engineering Mastery",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-301-prompt-engineering.html",
     "track": "APP"
   },
@@ -76,7 +76,7 @@
     "code": "APP 302",
     "slug": "app-302-llm-apis",
     "title": "LLM APIs & SDKs",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-302-llm-apis.html",
     "track": "APP"
   },
@@ -85,7 +85,7 @@
     "code": "APP 303",
     "slug": "app-303-context-memory",
     "title": "Context & Memory Engineering",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-303-context-memory.html",
     "track": "APP"
   },

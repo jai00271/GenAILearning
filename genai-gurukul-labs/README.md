@@ -11,7 +11,7 @@ source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Ollama is **not** required for FOUND 101–103 or CORE 201–204 convergent labs (CORE 204 uses a deterministic local embedder; optional Ollama path is documented on the lesson). Assumption for APP 301+: `llama3.2` and `nomic-embed-text` until confirmed.
+Ollama is **not** required for FOUND 101–103 or CORE 201–204 convergent labs (CORE 204 uses a deterministic local embedder; optional Ollama path is documented on the lesson). Assumption for APP 301+: `llama3.2` and `nomic-embed-text` until confirmed. **APP 302** defaults to an httpx Ollama client with MockTransport in pytest (no live server required); cloud OpenAI/Anthropic/Bedrock adapters are stubs so CI needs no keys.
 
 ## How labs are graded
 
@@ -21,8 +21,7 @@ Ollama is **not** required for FOUND 101–103 or CORE 201–204 convergent labs
 | Debug / decision / track challenge | later tracks | rubric on the lesson page |
 
 ```bash
-pytest found-101/tests found-102/tests found-103/tests core-20*/tests -q
-GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core-20*/tests -q
+GURUKUL_LAB=solution pytest found-*/tests core-20*/tests app-30*/tests -q
 ```
 
 ## Module map (available)
@@ -35,6 +34,8 @@ GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core
 - **CORE 203** — mean NLL / perplexity + toy DPO-style preference loss
 - **CORE 204** — LocalEmbedder, cosine rank, negation failure demo; checkpoint under `checkpoints/core-204/`
 - **CORE challenge** — `challenges/core/` (no starter/solution; rubric-graded English memo)
+- **APP 301** — Ollama-only prompts, few-shot, structured JSON + Pydantic, user-typed injection heuristics (FakeCompleter in tests)
+- **APP 302** — thin `LLMClient` (`complete` / `stream_tokens`), Ollama httpx + cloud stubs, cost + quantization memory helpers
 - **APP 303** — conversation memory under token budget + window vs retrieve_later placement
 
 ## Layout
