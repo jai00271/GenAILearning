@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 309 — Multimodal GenAI (survey) · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Building GenAI Applications</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-309/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-309"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 309 · Multimodal GenAI (survey)</p>
+    <h1>Images, VLMs, audio — map pehle, rabbit hole baad mein</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-309/</code></span>
+      <span>Offline lab · FakeImageClient</span>
+      <span>Prereq: APP track challenge (recommended)</span>
+      <span>Next: PROD 401 — this module does <strong>not</strong> block PROD</span>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Gate note · does NOT block PROD</span>
+      <p>
+        APP 309 ek <strong>survey</strong> hai — vocabulary + judgment, deep specialization
+        nahi. PROD 401 (Evaluation in Production) ke liye yeh module mandatory gate
+        <em>nahi</em> hai. Track challenge clear karke seedha PROD ja sakte ho; multimodal
+        yahan taaki aap “diffusion / VLM / ASR” deck pe blank na raho.
+      </p>
+    </div>
+
+    <p>
+      Text-only LLM ke baad market noise multimodal pe aa jata hai: Stable Diffusion /
+      Flux se marketing creatives, GPT-4o / LLaVA se screenshot QA, Whisper se call
+      transcripts. Pehla engineering sawaal “kaunsa model trendy hai?” nahi — <strong>input
+      modality kya hai, output kya chahiye, aur cost/latency/eval kaise measure hoga?</strong>
+    </p>
+    <p>
+      Scope: diffusion image-gen intuition, vision-language models (VLM), audio
+      (speech-to-text / TTS) — survey depth. Lab sirf thin <code>ImageClient</code> +
+      deterministic <code>FakeImageClient</code> sikhati hai taaki offline pytest green
+      rahe; paid image APIs stub hain, GPU required nahi.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 302 · APP 304 · APP challenge</span>
+      <p>
+        Provider-agnostic client interface (APP 302) yahan image pe repeat hota hai —
+        <code>generate(prompt) → ImageArtifact</code>. Eval beat pehle socho (APP 304):
+        image quality subjective hai; lab mein hum <em>determinism + contract</em> measure
+        karte hain, FID/CLIP scores nahi. Track challenge text/RAG slice pehle prove karta
+        hai; multimodal uske baad optional map hai.
+      </p>
+    </div>
+
+    <h2>1. Three lanes — image-gen, VLM, audio</h2>
+    <p>
+      “Multimodal” ek bucket nahi — teen alag product shapes hain. Confusion tab aati hai
+      jab aap image <em>generate</em> karne wale model ko image <em>understand</em> karne
+      wale VLM se mix kar do, ya ASR transcript ko “agent memory” samajh lo bina eval ke.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Lane</th>
+          <th>Typical job</th>
+          <th>Watch-outs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Diffusion / image-gen</strong></td>
+          <td>Text → pixels (or img2img / inpaint)</td>
+          <td>Steps × resolution = cost; prompt injection via uploaded refs; brand safety</td>
+        </tr>
+        <tr>
+          <td><strong>VLM (vision-language)</strong></td>
+          <td>Image (+ text) → text: caption, QA, UI describe</td>
+          <td>Hallucinated OCR; resolution limits; PII in screenshots</td>
+        </tr>
+        <tr>
+          <td><strong>Audio (ASR / TTS)</strong></td>
+          <td>Speech → text, text → speech</td>
+          <td>Accents / noise; streaming latency; consent &amp; retention</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <figure class="diagram" aria-label="Three multimodal lanes into application glue">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Survey map — three lanes, one app glue layer</text>
+
+        <rect x="40" y="60" width="180" height="90" rx="8" fill="#12172B"/>
+        <text x="130" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Diffusion</text>
+        <text x="130" y="118" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">text → image</text>
+
+        <rect x="290" y="60" width="180" height="90" rx="8" fill="#3F8C87"/>
+        <text x="380" y="95" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">VLM</text>
+        <text x="380" y="118" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">image → text</text>
+
+        <rect x="540" y="60" width="180" height="90" rx="8" fill="#2a3348"/>
+        <text x="630" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Audio</text>
+        <text x="630" y="118" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">speech ↔ text</text>
+
+        <text x="130" y="175" text-anchor="middle" fill="#3F8C87" font-size="18">↓</text>
+        <text x="380" y="175" text-anchor="middle" fill="#3F8C87" font-size="18">↓</text>
+        <text x="630" y="175" text-anchor="middle" fill="#3F8C87" font-size="18">↓</text>
+
+        <rect x="180" y="190" width="400" height="70" rx="8" fill="#B8923F"/>
+        <text x="380" y="220" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">your client + eval + policy seams</text>
+        <text x="380" y="242" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">ImageClient · ASR adapter · budgets</text>
+      </svg>
+      <figcaption>
+        Figure 1. Keep provider SDKs behind thin clients. Glue owns budgets, allowlists, and
+        what you log for eval — same lesson as APP 302 text clients.
+      </figcaption>
+    </figure>
+
+    <h2>2. Diffusion intuition — noise se image, steps se bill</h2>
+    <p>
+      Modern text-to-image mostly <strong>latent diffusion</strong>: model noise se start
+      karke denoising steps mein structure laata hai (U-Net / DiT family — names perishable).
+      Teaching heuristic lab mein: <code>diffusion_work_units = width × height × steps</code>.
+      Yeh FID nahi hai; yeh relative cost gut-check hai — 1024² × 50 steps 256² × 20 se
+      visibly mehnga feel hona chahiye.
+    </p>
+    <ul>
+      <li><strong>Prompt:</strong> subject + style + constraints; negative prompts vendor-specific.</li>
+      <li><strong>Seed:</strong> reproducibility ke liye; lab <code>seed_from_prompt</code> deterministic 31-bit seed banata hai.</li>
+      <li><strong>Safety:</strong> brand / NSFW / likeness filters product feature hain, afterthought nahi.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Diffusion denoise steps and work units">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Diffusion sketch — steps trade quality vs latency/cost</text>
+
+        <circle cx="90" cy="140" r="36" fill="#1c2438"/>
+        <text x="90" y="145" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">noise</text>
+
+        <text x="150" y="145" fill="#3F8C87" font-size="22">→</text>
+
+        <rect x="180" y="100" width="100" height="80" rx="8" fill="#2a3348"/>
+        <text x="230" y="135" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">step 1</text>
+        <text x="230" y="155" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">denoise</text>
+
+        <text x="300" y="145" fill="#3F8C87" font-size="22">→</text>
+
+        <rect x="330" y="100" width="100" height="80" rx="8" fill="#2a3348"/>
+        <text x="380" y="135" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">step k</text>
+        <text x="380" y="155" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">…</text>
+
+        <text x="450" y="145" fill="#3F8C87" font-size="22">→</text>
+
+        <rect x="480" y="100" width="100" height="80" rx="8" fill="#3F8C87"/>
+        <text x="530" y="135" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">image</text>
+        <text x="530" y="155" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="10">PNG/JPEG</text>
+
+        <rect x="600" y="90" width="130" height="100" rx="8" fill="#12172B"/>
+        <text x="665" y="125" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="12" font-weight="700">work ≈</text>
+        <text x="665" y="150" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="11">W×H×steps</text>
+        <text x="665" y="172" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="10">lab heuristic</text>
+
+        <text x="24" y="250" font-family="Inter, sans-serif" font-size="12" fill="#5a6178">More steps ≠ always better UX — measure latency budget pehle.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Denoising steps are a dial. Lab <code>diffusion_work_units</code> makes the
+        cost conversation concrete without claiming perceptual quality.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition · FakeImageClient</span>
+      <p>
+        Production mein aap SDXL / Flux / DALL·E / Imagen call karoge. Gurukul CI mein GPU
+        nahi chahiye — <code>FakeImageClient</code> seed se solid RGB PNG banata hai,
+        deterministic. Contract same: <code>ImageArtifact(prompt, width, height, mime,
+        data, seed, provider, steps)</code>. Optional <code>OllamaImageClient</code> httpx
+        se <code>/api/generate</code> shape seekhata hai (MockTransport in tests);
+        <code>StubOpenAIImageClient</code> paid path ka label hai bina API key ke.
+      </p>
+    </div>
+
+    <h2>3. VLMs — dekhna ≠ generate karna</h2>
+    <p>
+      Vision-language models image tokens (patches / tiles) ko text tokens ke saath joint
+      space mein laate hain. Use cases: document QA, UI bug describe, shelf / receipt OCR
+      assist. Failure mode classic: model confidently galat digit padh le — isliye
+      <strong>grounded eval</strong> (golden screenshots + expected fields) text RAG jaisa
+      zaroori hai.
+    </p>
+    <ul>
+      <li><strong>Input budget:</strong> megapixel limits; resize pehle, blind 4K dump mat.</li>
+      <li><strong>Tooling:</strong> VLM aksar agent tool ban'ta hai (“describe_screenshot”) — APP 307 allowlists apply.</li>
+      <li><strong>Privacy:</strong> customer PII screenshots third-party VLM pe bhejne se pehle policy.</li>
+    </ul>
+
+    <h2>4. Audio — ASR / TTS survey</h2>
+    <p>
+      <strong>ASR</strong> (speech-to-text): Whisper-class / cloud speech APIs — batch vs
+      streaming. <strong>TTS</strong>: product voice, IVR, accessibility. Multimodal “agent
+      that listens” usually ASR → text LLM → (optional) TTS; audio tokens seedha LLM mein
+      ab experimental / vendor-specific hain — survey pehle text bridge assume karo.
+    </p>
+    <ul>
+      <li>Measure WER / intent accuracy on <em>your</em> accents, not demo reels.</li>
+      <li>Streaming partial transcripts = UX win + race conditions; version the contract.</li>
+      <li>Retention: call audio often regulated — delete / redact policy PROD track pe deep dive.</li>
+    </ul>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · app-309</span>
+      <p>
+        <code>genai-gurukul-labs/app-309/</code> —
+        <code>image_gen.py</code>: <code>normalize_prompt</code>,
+        <code>diffusion_work_units</code>, <code>seed_from_prompt</code>,
+        <code>build_generate_request</code>, <code>FakeImageClient</code>,
+        <code>OllamaImageClient</code> (httpx), <code>StubOpenAIImageClient</code>.
+        Success: <code>GURUKUL_LAB=solution pytest app-309/tests -q</code>.
+        No GPU, no paid keys.
+      </p>
+    </div>
+
+    <h2>5. Portfolio-facing English — when to reach for multimodal</h2>
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        Reach for multimodal only when the job genuinely needs pixels or audio — not as a
+        demo garnish on a text workflow that already works. Separate image generation from
+        vision-language understanding, put each behind a thin client, and define an eval
+        slice (golden prompts/screenshots/clips) before optimizing model brand names.
+        Treat resolution, steps, and streaming as cost dials with explicit budgets.
+      </p>
+    </div>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> APP 309 PROD 401 ko block karta hai kya?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Nahi. Yeh survey optional map hai — PROD gate track challenge pe hai, APP 309 pe
+            nahi.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Diffusion vs VLM — one-line farq?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Diffusion / image-gen: text (ya image) → new pixels. VLM: image (+ text) → text
+            understanding. Generate ≠ see.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Lab <code>diffusion_work_units</code> kya measure karta hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Teaching heuristic: <code>width × height × steps</code> — relative compute/cost
+            gut-check, perceptual quality score nahi.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> <code>FakeImageClient</code> kyun?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Offline deterministic PNG — CI mein GPU/API keys ke bina ImageClient contract
+            green. Real providers baad mein swap.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>5.</strong> Audio multimodal agent ka common bridge?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            ASR → text LLM (+ tools) → optional TTS. Native audio-token LLMs survey-level
+            awareness; default product design abhi text bridge se start.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 309</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; design system; transcript <code>data-current="app-309"</code></li>
+        <li>Survey: diffusion image-gen, VLMs, audio (ASR/TTS) — not a deep specialization track</li>
+        <li>Explicit: does <strong>not</strong> block PROD 401</li>
+        <li>≥2 SVG diagrams; quiz; citations</li>
+        <li>Lab <code>app-309/{starter,solution,tests}</code> with <code>FakeImageClient</code>; offline pytest green</li>
+        <li>Prev → <code>app-challenge.html</code>; Next → <code>prod-401-eval-production.html</code></li>
+        <li>No <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Citations · primary</span>
+      <ul>
+        <li>Ho et al., Denoising Diffusion Probabilistic Models: <a href="https://arxiv.org/abs/2006.11239">arXiv:2006.11239</a></li>
+        <li>Rombach et al., High-Resolution Image Synthesis with Latent Diffusion Models: <a href="https://arxiv.org/abs/2112.10752">arXiv:2112.10752</a></li>
+        <li>OpenAI Whisper: <a href="https://openai.com/research/whisper">openai.com/research/whisper</a></li>
+        <li>Ollama API docs (local multimodal experiments): <a href="https://github.com/ollama/ollama/blob/main/docs/api.md">ollama/docs/api.md</a></li>
+      </ul>
+    </div>
+
+    <p>
+      Agla default step PROD 401 hai — production evaluation, online metrics, regression
+      gates. Multimodal rabbit holes (fine-tune VLM, train LoRA on brand shots) tab, jab
+      text slice pehle eval-green ho.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-challenge.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP Challenge · Track gate</span>
+      </a>
+      <a class="next" href="prod-401-eval-production.html">
+        <span class="dir">Next</span>
+        <span class="label">PROD 401 · Evaluation in Production</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 309</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

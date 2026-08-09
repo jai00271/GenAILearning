@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORE 203 — How LLMs Are Trained · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">CORE · Language &amp; Transformers</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/core-203/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="core-203"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">CORE 203 · How LLMs Are Trained</p>
+    <h1>Pretrain → SFT → preference: model “smart” hone se pehle, model “useful” banta hai</h1>
+    <div class="lesson-meta">
+      <span>Track: CORE</span>
+      <span>Labs: <code>genai-gurukul-labs/core-203/</code></span>
+      <span>Local math · no paid API</span>
+      <span>Prereq: CORE 202 + FOUND 102 log-probs / perplexity</span>
+    </div>
+
+    <p>
+      CORE 202 ne dikhaya ki Transformer tokens ko kaise mix karta hai. Ab sawal training ka hai:
+      woh weights <em>kis loss</em> se seekhte hain, aur chat-ready model raw next-token predictor se
+      kitne stages door hai. Industry stack aaj teen clear phases mein padha jaata hai —
+      <strong>pretraining</strong> (internet-scale next-token prediction), <strong>supervised
+      fine-tuning (SFT)</strong> (instruction / demonstration data), aur <strong>preference
+      optimization</strong> (RLHF ya DPO jaise methods jo “chosen vs rejected” answers se seekhte
+      hain). Yeh chapter un phases ko practitioner language mein lock karta hai: aap vendor blog
+      mein “aligned with RLHF” padho to pipeline samajh aaye, aur aap apne eval harness mein
+      pretraining loss ko FOUND 102 ke log-probs / perplexity se jod sako.
+    </p>
+    <p>
+      Scope honest rakho. Hum GPU cluster schedule nahi likhenge, reward-model gradients ka full
+      derivation nahi karenge, aur masters-level optimization theory nahi padhayenge. Jo lab mein
+      hoga: short sequence ke token log-probs se mean NLL aur perplexity, plus ek toy DPO-style
+      preference loss term — taaki papers ke symbols aapke Python mein concrete ho jayein.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · FOUND 102</span>
+      <p>
+        Token log-probability natural log mein measure hoti hai. Sequence ka mean negative
+        log-likelihood (NLL) = average of <code>−log p(token_i)</code>. Perplexity
+        <code>PPL = exp(mean NLL)</code> — effective branching factor ki intuition. Pretraining
+        loss isi family ka hai: model next token ki probability maximize karti hai, jo numerically
+        mean NLL minimize karne ke barabar hai. Lab wahi formulas teaching scale par dubara
+        implement karega (found-102 se import nahi — concepts reuse).
+      </p>
+    </div>
+
+    <h2>1. Pretraining — next-token negative log-likelihood</h2>
+    <p>
+      Autoregressive language model training ka contract seedha hai. Corpus se ek sequence
+      <code>x₁, x₂, …, xₙ</code> lo. Position <code>t</code> par model, pehle ke tokens
+      <code>x_&lt;t</code> dekh kar, vocabulary par distribution <code>p_θ(x_t | x_&lt;t)</code>
+      predict karta hai. Loss us distribution ke under true token ki negative log-probability hai.
+      Batch / sequence par average lete ho — wahi <strong>cross-entropy</strong> / mean NLL jo
+      FOUND 102 mein aayi. Teacher forcing mein poori sequence ke targets parallel compute hote
+      hain (CORE 202 causal mask yahi leak rokta hai).
+    </p>
+    <p>
+      Pretraining ka goal “chatbot banana” nahi hota. Goal hota hai: broad text distribution ko
+      compress karna — syntax, facts jo data mein hain, patterns, code, dialogue fragments —
+      taaki model next token predict kar sake. Quality signal often reported as validation
+      perplexity ya bits-per-byte on held-out corpora. Lower PPL on a fixed eval set usually better
+      next-token modeling indicate karti hai; yeh user preference ya safety ka direct measure nahi
+      hai. Simplified label: <em>pretrain = capability substrate; later stages = behavior shaping.</em>
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Alec Radford et al., “Language Models are Unsupervised Multitask Learners” (GPT-2 technical
+        report), OpenAI, 2019,
+        <a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf">cdn.openai.com/…/language_models_are_unsupervised_multitask_learners.pdf</a>.
+        Report frames the learning objective as maximizing the likelihood of the next token given
+        previous context — unsupervised language modeling as a transferable pretraining task that
+        can be queried with natural-language prompts without task-specific architectures.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="Pretraining next-token loss">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Pretraining = mean NLL over next-token predictions</text>
+        <rect x="40" y="55" width="680" height="50" rx="8" fill="#12172B"/>
+        <text x="380" y="85" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="13">context: x₁ x₂ … xₜ₋₁  →  model  →  log p(xₜ | context)</text>
+        <text x="40" y="140" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">Per token: NLLₜ = −log p_θ(xₜ | x_&lt;t). Sequence metric: mean NLL → PPL = exp(mean NLL).</text>
+        <rect x="40" y="160" width="200" height="70" rx="8" fill="#1c2438"/>
+        <text x="140" y="190" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="13" font-weight="600">token logprobs</text>
+        <text x="140" y="210" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">FOUND 102</text>
+        <text x="255" y="200" fill="#3F8C87" font-size="22">→</text>
+        <rect x="280" y="160" width="180" height="70" rx="8" fill="#3F8C87"/>
+        <text x="370" y="200" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="600">mean NLL</text>
+        <text x="475" y="200" fill="#3F8C87" font-size="22">→</text>
+        <rect x="500" y="160" width="220" height="70" rx="8" fill="#B8923F"/>
+        <text x="610" y="200" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">PPL = e^{NLL}</text>
+        <text x="40" y="260" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Lab: given a short list of token log-probs, compute mean NLL and perplexity — same math as FOUND 102.</text>
+      </svg>
+      <figcaption>Figure 1. Pretraining loss FOUND 102 ke log-prob / perplexity pipeline se seedha map hota hai; scale aur data alag hain, formula nahi.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Datadog log pipeline socho: har event ke liye model “agla field kya hoga?” predict karti hai.
+        Agar true field rare hai aur model ne usse low probability di, NLL high — surprise zyada.
+        Pretraining millions of such surprises ko average karke weights update karti hai. Chat
+        product ka “helpful answer” yahan abhi target nahi; pehle language ke statistics seekhna
+        hai.
+      </p>
+    </div>
+
+    <h2>2. Supervised fine-tuning (SFT) — demonstrations se behavior</h2>
+    <p>
+      Raw pretrained model powerful hone ke bawajood aksar instructions ko “complete the internet”
+      style mein treat karti hai: prompt ke baad plausible continuation, jo user ke intent se match
+      na kare. <strong>SFT</strong> us gap ko band karti hai. Aap curated (prompt, ideal completion)
+      pairs collect karte ho — human-written ya high-quality synthetic — aur same next-token NLL
+      loss se model ko un completions par fine-tune karte ho. Loss function pretraining jaisi reh
+      sakti hai; <em>data distribution</em> badal jaati hai: ab targets “good assistant replies”
+      hain, random web text nahi.
+    </p>
+    <p>
+      Practitioner reading: SFT quality ceiling aapke demonstration set ki quality aur coverage se
+      bound hoti hai. Agar aapke examples mein tool-use, refusal patterns, ya domain jargon missing
+      hai, model un behaviors ko reliably nahi seekhegi. SFT ke baad bhi model kabhi-kabhi
+      sycophantic ya verbose ho sakti hai — isliye preference stage aati hai. Simplified: SFT =
+      “yeh format / yeh tone mein jawab do” sikhana; preference = “do plausible answers mein se
+      better wala choose karna” sikhana.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “Fine-tuned” ko magic word maan lena. Fine-tune <em>kis data</em> aur <em>kis objective</em>
+        se hua, woh product risk decide karta hai. Ek internal FAQ corpus par SFT se domain jargon
+        improve ho sakta hai; safety refusals ya preference ranking usse automatically nahi aate.
+        Jab vendor “instruction-tuned” kahe, poocho: SFT-only hai ya preference-optimized bhi?
+      </p>
+    </div>
+
+    <h2>3. RLHF — reward model + policy optimization</h2>
+    <p>
+      <strong>Reinforcement Learning from Human Feedback (RLHF)</strong> preference data ko explicit
+      reward signal mein badalta hai. Typical pipeline (InstructGPT lineage): (1) SFT se starting
+      policy banao; (2) humans ko same prompt ke multiple model outputs dikhao, unse ranking /
+      comparison lo; (3) un comparisons se ek <strong>reward model</strong> train karo jo scalar
+      score predict kare; (4) policy ko RL (often PPO) se update karo taaki high-reward answers
+      generate kare, usually with a KL penalty toward a reference policy taaki model reward hack
+      karke collapse na ho.
+    </p>
+    <p>
+      Yeh stack powerful hai aur operationally heavy bhi: reward model training, RL instability,
+      hyperparameter sensitivity, aur “reward hacking” jahan model high score ke liye human intent
+      se hat kar shortcuts seekh leti hai. Job-ready takeaway: jab koi system “RLHF-aligned” claim
+      kare, aap samajh lo ke beech mein human (ya AI) preference labels the, ek learned reward tha,
+      aur policy us reward ke against optimized hui — exact PPO recipe vendor-specific hoti hai.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Long Ouyang et al., “Training language models to follow instructions with human feedback”
+        (InstructGPT), arXiv:2203.02155,
+        <a href="https://arxiv.org/abs/2203.02155">arxiv.org/abs/2203.02155</a>.
+        Paper describes fine-tuning GPT-3 with human demonstrations and preference rankings via a
+        reward model, then optimizing the policy with reinforcement learning so the model better
+        follows user instructions — reporting improved human preference win rates versus the base
+        GPT-3 family on instruction-following evaluations.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="Training stages pipeline">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Three stages (simplified) — pretrain → SFT → preference</text>
+        <rect x="40" y="55" width="200" height="160" rx="10" fill="#12172B"/>
+        <text x="140" y="90" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="14" font-weight="700">1 · Pretrain</text>
+        <text x="140" y="120" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Next-token NLL</text>
+        <text x="140" y="145" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Web / code scale</text>
+        <text x="140" y="175" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">capability</text>
+        <text x="255" y="135" fill="#3F8C87" font-size="24">→</text>
+        <rect x="280" y="55" width="200" height="160" rx="10" fill="#1c2438"/>
+        <text x="380" y="90" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="14" font-weight="700">2 · SFT</text>
+        <text x="380" y="120" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Demo pairs</text>
+        <text x="380" y="145" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Same NLL loss</text>
+        <text x="380" y="175" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">format / follow</text>
+        <text x="495" y="135" fill="#3F8C87" font-size="24">→</text>
+        <rect x="520" y="55" width="200" height="160" rx="10" fill="#3F8C87"/>
+        <text x="620" y="90" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="14" font-weight="700">3 · Preference</text>
+        <text x="620" y="120" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">RLHF or DPO</text>
+        <text x="620" y="145" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">chosen ≻ rejected</text>
+        <text x="620" y="175" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">behavior</text>
+        <text x="40" y="250" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">RLHF path: preferences → reward model → RL on policy (+ KL to reference).</text>
+        <text x="40" y="275" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">DPO path: preferences → closed-form preference loss on policy (no separate RM loop in the toy view).</text>
+      </svg>
+      <figcaption>Figure 2. Chat LLMs rare hi “sirf pretrain” se ship hote hain. SFT aur preference stages behavior aur instruction-following shape karti hain.</figcaption>
+    </figure>
+
+    <h2>4. DPO — preferences bina alag RL loop ke (intuition)</h2>
+    <p>
+      <strong>Direct Preference Optimization (DPO)</strong> preference learning ko ek classification-
+      style objective mein rewrite karti hai. Idea: agar aap reward model aur RL step ko theoretically
+      combine karo, to aap seedha policy parameters par ek loss likh sakte ho jo chosen response
+      <code>y_w</code> ko rejected response <code>y_l</code> se prefer karaye, relative to a
+      reference policy. Intuition form (lab isi ko toy scale par compute karega): beta-scaled
+      difference of (policy log-prob minus reference log-prob) for chosen vs rejected, phir
+      <code>−log σ(·)</code>. Jab chosen ka advantage clear ho, loss chhoti; jab rejected zyada
+      likely ho policy ke under, loss badi.
+    </p>
+    <p>
+      Simplified for this course: lab <em>full</em> DPO training loop nahi hai — na GPU, na tokenizer
+      dump. Aapko given scalar log-prob sums (chosen / rejected, optional reference) se ek
+      DPO-style loss term nikalna hai, taaki paper ka formula aapke hands mein numerical ho.
+      Production teams DPO (aur variants) isliye pasand karti hain kyunki RL infra ka operational
+      burden kam ho sakta hai; yeh claim context-dependent hai, silver bullet nahi.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Rafael Rafailov et al., “Direct Preference Optimization: Your Language Model is Secretly a
+        Reward Model,” arXiv:2305.18290,
+        <a href="https://arxiv.org/abs/2305.18290">arxiv.org/abs/2305.18290</a>.
+        Authors derive a preference loss that optimizes the policy directly from preferred vs
+        dispreferred completions relative to a reference model, avoiding an explicit reward-model
+        fitting stage and a separate RL loop while targeting the same preference objective family
+        as RLHF-style methods.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · core-203 lab preview</span>
+      <p>
+        Toy DPO term: <code>δ = β · [(ℓ_θ(y_w) − ℓ_ref(y_w)) − (ℓ_θ(y_l) − ℓ_ref(y_l))]</code>,
+        loss = <code>−log σ(δ)</code>, jahan <code>ℓ</code> sequence log-prob sum hai. Agar reference
+        logs zero rakho (teaching shortcut), margin chosen−rejected par collapse ho jaati hai.
+        Yeh simplification lab docstring mein labeled hai — production DPO reference policy ko
+        casually drop nahi karti.
+      </p>
+    </div>
+
+    <h2>5. Scaling laws — intuition only</h2>
+    <p>
+      Empirically, language-model loss predictably improve hoti hai jab aap model size, dataset
+      size, aur compute ko scale karte ho — within the regimes papers ne measure kiye. Kaplan et al.
+      ne early “scaling laws” curves popular kiye: loss as a power-law function of parameters /
+      data / compute. Baad mein Chinchilla (Hoffmann et al.) ne emphasize kiya ki many large models
+      undertrained on tokens the — optimal compute allocation mein data aur parameters dono ko
+      balance karna padta hai, sirf parameters badhana kaafi nahi. Practitioner intuition: bigger
+      often helps <em>if</em> you also feed enough data and pay the compute; “10× parameters”
+      automatically “10× product quality” nahi hai, especially after SFT/preference stages aur
+      eval mismatch.
+    </p>
+    <p>
+      Job-ready use: capacity planning meetings mein “scale the model” ko challenge karo with
+      “scale which axis — params, tokens, or inference compute?” PROD track cost/latency se isse
+      jodega; yahan aap sirf vocabulary lock kar rahe ho.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Jordan Hoffmann et al., “Training Compute-Optimal Large Language Models” (Chinchilla),
+        arXiv:2203.15556,
+        <a href="https://arxiv.org/abs/2203.15556">arxiv.org/abs/2203.15556</a>.
+        Paper argues that for a fixed training compute budget, model size and training tokens
+        should be scaled together; their analysis finds many prior large models were undertrained
+        on tokens relative to an approximately compute-optimal allocation, and that smaller models
+        trained on more data can outperform larger undertrained models on the same compute.
+      </p>
+    </div>
+
+    <h2>6. Context-window size — one checkpoint, then APP 303</h2>
+    <p>
+      Training aur architecture decide karti hain model ki maximum <strong>context-window size</strong>
+      (kitne tokens ek forward pass mein legally attend ho sakte hain). Yeh number product copy mein
+      “128k context” jaisa dikhta hai, lekin yeh applied memory strategy nahi hai: window ke andar
+      kya rakhna hai, overflow par summarize / retrieve kaise karna hai, aur long-context cost kaise
+      manage karni hai — woh <strong>APP 303 (context / memory engineering)</strong> ka scope hai.
+      Yahan sirf itna yaad rakho: pretrain/fine-tune positional limits aur attention cost window
+      size ko bound karte hain; engineering the contents of that window aage aata hai.
+    </p>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        C# service ka max request body size socho versus aapka API design jo us body mein kya
+        bhejta hai. Window size = protocol limit. APP 303 = payload design (RAG, summaries,
+        tool traces). Dono confuse mat karo.
+      </p>
+    </div>
+
+    <h2>7. Hands-on lab</h2>
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · core-203</span>
+      <p>
+        <code>genai-gurukul-labs/core-203/</code> — pure Python / math (+ NumPy lists ok). Implement
+        <code>mean_nll</code> aur <code>perplexity_from_logprobs</code> short token log-prob
+        sequences ke liye, phir <code>dpo_style_loss</code> chosen vs rejected log-prob sums se.
+        Pytest frozen fixtures se numerical values check karega.
+        <code>GURUKUL_LAB=solution pytest core-203/tests -q</code> for the reference.
+      </p>
+    </div>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Pretraining loss FOUND 102 ke kis metric se map hota hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Next-token negative log-likelihood — sequence / batch par mean NLL; perplexity
+            <code>exp(mean NLL)</code> usi loss ka human-friendlier reporting scale hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> SFT aur RLHF mein data / objective ka farq kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            SFT demonstration pairs par (usually) same next-token NLL use karti hai — “ideal”
+            completions clone karna. RLHF preference comparisons se reward model seekhta hai, phir
+            policy ko us reward ke against RL se update karta hai (KL-to-reference ke saath typical
+            setups mein).
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> DPO RLHF se operational intuition mein kaise alag hai (course-level)?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            DPO preference pairs se seedha policy loss optimize karti hai — toy view mein alag
+            reward-model + RL loop skip — chosen vs rejected log-probs (reference-relative) par
+            <code>−log σ(β · advantage)</code> style term ke through. Full production recipes still
+            careful with reference models and data quality.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Chinchilla-style scaling intuition ek line mein?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Fixed compute budget par parameters aur training tokens dono ko scale karo; bada model
+            with too few tokens undertrained reh sakta hai compared to a smaller model trained on
+            more data.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — CORE 203</h2>
+      <ul class="dod-checklist">
+        <li>Book-like Hinglish lesson; design system; transcript strip</li>
+        <li>≥2 SVG diagrams (pretrain NLL/PPL pipeline; three-stage training)</li>
+        <li>Must-cover: pretraining objective, SFT, RLHF, DPO, scaling-laws intuition, context-window size → APP 303</li>
+        <li>FOUND 102 log-probs / perplexity tied into pretraining loss explanation</li>
+        <li>Lab starter/solution/pytest (mean NLL + PPL + toy DPO-style loss)</li>
+        <li>Citations: GPT-2 / LM objective, InstructGPT (Ouyang), DPO (Rafailov), Chinchilla (Hoffmann)</li>
+        <li>Formative quiz; Prev/Next wired to CORE 202 / CORE 204</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="core-202-transformer.html">
+        <span class="dir">Prev</span>
+        <span class="label">CORE 202 · Transformer</span>
+      </a>
+      <a class="next" href="core-204-embeddings.html">
+        <span class="dir">Next</span>
+        <span class="label">CORE 204 · Embeddings</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · CORE 203</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

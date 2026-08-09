@@ -1,0 +1,16 @@
+{
+  "doc_id": "ticket-inc-1042",
+  "source_format": "json",
+  "service": "auth",
+  "type": "incident",
+  "number": "INC-1042",
+  "priority": "P2",
+  "state": "in_progress",
+  "short_description": "Users cannot refresh OAuth tokens; auth-api restarting",
+  "description": "Multiple customers report refresh_token failures since 06:40 UTC. Kubernetes shows auth-api CrashLoopBackOff on two of three pods. Suspect secret rotation at 06:35 UTC.",
+  "work_notes": [
+    "Checked Datadog: 5xx on /oauth/token elevated.",
+    "Comparing secret auth-oidc with previous version."
+  ],
+  "updated_at": "2026-08-09T06:55:00Z"
+}

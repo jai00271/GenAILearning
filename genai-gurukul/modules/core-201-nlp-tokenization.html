@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORE 201 — NLP Fundamentals &amp; Tokenization · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">CORE · Language &amp; Transformers</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/core-201/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="core-201"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">CORE 201 · NLP Fundamentals &amp; Tokenization</p>
+    <h1>Model words nahi padhta — tokens padhta hai. Aapka bill bhi unhi se banta hai.</h1>
+    <div class="lesson-meta">
+      <span>Track: CORE</span>
+      <span>Labs: <code>genai-gurukul-labs/core-201/</code></span>
+      <span>Local · tiktoken · no paid API</span>
+      <span>Prereq: FOUND 101–103</span>
+    </div>
+
+    <p>
+      Backend engineer ke dimaag mein “string” ek pehli-class cheez hai: UTF-8 bytes, length, maybe a
+      culture-aware collation. Language model ke dimaag mein pehli-class cheez <em>token id</em> hai —
+      ek integer vocabulary ke andar. Jab aap prompt likhte ho, context window plan karte ho, chunk size
+      choose karte ho, ya tokens-per-minute (TPM) capacity sochte ho (PROD 405), aap asal mein isi
+      integer stream ke saath kaam kar rahe ho. Is chapter ka kaam yeh illusion todna hai ki model
+      English “words” dekh raha hai, aur uski jagah woh machinery rakhna jo aap production mein daily
+      use karoge: why we tokenize, how Byte Pair Encoding (BPE) and WordPiece build a vocabulary,
+      what vocab-size trade-offs buy you, and how to measure real token counts with OpenAI’s
+      <code>tiktoken</code> library.
+    </p>
+    <p>
+      Yeh NLP survey course nahi hai. Stemming, part-of-speech tagging, classical n-gram language
+      models — unka historical value hai, lekin GenAI Application Engineer ke daily path pe nahi.
+      Jo classical idea yahan zinda hai woh sirf itna hai: text ko discrete units mein todna zaroori
+      hai kyunki neural nets fixed-size symbol tables par train hote hain. Uske baad hum seedha
+      subword tokenization par aa jaate hain, kyunki wahi 2015–2026 ke LLMs ka default hai.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · FOUND 102</span>
+      <p>
+        Perplexity token-level log-probabilities par define hoti hai, character-level ya word-level
+        par nahi — jab tak aap explicitly woh unit choose na karo. Agar do models alag tokenizers
+        use karte hain, unki perplexity numbers seedha compare mat karo. Yeh chapter us warning ko
+        concrete banata hai: same English sentence, do encodings, do token counts, do bill shapes.
+      </p>
+    </div>
+
+    <h2>1. Kyun tokenize — bytes se integers tak ka contract</h2>
+    <p>
+      Neural language model ek badi lookup table + matrix multiplies ka system hai. Har input position
+      par use ek <em>embedding vector</em> chahiye (CORE 204 us vector semantics ko deepen karega).
+      Embedding table ka size roughly <code>vocab_size × embedding_dim</code> hota hai. Agar aap har
+      possible Unicode string ko ek row dete, table infinite hoti. Agar aap sirf “whitespace-separated
+      English words” rakhte, to teen problems turant aati hain.
+    </p>
+    <p>
+      Pehli problem: <em>open vocabulary</em>. “ServiceNow”, “INC0042817”, “resetPasswordAsync”,
+      aur kal ka naya product name — yeh training data mein na hon, aur model ke paas unke liye koi
+      row nahi. Classical NLP ne iske liye an <code>&lt;UNK&gt;</code> token use kiya; production assistant
+      mein har unknown word ko UNK banana matlab incident numbers aur API paths kho dena.
+    </p>
+    <p>
+      Doosri problem: morphology aur glue. English mein “password”, “passwords”, “password-reset”
+      related hain; German compounds aur code identifiers aur bhi messy hain. Pure word vocab either
+      explode karti hai ya related forms ko bilkul alag rows deti hai.
+    </p>
+    <p>
+      Teesri problem: cost and context. Context window tokens mein measure hota hai, characters mein
+      nahi. Same 4,000-character runbook ek tokenizer mein 1,100 tokens ho sakta hai, doosre mein
+      1,800. Agar aap character length se “safe” budget karoge, kabhi window se bahar nikal jaoge,
+      kabhi paise waste karoge. Tokenization isliye sirf linguistics nahi — yeh aapka metering,
+      packing, aur truncation contract hai.
+    </p>
+
+    <figure class="diagram" aria-label="Text to token ids pipeline">
+      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="220" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · The only pipeline the model sees</text>
+        <rect x="24" y="60" width="150" height="70" rx="8" fill="#12172B"/>
+        <text x="99" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">UTF-8 text</text>
+        <text x="99" y="112" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">“reset pwd”</text>
+        <text x="184" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="210" y="60" width="160" height="70" rx="8" fill="#1c2438"/>
+        <text x="290" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">tokenizer</text>
+        <text x="290" y="112" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">BPE / WordPiece</text>
+        <text x="380" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="410" y="60" width="160" height="70" rx="8" fill="#3F8C87"/>
+        <text x="490" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">token ids</text>
+        <text x="490" y="112" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">[12580, 339, …]</text>
+        <text x="580" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="610" y="60" width="126" height="70" rx="8" fill="#B8923F"/>
+        <text x="673" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">embeddings</text>
+        <text x="673" y="112" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">CORE 204</text>
+        <text x="24" y="170" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">C# analog: serialize a DTO to a wire format before the service bus. Model never sees your string;</text>
+        <text x="24" y="192" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">it sees the encoding. Wrong encoding = wrong bill, wrong truncation, wrong “UNK” holes in meaning.</text>
+      </svg>
+      <figcaption>Figure 1. Tokenization the trust boundary hai text aur model arithmetic ke beech — jaise JSON serialization service boundary par hoti hai.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Microservice world mein aap protobuf vs JSON choose karte ho: denser encoding, different
+        schema evolution rules, different debugging pain. Tokenizers bhi encodings hain. Dense /
+        clever encoding (subwords) rare words ko pieces mein tod deti hai; naive word encoding
+        either UNK karti hai ya vocab explode. Aap “kaunsi encoding” ko product decision ki tarah
+        treat karo, cosmetics ki tarah nahi.
+      </p>
+    </div>
+
+    <h2>2. Character, word, subword — teen incomplete answers</h2>
+    <p>
+      Character-level tokenization theoretically open vocabulary solve karti hai: har Unicode code
+      point (ya byte) ek symbol. Practical dard: sequences lambi ho jaati hain, aur model ko spelling
+      se meaning compose karna padta hai. “password” aath alag steps ban jaata hai. Short context
+      windows pe yeh luxury mehngi padti hai.
+    </p>
+    <p>
+      Word-level tokenization human intuition se milti-julti hai, lekin upar wali teen problems
+      (UNK, morphology, metering) production mein laut aati hain. Code aur incident IDs par yeh
+      especially bura behave karti hai — exactly woh domain jahan aap GenAI Application Engineer
+      ke taur par kaam karoge.
+    </p>
+    <p>
+      Subword tokenization beech ka raasta hai. Common words aksar ek hi token ban jaate hain.
+      Rare or novel strings smaller pieces mein toot-te hain — kabhi syllables, kabhi morphemes,
+      kabhi ajeeb fragments — lekin <em>hamesha</em> representable rehte hain bina UNK ke (byte-level
+      BPE variants mein literally har UTF-8 byte cover hota hai). Modern LLMs isi family mein jeete hain.
+    </p>
+
+    <h2>3. Byte Pair Encoding (BPE) — merges jo corpus se seekhte hain</h2>
+    <p>
+      Byte Pair Encoding originally data compression ka trick tha: repeatedly replace the most
+      frequent pair of symbols with a new symbol. Sennrich, Haddow, and Birch ne 2016 mein isi idea
+      ko neural machine translation ke liye open-vocabulary translation tool banaya: pehle words ko
+      characters (plus a word-boundary marker) mein todo, phir training corpus par frequent pairs
+      ko merge karke ek fixed-size subword vocabulary banao. Decode time par merges reverse ho
+      jaate hain aur text wapas milta hai.
+    </p>
+    <p>
+      Worked miniature. Maan lo aapka poora “corpus” yeh teen strings hain (spaces explicit):
+      <code>low</code>, <code>lowest</code>, <code>newer</code>. Characters se start karo. Sabse
+      frequent adjacent pair shayad <code>l o</code> ya <code>e r</code> hoga depending on counts.
+      Har merge ek naya vocab entry banata hai — <code>lo</code>, phir <code>low</code>, phir
+      <code>est</code>, aur aage. Jab aap merge list freeze kar dete ho, encoding algorithm left-to-right
+      (ya tokenizer-specific rule se) greedy merges apply karta hai. Result: “lowest” shayad
+      <code>low</code> + <code>est</code> ban jaaye, “lowing” jaise unseen word bhi pieces se cover
+      ho sake.
+    </p>
+    <p>
+      GPT-family tokenizers BPE hi use karte hain, with an important modern twist: many operate on
+      <em>bytes</em> (UTF-8) rather than Unicode characters, so any string is encodable. OpenAI’s
+      <code>tiktoken</code> library exactly inhi BPE encodings ko expose karti hai — including
+      <code>cl100k_base</code> (GPT-4 / GPT-3.5-turbo era) and <code>o200k_base</code> (GPT-4o family).
+      Lab mein aap dono ko count karke dekoge ki same English prose ka token footprint encoding ke
+      saath badalta hai.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Rico Sennrich, Barry Haddow, and Alexandra Birch, “Neural Machine Translation of Rare Words
+        with Subword Units,” ACL 2016 (arXiv:1508.07909),
+        <a href="https://arxiv.org/abs/1508.07909">arxiv.org/abs/1508.07909</a>.
+        Paper kehti hai ki BPE se built subword vocabulary rare and unknown words ko smaller units
+        mein segment karke open-vocabulary NMT allow karti hai, without needing a large word-level vocab.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="BPE merge steps">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · BPE as repeated “most common pair → new symbol”</text>
+        <rect x="40" y="58" width="680" height="44" rx="8" fill="#12172B"/>
+        <text x="380" y="86" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="14">l o w e s t   ·   l o w   ·   n e w e r</text>
+        <text x="380" y="128" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="13">merge₁: (l,o) → lo</text>
+        <rect x="40" y="140" width="680" height="44" rx="8" fill="#1c2438"/>
+        <text x="380" y="168" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="14">lo w e s t   ·   lo w   ·   n e w e r</text>
+        <text x="380" y="210" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="13">merge₂: (lo,w) → low … continue until vocab budget filled</text>
+        <text x="40" y="248" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Training = learn merge list from corpus. Inference = apply frozen merges. Aapka app merges nahi sikhata — encoding pick karta hai.</text>
+      </svg>
+      <figcaption>Figure 2. BPE training corpus statistics se vocabulary mint karti hai. Production mein aap almost hamesha ek frozen, published encoding use karte ho — khud train nahi karte.</figcaption>
+    </figure>
+
+    <h2>4. WordPiece — similar goal, different selection rule</h2>
+    <p>
+      WordPiece bhi subword vocabulary banata hai, lekin pair selection ka criterion alag hai.
+      BPE mostly frequency (kitni baar pair dikha) se merge choose karti hai. WordPiece, jaise
+      Google’s Neural Machine Translation system documentation aur follow-on BERT-era tooling ne
+      popularize kiya, likelihood-based / language-modelish scoring se choose karta hai: kaunsa merge
+      training data ki likelihood ko sabse zyada improve kare. Surface pe results similar lagte hain —
+      common words intact, rare words pieces — lekin same corpus par merges identical nahi hote.
+    </p>
+    <p>
+      Practitioner ke liye practical rule yeh hai: <strong>jo model load kiya hai, uska tokenizer
+      use karo</strong>. BERT checkpoints WordPiece expect karte hain; GPT-4 family
+      <code>cl100k_base</code>/<code>o200k_base</code> BPE expect karti hai; Llama family apna
+      SentencePiece-style stack rakhti hai. Cross-wiring — GPT tokenizer se count karke Llama
+      context budget claim karna — bilkul wahi galti hai jo aap protobuf payload ko JSON content-length
+      se meter kar ke karte ho.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Yonghui Wu et al., “Google’s Neural Machine Translation System: Bridging the Gap between
+        Human and Machine Translation,” arXiv:1609.08144 (2016),
+        <a href="https://arxiv.org/abs/1609.08144">arxiv.org/abs/1609.08144</a>.
+        Paper WordPiece model ko GNMT ke open-vocabulary approach ke taur par describe karti hai:
+        words ko subword units mein segment kiya jata hai using a data-driven wordpiece vocabulary,
+        so the system can handle rare and unseen words.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “Roughly 4 characters per token” ka rule of thumb English prose par kabhi-kabhi kaam karta
+        hai, code, tables, aur non-English text par regularly fail hota hai. JSON with repeated keys,
+        base64 blobs, aur markdown tables often <em>worse</em> compression dete hain (zyada tokens
+        per character). RAG chunking APP 305 mein isliye token-aware hona chahiye, character-aware nahi.
+      </p>
+    </div>
+
+    <h2>5. Vocabulary size trade-offs — jo aap actually feel karoge</h2>
+    <p>
+      Vocab size ek capacity dial hai, free lunch nahi. Chhota vocab (say tens of thousands): embedding
+      table chhoti, lekin average tokens-per-sentence zyada — kyunki words zyada pieces mein tootenge.
+      Har sequence lambi, attention cost (CORE 202) zyada, aur same document context window mein kam
+      fit hoga. Bada vocab (100k–200k+): common phrases ek token mein pack ho sakti hain, sequences
+      short, lekin embedding matrix badi, aur rare token rows under-trained ho sakte hain agar data
+      sparse ho.
+    </p>
+    <p>
+      Concrete footprint. OpenAI cookbook documents that <code>cl100k_base</code> GPT-4 / GPT-3.5-turbo
+      / several embedding models ke saath mapped hai, aur <code>o200k_base</code> GPT-4o family ke saath.
+      Naam khud hint karta hai: roughly 100k vs 200k-class vocabularies. Lab mein aap same IT runbook
+      paragraph ko dono encodings se count karke dekoge. Expectation (not a universal law): newer
+      larger-vocab encodings often use fewer tokens on the same English+code mix — which means the
+      same context window holds more prose — but you must measure on <em>your</em> corpus, not blog
+      folklore.
+    </p>
+
+    <table class="plain">
+      <thead>
+        <tr>
+          <th>Knob</th>
+          <th>Smaller vocab</th>
+          <th>Larger vocab</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Embedding table</td>
+          <td>Fewer parameters at the edge</td>
+          <td>More parameters; fatter load</td>
+        </tr>
+        <tr>
+          <td>Tokens / document</td>
+          <td>Usually higher</td>
+          <td>Usually lower on in-domain text</td>
+        </tr>
+        <tr>
+          <td>Rare IDs / code</td>
+          <td>More fragmentation</td>
+          <td>Less fragmentation if trained on similar data</td>
+        </tr>
+        <tr>
+          <td>Cross-model metering</td>
+          <td colspan="2">Never transferable — recount with the target encoding</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        OpenAI Cookbook, “How to count tokens with tiktoken,”
+        <a href="https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken">developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken</a>
+        (re-verified August 2026; perishable model↔encoding map). Cookbook kehta hai ki tiktoken
+        OpenAI models ke liye fast BPE tokenizer hai, aur encodings jaise <code>cl100k_base</code>
+        aur <code>o200k_base</code> specific model families se map hote hain; use
+        <code>tiktoken.encoding_for_model()</code> ya <code>get_encoding()</code> to load them and
+        <code>encode()</code> to turn text into token ids for counting.
+      </p>
+    </div>
+
+    <h2>6. tiktoken hands-on — counting is a production skill</h2>
+    <p>
+      APP 302 ke baad aap Bedrock / OpenAI / Ollama clients touch karoge. Token counting us se
+      <em>pehle</em> aati hai kyunki bina iske aap prompt experiments ko meter nahi kar sakte.
+      <code>tiktoken</code> local library hai — isi module ke lab mein koi cloud call nahi.
+      Pattern yeh hai:
+    </p>
+<pre><code>import tiktoken
+
+enc = tiktoken.get_encoding("cl100k_base")
+ids = enc.encode("reset the service account password")
+print(len(ids), ids)
+print(enc.decode(ids))</code></pre>
+    <p>
+      Teen production habits abhi se:
+    </p>
+    <ol>
+      <li>
+        <strong>Count before you ship a system prompt.</strong> A 800-word “helpful assistant”
+        manifesto easily burns hundreds of tokens on every call. That is a recurring cost, not a one-time doc.
+      </li>
+      <li>
+        <strong>Count retrieval chunks in tokens, not characters.</strong> APP 305 chunking strategies
+        tab meaningful hongi jab aap token budgets se sochoge.
+      </li>
+      <li>
+        <strong>Chat wrappers add tokens.</strong> Raw string count ≠ messages API bill. Role headers,
+        tool schemas, and multipart content each add overhead. Cookbook walks through
+        message-format counting for chat models; lab ke Part B mein aap ek chhota helper likhoge jo
+        role+content frames ko account kare (simplified — not every provider’s exact billing quirk).
+      </li>
+    </ol>
+
+    <figure class="diagram" aria-label="Same text different token counts">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="240" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 3 · Same runbook sentence, two encodings (illustrative bars)</text>
+        <text x="24" y="70" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">“Check INC0042817: restart the auth pod, then reset the service account password.”</text>
+        <text x="24" y="110" font-family="JetBrains Mono, monospace" font-size="12" fill="#4a5268">cl100k_base</text>
+        <rect x="160" y="95" width="360" height="22" rx="4" fill="#12172B"/>
+        <text x="530" y="111" font-family="JetBrains Mono, monospace" font-size="12" fill="#12172B">N tokens</text>
+        <text x="24" y="160" font-family="JetBrains Mono, monospace" font-size="12" fill="#4a5268">o200k_base</text>
+        <rect x="160" y="145" width="300" height="22" rx="4" fill="#3F8C87"/>
+        <text x="470" y="161" font-family="JetBrains Mono, monospace" font-size="12" fill="#3F8C87">often ≤ N</text>
+        <text x="24" y="205" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Lab real numbers measure karega. Incident IDs aur code identifiers fragmentation dikhate hain — prose benchmarks se zyada.</text>
+      </svg>
+      <figcaption>Figure 3. Encoding change = meter change. Budget spreadsheets mein “1 token ≈ 4 chars” ko single source of truth mat banao.</figcaption>
+    </figure>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Tokenizer ko “translate” samajhna. Decode(encode(text)) generally round-trips for these
+        BPE encodings, lekin token boundaries meaning boundaries nahi hain. Ek token half-word ho
+        sakta hai; ek JSON key ka quote alag token ho sakta hai. Isliye character-offset highlighting
+        in UI ko token indexes se map karte waqt carefully test karo — off-by-one yahan user-visible
+        bug ban-ta hai.
+      </p>
+    </div>
+
+    <h2>7. Hands-on lab</h2>
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · core-201</span>
+      <p>
+        Repo: <code>genai-gurukul-labs/core-201/</code>. Convergent lab with <code>starter/</code>,
+        adjacent <code>solution/</code>, and pytest. Dependency: <code>tiktoken</code> (already in
+        root <code>requirements.txt</code>). No Ollama required. No paid API.
+        Success: <code>pytest core-201/tests -q</code> green.
+        Solution check: <code>GURUKUL_LAB=solution pytest core-201/tests -q</code>.
+      </p>
+    </div>
+    <ol>
+      <li>
+        <code>counting.py</code> — <code>count_tokens(text, encoding_name)</code> using
+        <code>tiktoken.get_encoding</code>. Must support at least <code>cl100k_base</code> and
+        <code>o200k_base</code>.
+      </li>
+      <li>
+        <code>compare.py</code> — <code>compare_encodings(text, names) → dict[str, int]</code>
+        returning token counts per encoding. Used to see footprint drift on the same IT runbook fixture.
+      </li>
+      <li>
+        <code>budget.py</code> — <code>fit_messages(messages, model_encoding, token_budget)</code>
+        that walks messages oldest-first and drops from the <em>front</em> (keeping the latest user
+        turn) until the simplified chat framing fits. This is the same instinct as log shipping
+        retention: newest evidence wins when the window is full. Framing rule is documented in the
+        starter docstring (role + content + fixed per-message overhead) — match it exactly so tests
+        stay deterministic.
+      </li>
+      <li>
+        <code>toy_bpe.py</code> — a teaching-scale BPE trainer: given a list of whitespace-separated
+        corpus words and <code>num_merges</code>, learn merges and encode a word into symbols.
+        Not production tiktoken — this exists so BPE is not a black box when you explain it in an interview.
+      </li>
+    </ol>
+    <p>
+      Deliverable: green tests, plus (for yourself) a three-line note: which encoding produced fewer
+      tokens on the fixture runbook, and whether you’d still refuse to hardcode that ratio into a
+      cost model without re-measuring on your corpus. Formative habit, not a track-challenge rubric.
+    </p>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <p>Yeh recognition check hai. Course ki rigor track challenges aur capstone acceptance se aati hai.</p>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Word-level vocabulary production IT text par kyun toot-ti hai, aur subword iska kaunsa hissa fix karta hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Incident IDs, code identifiers, and new product names are open-vocabulary; word tables
+            need UNK or explode. Subword (BPE/WordPiece) represents unseen strings as pieces without
+            UNK (byte-level BPE covers any UTF-8), at the cost of fragmentation and encoding-specific metering.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> BPE training mein “merge” ka selection roughly kis cheez par hota hai, aur inference time par kya freeze hota hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Training repeatedly merges the most frequent symbol pair (classic BPE) into a new vocab
+            entry. Inference uses the frozen merge list / encoding — your app selects
+            <code>cl100k_base</code> or similar; it does not re-learn merges per request.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Aap GPT-4o ke liye token budget <code>cl100k_base</code> se count karke kyun nahi final karenge?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Model↔encoding maps differ (cookbook: GPT-4o family → <code>o200k_base</code>). Counts
+            are not portable across encodings. Always recount with the target model’s encoding;
+            treat “4 chars/token” as folklore, not a budget.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — CORE 201</h2>
+      <ul class="dod-checklist">
+        <li>HTML lesson matches design system; transcript from modules.js; Prev/Next linked</li>
+        <li>≥2 inline SVG diagrams (pipeline, BPE merges; plus encoding comparison)</li>
+        <li>Must-cover taught in prose: why tokenize, BPE, WordPiece, vocab-size trade-offs, tiktoken hands-on</li>
+        <li>Companion lab starter + solution + pytest; local tiktoken; no paid API</li>
+        <li>Section 8b citations: Sennrich BPE, Wu WordPiece/GNMT, OpenAI tiktoken cookbook (dated)</li>
+        <li>Formative 3-question quiz; index status CORE 201 Available</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="found-103-neural-networks.html">
+        <span class="dir">Prev</span>
+        <span class="label">FOUND 103 · Neural Networks</span>
+      </a>
+      <a class="next" href="core-202-transformer.html">
+        <span class="dir">Next</span>
+        <span class="label">CORE 202 · The Transformer</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · CORE 201</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

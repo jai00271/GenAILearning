@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 304 — Evaluation Fundamentals · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Building GenAI Applications</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-304/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-304"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 304 · Evaluation Fundamentals</p>
+    <h1>Pehle measure, phir fancy retrieval — vibes se ship mat karo</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-304/</code></span>
+      <span>Offline lab · golden JSONL + NumPy metrics</span>
+      <span>Prereq: APP 303 context/memory · CORE challenge measure muscle</span>
+      <span>Next: APP 305 RAG</span>
+    </div>
+
+    <p>
+      APP 303 ne decide kiya: window mein thopo vs retrieve-later. APP 305 us retrieve path ko
+      messy PDFs pe wire karega. Beech mein yeh module zaroori hai kyunki bina vocabulary ke
+      “RAG better ho gaya” sirf slide hai. Yahan aap <strong>golden evaluation sets</strong>,
+      ranked-retrieval metrics (Precision / Recall / F1 @ k, MRR, nDCG intuition), agreement
+      (confusion matrix, Cohen’s κ), aur chhote accuracy jumps (71→74) ke liye paired significance
+      (bootstrap / McNemar) seekhte ho — plus kaise khud ko fool na karo.
+    </p>
+    <p>
+      Backend analogy seedhi hai: integration tests + contract fixtures pehle, feature flags baad
+      mein. Golden JSONL ≈ held-out fixtures. Metric function ≈ assertion helper. Pass/fail gate ≈
+      CI threshold. Non-determinism aur tiny deltas pe significance tests aati hain — unit test
+      green hone ka matlab product win nahi.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 303 · CORE challenge</span>
+      <p>
+        Context placement decide ho chuka (APP 303). CORE challenge ne measure-then-decide muscle
+        diya. APP 304 us muscle ko <em>named metrics + frozen data + explicit gate</em> mein
+        lock karta hai. Har baad ka RAG / agent change in teen boxes ke bagair claim nahi karta.
+      </p>
+    </div>
+
+    <h2>1. The evaluation beat — metric · data · pass/fail</h2>
+    <p>
+      Har GenAI change se pehle teen boxes bharo. Incomplete boxes = vibes marketing.
+    </p>
+    <ol>
+      <li>
+        <strong>Metric</strong> — kya number? Precision@k, Recall@k, F1@k, MRR, latency_p95…
+        Primary ek rakho; secondary optional.
+      </li>
+      <li>
+        <strong>Data</strong> — kaunsa frozen set? Versioned golden JSONL with
+        <code>id</code>, <code>question</code>, <code>relevant_ids</code>. Prompt examples se
+        leakage check.
+      </li>
+      <li>
+        <strong>Pass / fail</strong> — ship gate explicit: e.g. Recall@3 ≥ 0.75 on this golden.
+        “Almost” allow nahi.
+      </li>
+    </ol>
+    <p>
+      Lab helpers: <code>load_golden_jsonl</code>, <code>find_leakage</code>,
+      <code>precision_at_k</code> / <code>recall_at_k</code> / <code>f1_at_k</code>,
+      <code>mean_reciprocal_rank</code>, <code>cohens_kappa</code>,
+      <code>mcnemar_contingency</code>, <code>paired_bootstrap_pvalue</code>. Known-good copies
+      <code>checkpoints/app-304/</code> mein freeze hain taaki APP 305 learner ke broken starter pe
+      depend na kare.
+    </p>
+
+    <figure class="diagram" aria-label="Evaluation beat three boxes">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Evaluation beat (declare before you tweak)</text>
+
+        <rect x="40" y="60" width="210" height="160" rx="10" fill="#12172B"/>
+        <text x="145" y="95" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Metric</text>
+        <text x="145" y="125" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">Recall@k · P@k</text>
+        <text x="145" y="150" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">MRR · F1@k</text>
+        <text x="145" y="185" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">one primary number</text>
+
+        <rect x="275" y="60" width="210" height="160" rx="10" fill="#1c2438"/>
+        <text x="380" y="95" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="14" font-weight="700">Data</text>
+        <text x="380" y="125" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">golden.jsonl</text>
+        <text x="380" y="150" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">+ leakage check</text>
+        <text x="380" y="185" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">frozen · versioned</text>
+
+        <rect x="510" y="60" width="210" height="160" rx="10" fill="#2a3348"/>
+        <text x="615" y="95" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="14" font-weight="700">Pass / fail</text>
+        <text x="615" y="125" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">R@3 ≥ 0.75</text>
+        <text x="615" y="150" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">else: no ship</text>
+        <text x="615" y="185" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">gate before PR</text>
+
+        <text x="40" y="250" fill="#4a5268" font-family="Inter, sans-serif" font-size="12">APP 305 isi beat ko RAG pipeline pe lagata hai — pehle boxes, phir chunk size.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Three boxes before any retrieval tweak. Missing a box turns “we improved RAG”
+        into an unfalsifiable story.
+      </figcaption>
+    </figure>
+
+    <h2>2. Golden sets — frozen questions, labeled relevance</h2>
+    <p>
+      Golden set = chhota, versioned list of eval questions with known relevant document ids.
+      Lab format JSONL: har non-blank line ek object —
+      <code>id</code>, <code>question</code>, <code>relevant_ids</code> (list; empty allowed).
+      Blank lines skip; bad JSON / missing keys fail fast.
+      <code>normalize_text</code> + <code>find_leakage</code> train/prompt examples aur eval
+      questions ke beech normalized overlap flag karte hain — exact string match after
+      lowercasing / punctuation strip (semantic near-dup detection labeled simplification; lab
+      nahi karta).
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · leakage</span>
+      <p>
+        Few-shot examples mein wahi sawaal paste kar dena jo golden pe hai = training on the
+        test set. Accuracy “magically” badhegi; production pe tootegi. Har golden refresh pe
+        <code>find_leakage</code> chalao.
+      </p>
+    </div>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition · .NET / backend</span>
+      <p>
+        Golden JSONL ≈ xUnit theory data + expected IDs. Leakage check ≈ ensuring your test
+        fixtures are not copied into the production seed data used at runtime. Version the file
+        in git; treat edits like contract changes.
+      </p>
+    </div>
+
+    <h2>3. Precision, Recall, F1 @ k</h2>
+    <p>
+      Ranked retrieval mein binary relevance assume karo: doc relevant hai ya nahi.
+      Top-<em>k</em> cut pe:
+    </p>
+    <ul>
+      <li>
+        <strong>Precision@k</strong> = (relevant hits in top k) / <em>k</em>.
+        Denominator always <em>k</em> (IR convention) — even if system returned fewer docs.
+      </li>
+      <li>
+        <strong>Recall@k</strong> = (relevant hits in top k) / |relevant|.
+        Empty relevant set → lab returns 0.0 (avoid div-by-zero).
+      </li>
+      <li>
+        <strong>F1@k</strong> = harmonic mean of P@k and R@k; both zero → 0.
+      </li>
+    </ul>
+    <p>
+      High precision, low recall = top results clean but many gold docs missing.
+      High recall, low precision = gold mil gaya lekin top-k mein junk bhi. Product choose karta
+      hai kaunsa pain zyada mehnga hai.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · ranked retrieval eval</span>
+      <p>
+        Manning, Raghavan, Schütze, <em>Introduction to Information Retrieval</em> — evaluation of
+        ranked retrieval results explains Precision/Recall on retrieved sets and why averaging
+        across queries matters
+        (<a href="https://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-ranked-retrieval-results-1.html">nlp.stanford.edu/IR-book/…</a>).
+        Lab formulas teaching-scale copies of those identities are — not a full TREC toolkit.
+      </p>
+    </div>
+
+    <h2>4. MRR &amp; nDCG — ranking quality intuition</h2>
+    <p>
+      <strong>Reciprocal rank (RR)</strong> ek query ke liye: pehle relevant doc ka 1-indexed rank
+      <em>r</em> ho to RR = 1/<em>r</em>; miss → 0. <strong>MRR</strong> = mean RR across queries.
+      “Pehla sahi result kitni jaldi aata hai?” — support search / FAQ style tasks ke liye natural.
+    </p>
+    <p>
+      <strong>nDCG</strong> (normalized Discounted Cumulative Gain) graded relevance + position
+      discount ka classic metric hai: upar wale ranks zyada weight, lower ranks discount.
+      Yeh lab nDCG implement nahi karta — intuition yeh hai ke binary P/R/MRR se aage graded labels
+      aur position-sensitive gains aate hain. Jab stakeholders “#3 pe bhi theek hai” vs “sirf #1
+      matter karta hai” argue karein, nDCG / DCG framing useful hai
+      (<a href="https://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-ranked-retrieval-results-1.html">IR book ranking eval chapter</a>).
+    </p>
+
+    <h2>5. Confusion matrix — classification view</h2>
+    <p>
+      Jab task binary/multiclass prediction ho (severity ok vs escalate; intent label), confusion
+      matrix rows = true class, columns = predicted (convention vary — always label axes).
+      TP / FP / FN / TN se precision/recall nikalte hain. Retrieval P@k conceptually “top-k
+      predictions” pe same TP/FP language reuse karti hai, lekin ranked list + multi-relevant
+      docs se matrix 2×2 simple case se richer hoti hai.
+    </p>
+
+    <figure class="diagram" aria-label="Confusion matrix and ranked metrics relationship">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="320" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Confusion cells ↔ ranked P/R language</text>
+
+        <rect x="50" y="70" width="140" height="50" rx="6" fill="#f5f1e6"/>
+        <text x="120" y="100" text-anchor="middle" fill="#4a5268" font-family="Inter, sans-serif" font-size="12">predicted →</text>
+        <rect x="190" y="70" width="120" height="50" rx="6" fill="#12172B"/>
+        <text x="250" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Pos</text>
+        <rect x="320" y="70" width="120" height="50" rx="6" fill="#1c2438"/>
+        <text x="380" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Neg</text>
+
+        <rect x="50" y="130" width="140" height="70" rx="6" fill="#12172B"/>
+        <text x="120" y="170" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="13">True Pos</text>
+        <rect x="190" y="130" width="120" height="70" rx="6" fill="#3F8C87"/>
+        <text x="250" y="160" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">TP</text>
+        <text x="250" y="180" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="11">hit</text>
+        <rect x="320" y="130" width="120" height="70" rx="6" fill="#2a3348"/>
+        <text x="380" y="160" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">FN</text>
+        <text x="380" y="180" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">miss</text>
+
+        <rect x="50" y="210" width="140" height="70" rx="6" fill="#1c2438"/>
+        <text x="120" y="250" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="13">True Neg</text>
+        <rect x="190" y="210" width="120" height="70" rx="6" fill="#2a3348"/>
+        <text x="250" y="240" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">FP</text>
+        <text x="250" y="260" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">junk in top-k</text>
+        <rect x="320" y="210" width="120" height="70" rx="6" fill="#12172B"/>
+        <text x="380" y="250" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="14" font-weight="700">TN</text>
+
+        <rect x="480" y="90" width="250" height="180" rx="10" fill="#12172B"/>
+        <text x="605" y="125" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="13" font-weight="700">Ranked @ k</text>
+        <text x="605" y="160" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">P@k ≈ TP / k</text>
+        <text x="605" y="190" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">R@k ≈ TP / |rel|</text>
+        <text x="605" y="225" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">TN rarely counted</text>
+        <text x="605" y="250" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">in top-k IR</text>
+      </svg>
+      <figcaption>
+        Figure 2. Classification confusion cells and how Precision/Recall@k reuse TP language on a
+        ranked cut. Do not pretend TN is well-defined for “all non-retrieved docs” without care.
+      </figcaption>
+    </figure>
+
+    <h2>6. Cohen’s kappa — agreement beyond chance</h2>
+    <p>
+      Do raters (ya human vs model labels) same labels pe kitna agree karte hain?
+      Raw percent agreement chance se inflate ho sakta hai (dono mostly “not escalate” bolte
+      rahein). Cohen’s κ = (p<sub>o</sub> − p<sub>e</sub>) / (1 − p<sub>e</sub>), jahan
+      p<sub>o</sub> observed agreement, p<sub>e</sub> expected agreement under independent
+      marginals. Lab edge case: agar 1 − p<sub>e</sub> = 0, return 1.0 jab p<sub>o</sub> = 1 else 0.0.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Cohen’s κ</span>
+      <p>
+        scikit-learn’s <code>cohen_kappa_score</code> documents κ as agreement corrected for
+        chance
+        (<a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.cohen_kappa_score.html">scikit-learn.org/…/cohen_kappa_score</a>).
+        Lab implementation teaching-scale hai; production papers often call sklearn/scipy directly.
+      </p>
+    </div>
+
+    <h2>7. Significance — 71% → 74% ship-worthy hai kya?</h2>
+    <p>
+      Same 100 queries pe system A = 71 correct, system B = 74. Absolute +3 points. Slide pe
+      “improved.” Engineering sawaal: kya yeh noise ho sakta hai?
+    </p>
+    <p>
+      <strong>McNemar (paired binary)</strong>: sirf discordant items matter —
+      <em>b</em> = A wrong, B right; <em>c</em> = A right, B wrong. Statistic
+      (b − c)<sup>2</sup> / (b + c) (lab: no continuity correction — labeled simplification) aur
+      chi-square 1-df style p-value. Example lab construction: 68 both right, 23 both wrong,
+      3 A-only, 6 B-only → accuracies 71 vs 74, b=6, c=3. Concordant cells significance nahi
+      badalte.
+    </p>
+    <p>
+      <strong>Paired bootstrap</strong>: per-item scores (0/1 correctness ya continuous) ke
+      paired differences ko with-replacement resample; observed mean(B−A) ke against bootstrap
+      deltas se one-sided / two-sided p intuition. Teaching helper — full BCa intervals nahi.
+      Clear constant gain → chhota p; identical vectors → observed Δ ≈ 0 aur p chhota nahi hona
+      chahiye.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · McNemar / paired tests</span>
+      <p>
+        McNemar’s test on paired nominal data focuses on discordant cells (classic contingency
+        framing; see e.g. Wikipedia’s overview of McNemar’s test —
+        <a href="https://en.wikipedia.org/wiki/McNemar%27s_test">en.wikipedia.org/wiki/McNemar’s_test</a>
+        — and textbooks on categorical data). For GenAI online eval, also prefer paired designs
+        over unpaired “two different traffic weeks” when you can.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · p-hacking the demo</span>
+      <p>
+        Golden pe 20 baar tweak karke ek baar p&lt;0.05 dekhna = multiple comparisons. Beat pehle
+        freeze karo; exploratory slices alag label karo. PROD 401 deeper production eval pe
+        jaayega — yahan fundamentals.
+      </p>
+    </div>
+
+    <h2>8. How not to fool yourself</h2>
+    <ul>
+      <li><strong>Train/test leakage</strong> — prompt examples ∩ eval questions (normalized).</li>
+      <li><strong>Metric shopping</strong> — jo number badhta dikhe woh report; primary pehle declare.</li>
+      <li><strong>Tiny N</strong> — 8 queries pe 12.5% swings normal hain; confidence intervals / paired tests.</li>
+      <li><strong>Stale goldens</strong> — product badla, labels nahi; “regression” false alarm.</li>
+      <li><strong>Unpaired A/B</strong> — alag weeks, alag traffic mix; paired jab possible.</li>
+      <li><strong>Leaderboard cosplay</strong> — public bench pe overfit; internal golden + failure slices rakho.</li>
+    </ul>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        CI mein flaky test ko “retry until green” se hide karna = bootstrap ko seed ghuma-ghuma
+        ke p&lt;0.05 dhundhna. Discipline: pre-register metric/data/gate, phir measure, phir ship
+        ya revert.
+      </p>
+    </div>
+
+    <h2>9. Hands-on lab</h2>
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · app-304</span>
+      <p>
+        <code>genai-gurukul-labs/app-304/</code> —
+        <code>golden.py</code>: <code>normalize_text</code>, <code>load_golden_jsonl</code>,
+        <code>find_leakage</code>, <code>golden_questions</code>.
+        <code>metrics.py</code>: P/R/F1@k, RR/MRR, Cohen’s κ, McNemar contingency, paired
+        bootstrap p-value. Fixtures under <code>tests/fixtures/</code>. No paid APIs. Success:
+        <code>GURUKUL_LAB=solution pytest app-304/tests -q</code>.
+        Checkpoint: <code>checkpoints/app-304/</code> for APP 305 imports.
+      </p>
+    </div>
+
+    <h2>10. Citations</h2>
+    <ol>
+      <li>
+        Manning, Raghavan, Schütze, <em>Introduction to Information Retrieval</em> — evaluation of
+        ranked retrieval results —
+        <a href="https://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-ranked-retrieval-results-1.html">nlp.stanford.edu/IR-book/…</a>
+        — Precision/Recall/averaging framing (paraphrase: ranked cuts need explicit relevance
+        judgments and care when averaging across queries).
+      </li>
+      <li>
+        scikit-learn, <code>cohen_kappa_score</code> —
+        <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.cohen_kappa_score.html">scikit-learn.org/…/cohen_kappa_score</a>
+        — κ as chance-corrected agreement (paraphrase: raw percent agreement can look high when
+        one class dominates).
+      </li>
+      <li>
+        McNemar’s test (paired nominal / discordant cells) —
+        <a href="https://en.wikipedia.org/wiki/McNemar%27s_test">en.wikipedia.org/wiki/McNemar’s_test</a>
+        — paraphrase: only disagreements between paired classifiers inform the test statistic;
+        lab omits continuity correction on purpose.
+      </li>
+      <li>
+        NIST TREC overview (information retrieval evaluation culture) —
+        <a href="https://trec.nist.gov/">trec.nist.gov</a>
+        — paraphrase: shared tasks publish judgments and metrics so systems are compared on the
+        same frozen data — the industrial ancestor of “golden JSONL + gate.”
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Evaluation beat ke teen boxes kya hain?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Metric (primary number + definition), Data (frozen golden / slice + leakage hygiene),
+            Pass/fail (numeric gate before ship). Vibes box nahi hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> P@k ka denominator hamesha k kyun hota hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            IR convention: aapne budget <em>k</em> slots ka liya. Agar system 2 hi docs return kare
+            aur k=5, baaki slots “empty / non-relevant” treat — precision penalize hoti hai. Lab
+            bhi yahi follow karta hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> MRR kya measure karta hai, nDCG intuition kya add karti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            MRR = mean of 1/rank of first relevant hit (miss → 0). nDCG graded relevance +
+            position discount add karti hai — lower ranks discounted; useful jab partial credit
+            / graded labels hon. Lab nDCG code nahi likhwata; intuition ke liye cite.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> 71→74 pe McNemar kyun concordant cells ignore karti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Paired comparison mein jahan dono systems same (dono right ya dono wrong), relative
+            win/loss evidence nahi milti. Discordant <em>b</em> aur <em>c</em> batate hain kaun
+            kiss item pe jeeta. Lab example: b=6, c=3 with 71% vs 74%.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>5.</strong> Golden leakage ka practical check kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            <code>find_leakage(train_or_fewshot_texts, eval_questions)</code> after
+            <code>normalize_text</code>. Hit aaya to example hatao ya golden split — metric ko
+            “cheat” mat karne do.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 304</h2>
+      <ul class="dod-checklist">
+        <li>Book-like Hinglish chapter; design system match with APP 303 / 305</li>
+        <li>Covers goldens, P/R/F1@k, MRR + nDCG intuition, confusion matrix, Cohen’s κ</li>
+        <li>71→74 significance via bootstrap + McNemar; “how not to fool yourself”</li>
+        <li>≥2 SVG diagrams; callouts; formative quiz; transcript strip</li>
+        <li>Citations with URL + paraphrase (IR book, sklearn κ, McNemar, TREC)</li>
+        <li>Lab <code>app-304/{starter,solution,tests}</code>; checkpoint <code>checkpoints/app-304/</code></li>
+        <li>Offline pytest; <code>GURUKUL_LAB=solution pytest app-304/tests -q</code> green</li>
+        <li>Prev → APP 303; Next → APP 305 RAG (<code>app-305-rag.html</code>)</li>
+      </ul>
+    </section>
+
+    <p>
+      Agla module <strong>APP 305 — RAG Deep-Dive</strong>: ingestion-first pipeline isi eval beat
+      aur checkpoint metrics ko fixtures pe lagata hai. Bina 304 ke “hybrid search better” claim
+      mat karna.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-303-context-memory.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP 303 · Context &amp; Memory Engineering</span>
+      </a>
+      <a href="app-305-rag.html">
+        <span class="dir">Next</span>
+        <span class="label">APP 305 · RAG Deep-Dive</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 304</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

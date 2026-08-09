@@ -1,0 +1,4 @@
+{"id": "q1", "question": "How do I reset an Okta password for an employee?", "relevant_ids": ["rb-okta-1", "rb-okta-2"]}
+{"id": "q2", "question": "Why are auth pods CrashLooping after the deploy?", "relevant_ids": ["rb-auth-health"]}
+{"id": "q3", "question": "What is the MaxDays value for Sick leave?", "relevant_ids": ["rb-leave-table"]}
+{"id": "q4", "question": "How do I rotate a VPN token?", "relevant_ids": ["rb-vpn"]}

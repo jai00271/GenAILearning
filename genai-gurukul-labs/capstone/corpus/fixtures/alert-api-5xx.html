@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Alert · auth-api 5xx rate</title>
+</head>
+<body>
+  <header>
+    <h1>Alert: auth-api 5xx rate</h1>
+    <p data-doc-id="alert-api-5xx">service=auth · severity=page · window=5m</p>
+  </header>
+  <main>
+    <p>
+      The <code>auth-api</code> 5xx rate exceeded 5% for 5 consecutive minutes.
+      Correlated dashboards: OAuth token latency, Kubernetes restart count,
+      IdP dependency errors.
+    </p>
+    <ul>
+      <li>Runbook hint: auth CrashLoopBackOff</li>
+      <li>Related ticket pattern: INC token refresh failures</li>
+      <li>Safe action: verify secret version before scaling replicas</li>
+    </ul>
+    <p><small>updated_at: 2026-08-09T06:50:00Z · fixture HTML alert page</small></p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 307 — Agents &amp; Tool Use · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Building GenAI Applications</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-307/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-307"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 307 · Agents &amp; Tool Use</p>
+    <h1>Agent = LLM + tools + loop — MCP contract pehle, vibes baad mein</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-307/</code></span>
+      <span>Offline lab · FakeLLM + ToyMCPClient</span>
+      <span>Prereq: APP 302 APIs · APP 304 eval · APP 305–306 retrieval-as-tool</span>
+      <span>Next: APP 308 multi-agent</span>
+    </div>
+
+    <p>
+      Chat completion ek shot hai. <strong>Agent</strong> woh loop hai jahan model decide karta
+      hai: jawab do ya tool call karo, observation padho, phir socho — jab tak stop condition
+      na mile. Function calling / tool use iska wire format hai; ReAct uska planning pattern;
+      error handling + max-steps circuit breaker production mein zinda rehne ka tareeka.
+    </p>
+    <p>
+      Is module mein <strong>MCP (Model Context Protocol)</strong> table stakes hai — sidebar
+      nahi. Tools ko discover + invoke karne ka open contract:
+      <code>tools/list</code> / <code>tools/call</code>, har tool pe
+      <code>name</code> · <code>description</code> · JSON Schema <code>inputSchema</code>.
+      LangChain (ya kisi aur framework) ka tool-calling <em>ek implementation</em> ho sakta
+      hai; MCP-shaped interop seekhna pehle aata hai taaki tumhara agent vendor SDK se chipak
+      na jaye. Lab offline <code>ToyMCPClient</code> + <code>FakeLLM</code> se yeh contract
+      pytest-green karti hai.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 302 · APP 304–306</span>
+      <p>
+        APP 302: provider-agnostic <code>complete</code> / messages. APP 304: metric · data ·
+        pass-fail. APP 305–306: retrieval ek <em>tool</em> ban sakta hai — tenant filter us
+        contract ka hissa. Yahan loop + tool interop + trajectory logs; full agent-eval
+        methodology <strong>PROD 401</strong>.
+      </p>
+    </div>
+
+    <h2>1. Function calling — model text nahi, structured action maangta hai</h2>
+    <p>
+      Classic chat: assistant string. Tool-capable turn: model JSON-ish
+      <code>tool_calls[]</code> emit karta hai — <code>name</code> + <code>arguments</code>
+      (schema-validated). Runtime tool execute karti hai, result
+      <code>role=tool</code> message mein wapas jata hai, model phir final text (ya aur calls)
+      deta hai. Yehi OpenAI / Anthropic / Ollama tool APIs ka shared shape hai; names thode
+      alag, idea same.
+    </p>
+    <ul>
+      <li><strong>Schema pehle</strong> — arguments JSON Schema se validate; “jo string aayi”
+        pe <code>eval</code> mat chalao.</li>
+      <li><strong>Idempotency / side effects</strong> — ticket update ≠ calculator; permissions
+        tool description + server policy dono pe.</li>
+      <li><strong>Retrieval as tool</strong> — APP 306 wala search ab agent ke toolbox mein;
+        forgotten tenant filter ab agent leak surface hai.</li>
+    </ul>
+
+    <h2>2. MCP — tool interop ka primary contract</h2>
+    <p>
+      <a href="https://modelcontextprotocol.io/specification/2025-03-26/server/tools">MCP tools
+      specification</a> servers ko yeh expose karne deti hai:
+    </p>
+    <ol>
+      <li>
+        <strong><code>tools/list</code></strong> — client ko descriptors milte hain:
+        <code>name</code>, <code>description</code>, <code>inputSchema</code> (JSON Schema).
+      </li>
+      <li>
+        <strong><code>tools/call</code></strong> —
+        <code>{ "name": "…", "arguments": {…} }</code> se execute; result structured content.
+      </li>
+    </ol>
+    <p>
+      Lab ka <code>ToolDescriptor.to_mcp_dict()</code> isi shape ko mirror karta hai
+      (<code>inputSchema</code> key). <code>ToyMCPClient.list_tools</code> /
+      <code>call_tool</code> in-process stand-in hain — network transport nahi, lekin
+      <em>contract</em> wahi hai jo hosts (Cursor, Claude Desktop, custom gateways) expect
+      karte hain. Production mein MCP server alag process / remote ho sakta hai; agent loop
+      phir bhi list → plan → call → observe.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Sources · MCP primary (verify current)</span>
+      <p>
+        Spec tools chapter:
+        <a href="https://modelcontextprotocol.io/specification/2025-03-26/server/tools">modelcontextprotocol.io/specification/…/server/tools</a>
+        — <code>tools/list</code>, <code>tools/call</code>, Tool schema. Learn page:
+        <a href="https://modelcontextprotocol.io/docs/learn/server-concepts">server concepts</a>.
+        Lab toy client; real SDK/transport alag modules / PROD track mein.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="ReAct loop with MCP tools and trajectory log">
+      <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="340" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · ReAct loop — Thought → Act (MCP tools/call) → Observe → … + trajectory</text>
+
+        <rect x="40" y="70" width="130" height="64" rx="8" fill="#12172B"/>
+        <text x="105" y="98" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Thought</text>
+        <text x="105" y="118" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">LLM complete</text>
+
+        <text x="185" y="108" fill="#3F8C87" font-size="22" font-family="Inter, sans-serif">→</text>
+
+        <rect x="210" y="70" width="150" height="64" rx="8" fill="#3F8C87"/>
+        <text x="285" y="98" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">Act</text>
+        <text x="285" y="118" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">tools/call</text>
+
+        <text x="375" y="108" fill="#3F8C87" font-size="22" font-family="Inter, sans-serif">→</text>
+
+        <rect x="400" y="70" width="140" height="64" rx="8" fill="#1c2438"/>
+        <text x="470" y="98" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="13" font-weight="700">Observe</text>
+        <text x="470" y="118" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">tool result</text>
+
+        <text x="555" y="108" fill="#3F8C87" font-size="22" font-family="Inter, sans-serif">→</text>
+
+        <rect x="580" y="70" width="140" height="64" rx="8" fill="#B8923F"/>
+        <text x="650" y="98" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">Final / loop</text>
+        <text x="650" y="118" text-anchor="middle" fill="#2a3348" font-family="Inter, sans-serif" font-size="11">or next Thought</text>
+
+        <rect x="40" y="170" width="340" height="140" rx="10" fill="#12172B"/>
+        <text x="60" y="200" fill="#B8923F" font-family="Inter, sans-serif" font-size="13" font-weight="700">MCP surface</text>
+        <text x="60" y="228" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">tools/list → descriptors</text>
+        <text x="60" y="252" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">name · description · inputSchema</text>
+        <text x="60" y="276" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">Lab: ToyMCPClient + calculator,</text>
+        <text x="60" y="296" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">ticket_lookup handlers</text>
+
+        <rect x="400" y="170" width="320" height="140" rx="10" fill="#1c2438"/>
+        <text x="420" y="200" fill="#3F8C87" font-family="Inter, sans-serif" font-size="13" font-weight="700">Trajectory log (eval hook)</text>
+        <text x="420" y="228" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">thought · tool_call · tool_result</text>
+        <text x="420" y="252" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">final · error · halt</text>
+        <text x="420" y="276" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">RAG Recall@k alone ≠ agent score</text>
+        <text x="420" y="296" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">→ methodology in PROD 401</text>
+      </svg>
+      <figcaption>
+        Figure 1. An agent is a planning loop over a tool catalog. MCP defines how tools are
+        listed and called; the trajectory log is what you evaluate when answers alone lie.
+      </figcaption>
+    </figure>
+
+    <h2>3. ReAct + planning loops — pattern, not product name</h2>
+    <p>
+      <strong>ReAct</strong> (Reason + Act): model interleaved reasoning aur actions produce
+      karta hai; environment observation wapas context mein aati hai. Practical implementation
+      aksar “hidden thought” + explicit <code>tool_calls</code> hoti hai — lab
+      <code>run_react</code> har LLM completion ko ek step maanti hai.
+    </p>
+    <p>
+      Planning variants (plan-then-execute, scratchpads, multi-hop) sab same risk share karte
+      hain: <em>loop unbounded ho sakta hai</em>. Isliye max-steps / budget / kill-switch
+      design ka hissa hain, afterthought nahi. Debug Lab B isi failure ko cost incident ke
+      roop mein dikhati hai → PROD 404.
+    </p>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition · .NET / backend framing</span>
+      <p>
+        Socho agent ≈ state machine with an LLM as the transition oracle. Tools ≈ injected
+        ports (calculator, ITSM client, vector search). MCP descriptors ≈ OpenAPI-ish
+        operation list the oracle is allowed to see. Circuit breaker ≈
+        <code>max_steps</code> / budget — without it you have a recursive bill generator.
+      </p>
+    </div>
+
+    <h2>4. Error handling inside the loop</h2>
+    <p>
+      Tool miss, bad args, unknown tool, LLM exception — loop crash karna usually galat
+      default hai. Prefer:
+    </p>
+    <ul>
+      <li><strong>Structured tool errors</strong> —
+        <code>{"ok": false, "error": "not_found"}</code> — model observe karke recover kar
+        sake.</li>
+      <li><strong>Trajectory <code>error</code> steps</strong> — eval / ops ko dikhe ki kaunsi
+        call fail hui.</li>
+      <li><strong>Hard halt</strong> — LLM transport down, auth revoked, ya policy deny —
+        <code>halted=True</code> + reason.</li>
+      <li><strong>Max-steps breaker</strong> — “ek aur verify” addiction se pehle kaato.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Max-steps circuit breaker versus unbounded cost">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Circuit breaker — max_steps / budget vs unbounded tool loop</text>
+
+        <!-- good path -->
+        <rect x="40" y="60" width="320" height="200" rx="10" fill="#12172B"/>
+        <text x="200" y="92" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="14" font-weight="700">APP 307 lab · run_react</text>
+        <text x="60" y="128" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">step ≤ max_steps</text>
+        <text x="60" y="156" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">tool_call → tool_result → …</text>
+        <text x="60" y="184" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">ceiling hit → kind=halt</text>
+        <text x="60" y="212" fill="#B8923F" font-family="JetBrains Mono, monospace" font-size="12">halted=True · max_steps</text>
+        <text x="60" y="240" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">pytest asserts breaker</text>
+
+        <!-- bad path -->
+        <rect x="400" y="60" width="320" height="200" rx="10" fill="#1c2438"/>
+        <text x="560" y="92" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Debug B · cost incident</text>
+        <text x="420" y="128" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">soft_budget only logged</text>
+        <text x="420" y="156" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">model always tool_calls</text>
+        <text x="420" y="184" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">USD climbs · warnings pile</text>
+        <text x="420" y="212" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="12">action: continue ← bug</text>
+        <text x="420" y="240" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">PROD 404 meters / kill-switch</text>
+      </svg>
+      <figcaption>
+        Figure 2. Same loop shape, different stop discipline. Soft budgets that only warn are
+        how agent bills become incidents.
+      </figcaption>
+    </figure>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · “final answer dikha toh agent theek hai”</span>
+      <p>
+        Model confidently galat ticket status de sakta hai, ya 40 unnecessary tool calls ke
+        baad sahi number. Answer string RAG-style Recall se score mat karo. Trajectory /
+        tool-call logs pehle class metrics hain; rubrics + online eval <strong>PROD 401</strong>.
+      </p>
+    </div>
+
+    <h2>5. Eval beat — trajectory logging (not Recall@k alone)</h2>
+    <p>
+      APP 304 ke teen boxes agents pe reuse, lekin metrics badlo:
+    </p>
+    <ol>
+      <li>
+        <strong>Metric:</strong> task success (final answer correct?) <em>plus</em>
+        trajectory shape — tool names called, error rate, steps_used, hit_max_steps.
+        Helper: <code>summarize_trajectory</code>.
+      </li>
+      <li>
+        <strong>Data:</strong> scripted <code>FakeLLM</code> scenarios (calc, ticket, unknown
+        tool, infinite tool_calls).
+      </li>
+      <li>
+        <strong>Pass / fail:</strong> happy path ends with <code>final</code>; breaker sets
+        <code>halted</code>; tool errors logged without crash. Full production methodology
+        (graders, traces, online shadow) → <strong>PROD 401</strong>.
+      </li>
+    </ol>
+    <p>
+      LangChain / LlamaIndex agents yahi logs differently name karte hain (callbacks, traces);
+      discipline same: <em>score the path, not only the paragraph</em>.
+    </p>
+
+    <div class="callout paid">
+      <span class="callout-label">[PAID — approx cost] · live tool-calling models</span>
+      <p>
+        Real tool-calling demos (cloud chat + MCP servers) meter tokens + tool hops.
+        <em>Check current vendor pricing as of August 2026</em>. Lab FakeLLM / ToyMCPClient:
+        $0 CI. Debug B fake USD meter teaching only. Paid path labeled; not required for pytest.
+      </p>
+    </div>
+
+    <h2>6. Hands-on lab + Debug B</h2>
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · app-307</span>
+      <p>
+        <code>genai-gurukul-labs/app-307/</code> —
+        <code>agent_loop.py</code>: MCP-shaped <code>ToolDescriptor</code>,
+        <code>ToyMCPClient</code> (list/call), injectable <code>calculator</code> +
+        <code>ticket_lookup</code>, <code>FakeLLM</code> tool_calls, <code>run_react</code>
+        with max-steps breaker + trajectory list, <code>summarize_trajectory</code>.
+        Success:
+        <code>GURUKUL_LAB=solution pytest app-307/tests -q</code>.
+      </p>
+    </div>
+    <div class="callout handson">
+      <span class="callout-label">Debug Lab B · agent cost incident</span>
+      <p>
+        <code>genai-gurukul-labs/debug-labs/B-agent-cost-incident/</code> — unbounded loop
+        fixture (no TODOs, no solution). Soft budget warns, does not halt. RCA checklist in
+        README. Observability / cost kill-switches deepen in <strong>PROD 404</strong>.
+      </p>
+    </div>
+
+    <h2>7. Citations</h2>
+    <ol>
+      <li>
+        Model Context Protocol — Tools (spec) —
+        <a href="https://modelcontextprotocol.io/specification/2025-03-26/server/tools">modelcontextprotocol.io/specification/2025-03-26/server/tools</a>
+        — primary: <code>tools/list</code>, <code>tools/call</code>, Tool
+        <code>inputSchema</code>.
+      </li>
+      <li>
+        MCP — Server concepts (tools) —
+        <a href="https://modelcontextprotocol.io/docs/learn/server-concepts">modelcontextprotocol.io/docs/learn/server-concepts</a>
+      </li>
+      <li>
+        Yao et al., “ReAct: Synergizing Reasoning and Acting in Language Models” (ICLR 2023) —
+        <a href="https://arxiv.org/abs/2210.03629">arxiv.org/abs/2210.03629</a>
+      </li>
+      <li>
+        OpenAI — Function calling —
+        <a href="https://platform.openai.com/docs/guides/function-calling">platform.openai.com/docs/guides/function-calling</a>
+        — one major wire format (illustrative; re-verify as of August 2026).
+      </li>
+      <li>
+        LangChain — Tool calling —
+        <a href="https://python.langchain.com/docs/concepts/tool_calling/">python.langchain.com/docs/concepts/tool_calling</a>
+        — optional framework implementation, not the interop standard.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> MCP <code>tools/list</code> response mein tool ke teen core fields?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            <code>name</code>, <code>description</code>, aur JSON Schema
+            <code>inputSchema</code> (lab: <code>ToolDescriptor</code> /
+            <code>to_mcp_dict</code>). Primary source: MCP tools specification.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> ReAct loop mein max-steps circuit breaker kyun mandatory hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Model baar-baar tool_calls maang sakta hai (“verify again”). Bina ceiling ke
+            latency + cost unbounded — Debug B. Lab <code>halted</code> +
+            <code>halt_reason="max_steps"</code>.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Agents ko sirf RAG Recall@k se score kyun nahi karte?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Agent success path-dependent hai: kaunse tools, kitni steps, errors, side effects.
+            Trajectory / tool-call logs chahiye; full methodology PROD 401.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> LangChain tool-calling vs MCP — relationship?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            LangChain ek application framework / implementation path hai. MCP tool discovery
+            + call ka <em>interop protocol</em> hai. Is module mein MCP contract pehle;
+            frameworks optional adapters.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>5.</strong> Tool <code>not_found</code> pe loop crash vs structured error — prefer?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Structured error + trajectory <code>error</code> step; model recover / user ko
+            miss bata sake. Crash sirf unrecoverable transport/policy pe. Lab ticket miss isi
+            pattern pe hai.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 307</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; design system; transcript <code>data-current="app-307"</code></li>
+        <li>Function calling, ReAct / planning loops, error handling in agent loops</li>
+        <li>MCP / tool-interop mandatory (primary citations); LangChain optional implementation</li>
+        <li>Eval beat: trajectory / tool-call logs; not RAG metrics alone; PROD 401 pointer</li>
+        <li>≥2 SVG diagrams; quiz; citations with MCP spec URLs</li>
+        <li>Lab <code>app-307/{starter,solution,tests}</code>; FakeLLM offline; GURUKUL_LAB</li>
+        <li>Debug Lab B <code>B-agent-cost-incident</code> (or PROD 404 pointer) — unbounded cost</li>
+        <li>Prev → <code>app-306-vector-databases.html</code>; Next → <code>app-308-multi-agent.html</code></li>
+        <li>No <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <p>
+      Agla module <strong>APP 308 — Multi-Agent Systems &amp; Orchestration</strong>: ek loop se
+      zyada actors, handoffs, shared tools. MCP descriptors tab bhi single source of tool truth
+      rehni chahiye — har agent apna shadow catalog mat banaye.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-306-vector-databases.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP 306 · Vector Databases</span>
+      </a>
+      <a href="app-308-multi-agent.html">
+        <span class="dir">Next</span>
+        <span class="label">APP 308 · Multi-Agent Systems</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 307</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

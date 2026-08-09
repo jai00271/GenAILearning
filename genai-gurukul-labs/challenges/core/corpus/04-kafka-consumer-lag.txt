@@ -1,0 +1,11 @@
+Title: Kafka consumer lag on payments.events
+Symptoms: lag climbing above 50k messages for > 10 minutes
+
+Checks:
+1. Consumer group payments-ledger-v3 — are all members alive?
+2. Disk saturation on broker rack B (historical cause of stall)
+3. Poison message: look for deserialization errors in payments-ledger logs
+4. Scale consumers horizontally only after confirming partition count allows it
+
+If lag is isolated to one partition, prefer key redistribution planning over blind restart.
+Notify #payments-risk if checkout latency SLO burns error budget.

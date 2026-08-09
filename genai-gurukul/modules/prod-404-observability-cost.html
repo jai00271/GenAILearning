@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PROD 404 — Observability &amp; Cost Optimization · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">PROD · Customization &amp; Production</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/prod-404/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="prod-404"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">PROD 404 · Observability &amp; Cost Optimization</p>
+    <h1>Soft budget sirf log kare — hard circuit ke bina agent raat bhar jale</h1>
+    <div class="lesson-meta">
+      <span>Track: PROD</span>
+      <span>Labs: <code>genai-gurukul-labs/prod-404/</code></span>
+      <span>Offline · cost + breaker + retry storm</span>
+      <span>Prereq: APP 307 agents · PROD 403 guardrails</span>
+      <span>Next: PROD 405 Deploy at Scale</span>
+    </div>
+
+    <p>
+      Production GenAI failures aksar “model dumb” nahi hoti — <em>meters missing</em> hoti
+      hain. Unbounded tool loops, retry storms on 429/5xx, aur tenant-blind spend se bill
+      explode karta hai. Is module mein observability ko cost ke saath bandhte hain:
+      per-tenant attribution, hard circuit breakers, retry-storm detection, aur prompt/model
+      change par cache invalidation (jo PROD 406 CI/CD pe jaati hai).
+    </p>
+    <p>
+      Scope: runaway agent cost; unbounded tool-call loops; retry storms; worked incident;
+      circuit-break; cost attribution per tenant; cache invalidation when prompts/models
+      change; Datadog/Splunk wiring. Lab offline hai — live APM required nahi.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 307 · Debug Lab B</span>
+      <p>
+        APP 307 ne <code>max_steps</code> circuit breaker sikhaya. Debug Lab B
+        (<a href="../../genai-gurukul-labs/debug-labs/B-agent-cost-incident/"><code>debug-labs/B-agent-cost-incident/</code></a>)
+        wohi muscle fail dikhata hai: soft USD budget sirf <code>budget_warning</code> log
+        karta hai, halt nahi. PROD 404 hard trip + tenant meters + retry storm pe deepen
+        karta hai.
+      </p>
+    </div>
+
+    <h2>1. Worked incident — soft budget, hard burn</h2>
+    <p>
+      Incident shape (Debug B + field stories): ReAct agent calculator (ya search) tool ko
+      baar-baar call karta hai; soft budget cross hone pe warning events; loop continues;
+      tokens + per-tool surcharge accumulate. RCA checklist: stop conditions diff karo —
+      soft vs hard; model stub final answer kab emit kare; kaunse events USD increment
+      karte hain. Fix hypothesis: hard halt on budget / max tool calls, idempotent tools,
+      Datadog monitor on <code>agent.usd</code> + <code>tool_calls</code>.
+    </p>
+
+    <figure class="diagram" aria-label="Soft budget versus hard circuit">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Soft log ≠ hard stop</text>
+
+        <rect x="40" y="60" width="300" height="160" rx="8" fill="#8f6f2c"/>
+        <text x="190" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Debug B · soft only</text>
+        <text x="190" y="125" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="12">budget_warning++</text>
+        <text x="190" y="150" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">loop continues</text>
+        <text x="190" y="175" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">usd keeps climbing</text>
+        <text x="190" y="200" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">incident_report.json</text>
+
+        <rect x="400" y="60" width="320" height="160" rx="8" fill="#3F8C87"/>
+        <text x="560" y="95" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">PROD 404 · hard breaker</text>
+        <text x="560" y="125" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="12">max_tool_calls / max_usd</text>
+        <text x="560" y="150" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13">RuntimeError · circuit open</text>
+        <text x="560" y="175" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13">tenant attribution retained</text>
+        <text x="560" y="200" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">run_with_breaker(…)</text>
+      </svg>
+      <figcaption>
+        Figure 1. Worked incident path: warnings without halt. Production path: trip the
+        circuit, keep the meters.
+      </figcaption>
+    </figure>
+
+    <h2>2. Unbounded tool loops &amp; circuit-break</h2>
+    <p>
+      Agent loop ke teen hard ceilings practically zaroori hain: <strong>max_steps</strong>
+      (LLM turns), <strong>max_tool_calls</strong>, <strong>max_usd</strong> (ya token
+      budget). Soft warning pehle aa sakti hai; hard trip ke baad koi tool fire nahi.
+      Lab <code>CircuitBreaker</code> / <code>run_with_breaker</code> yahi sikhata hai —
+      open circuit pe <code>RuntimeError</code>.
+    </p>
+
+    <h2>3. Retry storms — 429/5xx amplifiers</h2>
+    <p>
+      Client retries + provider throttling = storm. Har retry tokens + queue pressure
+      badhata hai; multi-tenant pe noisy neighbor. Detect: sliding window mein retry count,
+      consecutive failures, provider tag. Response: backoff + jitter, shed load, open
+      provider circuit (PROD 405 failover se judta hai), Splunk/Datadog alert on
+      <code>retry_rate</code> by <code>provider</code>.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Datadog LLM Observability</span>
+      <p>
+        Datadog documents LLM Observability spans/metrics for generative AI apps (tokens,
+        latency, errors) — wire custom metrics with tenant tags for cost attribution.
+        See
+        <a href="https://docs.datadoghq.com/llm_observability/">docs.datadoghq.com/llm_observability</a>.
+        Splunk side: ingest structured JSON logs (<code>tenant_id</code>, <code>tokens_in</code>,
+        <code>usd</code>, <code>tool_calls</code>) into an index; alert on rate spikes
+        (<a href="https://docs.splunk.com/Documentation/Splunk">docs.splunk.com</a> — verify
+        your org’s CIM / metric schema).
+      </p>
+    </div>
+
+    <h2>4. Cost attribution per tenant</h2>
+    <p>
+      Blended “account bill” se incident response nahi hota. Har LLM turn pe
+      <code>tenant_id</code> + model + tokens_in/out meter karo; Datadog tags /
+      Splunk fields se slice. Lab <code>TenantCostTracker</code> didactic rate card se
+      USD attribute karta hai — <strong>live pricing nahi</strong>; OpenAI/Anthropic rate
+      cards change — ship se pehle verify.
+    </p>
+
+    <figure class="diagram" aria-label="Tenant cost attribution pipeline">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="240" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Meter → attribute → alert</text>
+        <rect x="40" y="70" width="140" height="70" rx="8" fill="#12172B"/>
+        <text x="110" y="110" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">LLM turn</text>
+        <text x="200" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="230" y="70" width="160" height="70" rx="8" fill="#3F8C87"/>
+        <text x="310" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">TenantCostTracker</text>
+        <text x="310" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">tenant_id tag</text>
+        <text x="410" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="440" y="70" width="280" height="70" rx="8" fill="#1c2438"/>
+        <text x="580" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">Datadog / Splunk</text>
+        <text x="580" y="120" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">usd · retries · tool_calls</text>
+        <text x="40" y="190" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Soft budget warn → hard budget / circuit open → page on-call with tenant tag.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Attribution without dashboards is a spreadsheet after the invoice.
+      </figcaption>
+    </figure>
+
+    <h2>5. Cache invalidation when prompts / models change → 406</h2>
+    <p>
+      Prompt version bump ya model swap ke baad stale response caches / embedding caches
+      galat answers serve kar sakte hain — cost “save” quality regress ban jati hai.
+      Invalidate (or namespace) cache keys with <code>prompt_semver</code> +
+      <code>model_id</code>. Eval flat dikhe lekin traces (tool errors, retries) worsen —
+      woh signal CI gate mein laana PROD <strong>406</strong> ka kaam hai; yahan meter +
+      alert foundation rakho.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Sirf monthly invoice pe cost control. Without per-tenant + per-run meters, noisy
+        neighbor aur runaway agent dono late milte hain. Doosra: retries without jitter —
+        thundering herd.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · prod-404</span>
+      <p>
+        <code>TenantCostTracker</code>, <code>run_with_breaker</code>,
+        <code>detect_retry_storm</code>. RCA Debug B:
+        <a href="../../genai-gurukul-labs/debug-labs/B-agent-cost-incident/README.md"><code>debug-labs/B-agent-cost-incident/</code></a>.
+        <code>GURUKUL_LAB=solution pytest prod-404/tests -q</code>. Offline.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        Treat soft budgets as alerts and hard ceilings as code paths. Attribute every LLM
+        and tool charge to a tenant tag before you trust a shared invoice. Detect retry
+        storms in a sliding window and open a provider circuit instead of amplifying 429s.
+        When you change prompts or models, invalidate caches keyed by version — and fail
+        CI when offline scores look flat but traces worsen (PROD 406).
+      </p>
+    </div>
+
+    <h2>6. Citations (8b)</h2>
+    <ol>
+      <li>
+        Datadog LLM Observability —
+        <a href="https://docs.datadoghq.com/llm_observability/">docs.datadoghq.com/llm_observability</a>
+        — spans/metrics for GenAI; tag custom cost meters by tenant.
+      </li>
+      <li>
+        OpenAI API rate limits (RPM/TPM; verify live) —
+        <a href="https://platform.openai.com/docs/guides/rate-limits">platform.openai.com/docs/guides/rate-limits</a>
+        — retry/backoff context for storms.
+      </li>
+      <li>
+        OpenAI API pricing (verify before finance models) —
+        <a href="https://openai.com/api/pricing/">openai.com/api/pricing</a>
+        — lab rate cards are didactic placeholders.
+      </li>
+      <li>
+        Anthropic rate limits / usage (verify live) —
+        <a href="https://docs.anthropic.com/en/api/rate-limits">docs.anthropic.com/en/api/rate-limits</a>
+        — provider-side TPM pressure.
+      </li>
+      <li>
+        Splunk Docs (alerting / metrics — org-specific) —
+        <a href="https://docs.splunk.com/Documentation/Splunk">docs.splunk.com/Documentation/Splunk</a>
+        — structured log fields for cost + retry dashboards.
+      </li>
+      <li>
+        OWASP LLM10:2025 Unbounded Consumption —
+        <a href="https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/">genai.owasp.org/llmrisk/llm102025-unbounded-consumption</a>
+        — DoS / cost exhaustion risk family for agents and APIs.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Soft budget vs hard circuit — farq?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Soft = warn/log; loop chal sakta hai (Debug B). Hard = trip + stop tool/LLM
+            calls (PROD 404 breaker).
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Retry storm ka practical signal?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Window mein zyada retries aur/or consecutive 429/5xx — provider tag ke saath
+            alert; backoff + circuit.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Tenant attribution kyun?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Shared invoice se noisy neighbor / runaway isolate nahi hota; meters pe
+            <code>tenant_id</code> tag chahiye.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Prompt change → cache?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Versioned keys se invalidate/namespace; warna stale answers + misleading cost
+            savings. Trace worsen pe 406 gate.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — PROD 404</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; design system; transcript <code>data-current="prod-404"</code></li>
+        <li>Runaway cost, tool loops, retry storms, worked incident, circuit-break, tenant attribution</li>
+        <li>Cache invalidation → 406; Datadog/Splunk tie-in; Debug B link</li>
+        <li>≥2 SVG diagrams; quiz; § Citations (pricing/API/security)</li>
+        <li>Lab cost tracker + circuit breaker + retry storm; pytest offline</li>
+        <li>Prev → 403; Next → 405; no <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="prod-403-guardrails.html">
+        <span class="dir">Prev</span>
+        <span class="label">PROD 403 · Guardrails</span>
+      </a>
+      <a class="next" href="prod-405-deploy-scale.html">
+        <span class="dir">Next</span>
+        <span class="label">PROD 405 · Deploy at Scale</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · PROD 404</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

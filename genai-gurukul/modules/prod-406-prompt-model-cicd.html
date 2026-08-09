@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PROD 406 — Prompt &amp; Model CI/CD · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">PROD · Customization &amp; Production</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/prod-406/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="prod-406"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">PROD 406 · Prompt &amp; Model CI/CD</p>
+    <h1>Eval flat, traces worse — ship mat karo; canary + sticky flag</h1>
+    <div class="lesson-meta">
+      <span>Track: PROD</span>
+      <span>Labs: <code>genai-gurukul-labs/prod-406/</code></span>
+      <span>Offline · CI gate + flags</span>
+      <span>Prereq: PROD 401 regression · PROD 404 traces</span>
+      <span>Next: PROD track challenge</span>
+    </div>
+
+    <p>
+      Prompt tweak aur model swap ab “config change” hain — bina CI ke production mein
+      merge karna app code jaisa laaparwaahi hai. Is module mein regression-eval gates,
+      prompt canaries, feature-flagged model swaps (LaunchDarkly-style percentage + sticky
+      keys), aur artifact versioning / rollback jab offline eval flat ho lekin traces
+      kharab hon.
+    </p>
+    <p>
+      Scope (all): regression-eval gates in CI; canary for prompt changes; feature-flagged
+      model swaps (LaunchDarkly parallel); prompt versioning / artifact storage / rollback
+      when eval flat but traces worse. Lab offline — no live LaunchDarkly.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · PROD 401 · 404 · 405</span>
+      <p>
+        PROD 401 <code>regression_gate</code> = offline ship/no-ship. PROD 404 meters /
+        traces / cache invalidation on prompt·model change. PROD 405 rollback + degraded
+        mode. 406 unhe CI + progressive delivery se wire karta hai.
+      </p>
+    </div>
+
+    <h2>1. Regression-eval gates in CI</h2>
+    <p>
+      Har prompt/model PR pe: frozen baseline metrics vs candidate; <code>max_drop</code>
+      fail-closed. Quality metrics (judge agree, task F1) higher-is-better. Trace metrics
+      (<code>tool_error_rate</code>, <code>p95_latency_ms</code>) lower-is-better —
+      <code>max_trace_worsen</code>. Lab <code>ci_eval_gate</code> dono; CI annotation string
+      logs mein chipkao.
+    </p>
+
+    <figure class="diagram" aria-label="CI eval gate with trace worsen">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Flat eval ≠ safe ship</text>
+        <rect x="40" y="70" width="200" height="70" rx="8" fill="#12172B"/>
+        <text x="140" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">baseline</text>
+        <text x="140" y="120" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">frozen scores</text>
+        <text x="260" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="290" y="70" width="200" height="70" rx="8" fill="#3F8C87"/>
+        <text x="390" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">candidate</text>
+        <text x="390" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">prompt / model</text>
+        <text x="510" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="540" y="70" width="180" height="70" rx="8" fill="#8f6f2c"/>
+        <text x="630" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">ci_eval_gate</text>
+        <text x="630" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">quality + traces</text>
+        <text x="40" y="190" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">judge_agree flat + tool_error_rate ↑ → FAIL (cache/prompt side effects show in traces).</text>
+        <text x="40" y="220" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">On pass: canary percentage — not 100% cutover.</text>
+      </svg>
+      <figcaption>
+        Figure 1. CI must see trace worsen signals that offline golden sets miss.
+      </figcaption>
+    </figure>
+
+    <h2>2. Canary for prompt changes</h2>
+    <p>
+      CI green ke baad bhi seedha 100% risky hai. Staged canary: 1% → 5% → 25% → 100%
+      (lab <code>canary_plan</code>). Har stage pe watch: error rate, cost/tenant, injection
+      flags (403), TTFT/total (405). Flat eval + worse traces → halt canary, rollback
+      artifact.
+    </p>
+
+    <h2>3. Feature-flagged model swaps (LaunchDarkly parallel)</h2>
+    <p>
+      Model id / prompt version ko flag treatment banao. Percentage rollout +
+      <strong>sticky key</strong> (user/tenant hash) taaki same user thrash na kare control ↔
+      treatment. Lab <code>sticky_bucket</code> / <code>in_rollout</code> /
+      <code>choose_variant</code> — teaching API, LaunchDarkly SDK nahi. Production mein
+      LD (ya equivalent) percentage rollouts + experiments same idea.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · LaunchDarkly percentage rollouts</span>
+      <p>
+        LaunchDarkly documents percentage rollouts and consistent bucketing so the same
+        context stays in the same cohort as the percentage expands — see
+        <a href="https://docs.launchdarkly.com/home/flags/rollouts">docs.launchdarkly.com/home/flags/rollouts</a>
+        (verify current UI terms). Lab hashes are didactic stand-ins.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="Sticky percentage rollout">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="240" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Sticky bucket → control / treatment</text>
+        <rect x="50" y="70" width="160" height="70" rx="8" fill="#12172B"/>
+        <text x="130" y="110" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">sticky key</text>
+        <text x="230" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="260" y="70" width="180" height="70" rx="8" fill="#3F8C87"/>
+        <text x="350" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">sha256 % 100</text>
+        <text x="350" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">bucket</text>
+        <text x="460" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="490" y="55" width="120" height="50" rx="8" fill="#1c2438"/>
+        <text x="550" y="85" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">control</text>
+        <rect x="490" y="120" width="120" height="50" rx="8" fill="#B8923F"/>
+        <text x="550" y="150" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12" font-weight="700">treatment</text>
+        <text x="630" y="100" font-family="JetBrains Mono, monospace" font-size="11" fill="#4a5268">bucket &lt; pct</text>
+        <text x="50" y="200" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Monotonic expand: 10% cohort ⊂ 25% cohort for a fixed salt.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Sticky hashing keeps canary assignment stable as you widen the percentage.
+      </figcaption>
+    </figure>
+
+    <h2>4. Prompt versioning, artifacts, rollback</h2>
+    <p>
+      Store prompt text + metadata as versioned artifacts (semver / content hash): model id,
+      temperature, tool allowlist fingerprint, eval baseline id. Deploy references immutable
+      artifact ids — not “whatever is in main”. Rollback = point flag control at previous
+      artifact + invalidate caches keyed by prompt/model (404 §5). Jab golden eval flat ho
+      lekin Datadog traces (tool errors, retries, cost) worsen — rollback even if CI quality
+      slice looked fine; next time gate mein trace metrics add karo.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Prompt ko Notion comment samajhna. Bina artifact id / flag / gate ke “quick edit”
+        production drift hai. Doosra: random bucketing without sticky keys — users flicker.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · prod-406</span>
+      <p>
+        <code>ci_eval_gate</code>, <code>sticky_bucket</code> / <code>in_rollout</code> /
+        <code>choose_variant</code>, <code>canary_plan</code>.
+        <code>GURUKUL_LAB=solution pytest prod-406/tests -q</code>.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        Gate every prompt and model candidate in CI on frozen offline metrics and on trace
+        worsen signals. Ship through sticky percentage canaries, not big-bang cutovers.
+        Version prompts as immutable artifacts; roll back by repointing the flag when eval
+        looks flat but production traces degrade — then tighten the gate.
+      </p>
+    </div>
+
+    <h2>5. Citations (8b)</h2>
+    <ol>
+      <li>
+        LaunchDarkly percentage rollouts —
+        <a href="https://docs.launchdarkly.com/home/flags/rollouts">docs.launchdarkly.com/home/flags/rollouts</a>
+        — progressive delivery for flag-backed model/prompt swaps.
+      </li>
+      <li>
+        Datadog LLM Observability —
+        <a href="https://docs.datadoghq.com/llm_observability/">docs.datadoghq.com/llm_observability</a>
+        — trace signals when offline eval is insufficient.
+      </li>
+      <li>
+        OpenAI API model docs (pin versions; verify live) —
+        <a href="https://platform.openai.com/docs/models">platform.openai.com/docs/models</a>
+        — treat model ids as deploy artifacts.
+      </li>
+      <li>
+        OWASP LLM01 Prompt Injection —
+        <a href="https://genai.owasp.org/llmrisk/llm01-prompt-injection/">genai.owasp.org/llmrisk/llm01-prompt-injection</a>
+        — canary watch for safety regressions after prompt edits.
+      </li>
+      <li>
+        Anthropic prompt engineering / version discipline (docs hub; verify) —
+        <a href="https://docs.anthropic.com/en/docs/overview">docs.anthropic.com/en/docs/overview</a>
+        — operational habit: change prompts like code.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Eval flat + traces worse pe kya?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Fail/halt canary; rollback artifact; gate mein trace metrics add karo.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Sticky key kyun?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Same user/tenant stable cohort mein rahe jab percentage widen ho — flicker na ho.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Canary ke baad turant 100%?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Nahi — staged plan; har stage pe error/cost/safety watch.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Prompt artifact mein kya pin?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Prompt text + model id + knobs + tool allowlist fingerprint + eval baseline id.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — PROD 406</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; transcript <code>data-current="prod-406"</code></li>
+        <li>CI regression gates; canary; LD-parallel flags; versioning/rollback on flat-eval/worse-traces</li>
+        <li>≥2 SVG; quiz; citations</li>
+        <li>Lab CI gate + percentage rollout + sticky hash; pytest offline</li>
+        <li>Prev → 405; Next → prod-challenge; no <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="prod-405-deploy-scale.html">
+        <span class="dir">Prev</span>
+        <span class="label">PROD 405 · Deploy at Scale</span>
+      </a>
+      <a class="next" href="prod-challenge.html">
+        <span class="dir">Next</span>
+        <span class="label">PROD · Track Challenge</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · PROD 406</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORE 204 — Embeddings &amp; Vector Semantics · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">CORE · Language &amp; Transformers</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/core-204/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="core-204"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">CORE 204 · Embeddings &amp; Vector Semantics</p>
+    <h1>Embedding vectors: text ko direction banao, phir cosine se retrieve karo — aur jaano kab yeh toot-ta hai</h1>
+    <div class="lesson-meta">
+      <span>Track: CORE</span>
+      <span>Labs: <code>genai-gurukul-labs/core-204/</code></span>
+      <span>Checkpoint: <code>checkpoints/core-204/</code></span>
+      <span>Offline lab · optional Ollama</span>
+      <span>Prereq: FOUND 101/102 cosine + CORE 201/202</span>
+    </div>
+
+    <p>
+      FOUND 101 aur 102 ne cosine similarity ko geometry ki zabaan di: do vectors ka angle chhota
+      ho to “similar”, length ignore. CORE 201 ne text ko token ids mein toda; CORE 202 ne un ids
+      ke embedding rows ko self-attention se mix kiya. Ab product sawaal alag hai: jab aap RAG,
+      semantic search, ya duplicate-detection likhte ho, aap <em>poori</em> sentence / chunk ko ek
+      fixed-length vector mein map karte ho — aur us vector space mein nearest neighbors nikaalte
+      ho. Yeh chapter us map ko engineer ke hisaab se padhata hai: embedding kya hai, model families
+      (OpenAI, Cohere, open-source via Ollama/Hugging Face) kaise trade-off karti hain, dimensionality
+      ka intuition, aur — sabse zaroori — <strong>kab embeddings fail karti hain</strong> taaki aap
+      cosine ko magic na samjho.
+    </p>
+    <p>
+      Lab offline chalti hai: deterministic hash/ngram <code>LocalEmbedder</code> se ranking aur
+      negation failure demo. Paid cloud calls yahan required nahi. Jo APP 305 aur capstone ko
+      chahiye, woh learner ke shayad-galat starter se nahi — known-good checkpoint
+      <code>genai-gurukul-labs/checkpoints/core-204/</code> se import hoga.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · FOUND 101 / 102</span>
+      <p>
+        Cosine = <code>(q·d) / (‖q‖ ‖d‖)</code>, zero-vector pe 0.0 return. Agar dono unit-normalized
+        hain to cosine seedha dot product hai — isliye vector DBs aksar normalize-then-IP search
+        karte hain. Yahan naya hissa yeh hai ki <code>q</code> aur <code>d</code> kahan se aate hain:
+        embedding model (ya lab ka local stand-in) text → ℝ<sup>D</sup>.
+      </p>
+    </div>
+
+    <h2>1. Embedding vector kya hai — .NET engineer ke liye</h2>
+    <p>
+      Socho aapke paas ek IT wiki hai: “VPN password reset”, “Okta MFA bypass runbook”, “cafeteria
+      menu”. Keyword search <code>LIKE '%VPN%'</code> ya Lucene BM25 se kaam chal sakta hai jab
+      vocabulary overlap ho. Semantic retrieval ka promise alag hai: user likhe “remote access
+      credential refresh” aur phir bhi VPN article top pe aaye, chahe exact words na milen.
+      Embedding model har string ko ek point (vector) banata hai. “Similar meaning” ≈ “nearby
+      direction” under cosine (ya related metrics). Rank = sort by similarity.
+    </p>
+    <p>
+      Familiar analogy: yeh soft, learned feature hash hai — jaise aap kisi entity ko fixed-width
+      fingerprint dekar similarity join karte ho. Elasticsearch / SQL full-text ke hard token
+      matches ki jagah continuous scores. Analogy toot-ti hai teen jagah: (1) fingerprint yahan
+      <em>trained</em> hai, aapka schema hash nahi; (2) “near” ka matlab distributional / task
+      training pe depend karta hai, business synonym table pe nahi; (3) score calibrated probability
+      nahi — 0.82 ka matlab “82% relevant” nahi hota bina evaluation ke (APP 304/305).
+    </p>
+
+    <figure class="diagram" aria-label="Text to embedding to cosine rank">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Chunk → embedding → cosine rank</text>
+        <rect x="40" y="60" width="150" height="70" rx="8" fill="#12172B"/>
+        <text x="115" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">query text</text>
+        <text x="115" y="112" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">"VPN reset"</text>
+        <text x="210" y="100" fill="#3F8C87" font-size="22">→</text>
+        <rect x="240" y="60" width="160" height="70" rx="8" fill="#3F8C87"/>
+        <text x="320" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">embed model</text>
+        <text x="320" y="112" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">f(text) → ℝᴰ</text>
+        <text x="420" y="100" fill="#3F8C87" font-size="22">→</text>
+        <rect x="450" y="55" width="120" height="80" rx="8" fill="#1c2438"/>
+        <text x="510" y="85" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">q ∈ ℝᴰ</text>
+        <text x="510" y="110" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">D=64…3072</text>
+        <rect x="40" y="170" width="280" height="70" rx="8" fill="#2a3348"/>
+        <text x="180" y="200" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">doc bank already embedded</text>
+        <text x="180" y="222" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">d₁…dₙ stored in index / array</text>
+        <text x="340" y="210" fill="#3F8C87" font-size="22">→</text>
+        <rect x="370" y="170" width="340" height="70" rx="8" fill="#B8923F"/>
+        <text x="540" y="200" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">rank by cos(q, dᵢ)</text>
+        <text x="540" y="222" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">FOUND 101 most_similar at scale</text>
+      </svg>
+      <figcaption>Figure 1. Retrieval = embed once (docs) + embed query + cosine (or IP on normalized vectors). Model choice D aur quality ceiling set karti hai; geometry FOUND 101 wahi rehti hai.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Datadog metrics ko aap tags se filter karte ho. Embedding space soft tags ka high-dimensional
+        soup hai — model ne training mein jo co-occurrence / contrastive pairs dekhe, wahi “tag
+        gravity” banate hain. Isliye antonyms kabhi-kabhi qareeb aa jaate hain: “hot” aur “cold”
+        same weather reviews mein dikhte hain, opposite meaning ke bawajood.
+      </p>
+    </div>
+
+    <h2>2. Model families — OpenAI, Cohere, open-source (Ollama / HF)</h2>
+    <p>
+      Production mein aap usually teen buckets mein se choose karte ho. Pehla: <strong>hosted API</strong>
+      (OpenAI Embeddings, Cohere Embed) — low ops, pay-per-token, data egress policy clear honi
+      chahiye. Doosra: <strong>self-hosted open weights</strong> (Hugging Face pe models, Ollama se
+      local serve) — latency/cost aapke hardware pe, air-gapped possible. Teesra: hybrid — index
+      build cloud pe, query local, ya ulat. Yeh course pehle conceptual trade-offs lock karta hai;
+      APP 305 wiring detail dega.
+    </p>
+    <p>
+      OpenAI ka current embedding line <code>text-embedding-3-small</code> aur
+      <code>text-embedding-3-large</code> hai. Official guide ke mutabiq default output length
+      small par <strong>1536</strong> dimensions, large par <strong>3072</strong> hai, aur
+      <code>dimensions</code> parameter se aap vector shorten kar sakte ho bina alag model train
+      kiye — Matryoshka-style flexibility for storage vs quality trade-offs. Mechanics aur API shape
+      ke liye primary docs dekho, speculative benchmark tables yahan nahi likh rahe.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · OpenAI Embeddings</span>
+      <p>
+        OpenAI, “Vector embeddings” API guide,
+        <a href="https://platform.openai.com/docs/guides/embeddings">platform.openai.com/docs/guides/embeddings</a>
+        (also mirrored under developers.openai.com). Paraphrase: embedding models text ko numerical
+        vectors mein map karte hain for relatedness; <code>text-embedding-3-small</code> /
+        <code>text-embedding-3-large</code> default lengths 1536 / 3072; optional
+        <code>dimensions</code> shortens vectors while aiming to preserve concept-representing
+        properties. Create-embeddings reference documents input limits and the same
+        <code>dimensions</code> field for <code>text-embedding-3</code> and later.
+      </p>
+    </div>
+
+    <p>
+      Cohere Embed family (docs mein <code>embed-v4.0</code> aur pehle multilingual v3 variants)
+      search-oriented <code>input_type</code> (jaise <code>search_query</code> vs
+      <code>search_document</code>) expose karti hai — asymmetric retrieval ke liye explicit signal.
+      <code>embed-v4.0</code> docs ke mutabiq multiple output dimensions support karta hai
+      (256 / 512 / 1024 / 1536, default 1536 in current Embed API reference) aur strong multilingual
+      positioning claim karta hai. Yeh “query aur doc ko same string space mein daal do” se zyada
+      productized hai — lekin aapko phir bhi eval chahiye apne corpus pe.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Cohere Embed</span>
+      <p>
+        Cohere, Embed model docs,
+        <a href="https://docs.cohere.com/docs/cohere-embed">docs.cohere.com/docs/cohere-embed</a>
+        and Embed API reference
+        <a href="https://docs.cohere.com/reference/embed">docs.cohere.com/reference/embed</a>.
+        Paraphrase: <code>embed-v4.0</code> supports selectable <code>output_dimension</code> values
+        including 256, 512, 1024, and 1536 (default 1536 per API reference); semantic-search guides
+        show distinct <code>input_type</code> values for documents vs queries; multilingual search
+        is a first-class documented use case.
+      </p>
+    </div>
+
+    <p>
+      Open-source side pe Gurukul ka default local assumption <code>nomic-embed-text</code> via
+      Ollama hai (FOUND labs README se aligned). Hugging Face model card
+      <code>nomic-ai/nomic-embed-text-v1.5</code> native dimension <strong>768</strong> dikhati hai,
+      with Matryoshka truncation down to smaller sizes, aur task instruction prefixes
+      (<code>search_document:</code> / <code>search_query:</code>) — phir se asymmetric setup.
+      Ollama library page model ko local embed-only artifact ke tor pe document karti hai
+      (<code>ollama pull nomic-embed-text</code>). Trade-off seedha hai: <strong>no per-token API
+      bill</strong>, lekin aap RAM/CPU/GPU, model drift, aur ops khud manage karte ho.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Nomic / Ollama</span>
+      <p>
+        Hugging Face model card,
+        <a href="https://huggingface.co/nomic-ai/nomic-embed-text-v1.5">huggingface.co/nomic-ai/nomic-embed-text-v1.5</a>
+        — paraphrase: v1.5 ships 768-D embeddings with optional Matryoshka dimensionality reduction
+        and requires task prefixes for search/clustering/classification. Ollama model page,
+        <a href="https://ollama.com/library/nomic-embed-text">ollama.com/library/nomic-embed-text</a>,
+        documents local pull + embed API usage. Ollama Embed API,
+        <a href="https://docs.ollama.com/api/embed">docs.ollama.com/api/embed</a>, describes the
+        <code>/api/embed</code> request shape (model, input, optional dimensions).
+      </p>
+    </div>
+
+    <div class="callout paid">
+      <span class="callout-label">[PAID — approx cost]</span>
+      <p>
+        OpenAI Embeddings aur Cohere Embed <strong>metered APIs</strong> hain — bill usually
+        input-token (ya equivalent) based hota hai, model tier ke hisaab se. Exact unit prices
+        change hoti rehti hain: <em>check current vendor pricing docs as of August 2026</em> before
+        you forecast a RAG re-index. Local alternative for this course: Ollama
+        <code>nomic-embed-text</code> (hardware cost only) ya lab ka <code>LocalEmbedder</code>
+        (CPU hash — semantic quality teaching toy, production retrieval nahi).
+      </p>
+    </div>
+
+    <h2>3. Dimensionality intuition</h2>
+    <p>
+      <code>D</code> chhota (jaise 256–384): index sasta, latency friendly, lekin fine distinctions
+      mushkil — alag runbooks ek dusre pe collapse ho sakte hain. <code>D</code> bada (1536–3072):
+      zyada capacity for nuances, lekin storage, RAM, aur brute-force scan cost badhte hain; ANN
+      indexes (HNSW etc.) bhi memory feel karte hain. OpenAI/Cohere/Nomic teeno modern lines
+      “shorten the vector” knobs dete hain — lekin shortened vector pe <em>apne</em> queries se
+      recall measure karo; vendor blog ka MTEB number aapka incident corpus nahi hai.
+    </p>
+    <p>
+      Rule of thumb for engineers: pehle ek dimension pe end-to-end eval slice freeze karo, phir
+      storage pressure aaye to officially supported truncation / <code>dimensions</code> parameter
+      try karo, aur same golden queries se compare karo. Randomly slicing a vector without the
+      vendor’s prescribed normalize-after-truncate recipe silent quality loss laa sakta hai —
+      OpenAI guide explicitly warns about manual shortening needing renormalization.
+    </p>
+
+    <figure class="diagram" aria-label="When embeddings fail">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Failure modes cosine will not apologize for</text>
+        <rect x="40" y="55" width="210" height="100" rx="10" fill="#12172B"/>
+        <text x="145" y="90" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Negation</text>
+        <text x="145" y="118" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">"is healthy" ≈</text>
+        <text x="145" y="138" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">"is not healthy"</text>
+        <rect x="275" y="55" width="210" height="100" rx="10" fill="#1c2438"/>
+        <text x="380" y="90" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Antonyms</text>
+        <text x="380" y="118" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">hot / cold share</text>
+        <text x="380" y="138" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">contexts → near</text>
+        <rect x="510" y="55" width="210" height="100" rx="10" fill="#2a3348"/>
+        <text x="615" y="90" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Tables / code</text>
+        <text x="615" y="118" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">layout ≠ prose</text>
+        <text x="615" y="138" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">semantics lost</text>
+        <rect x="40" y="175" width="340" height="90" rx="10" fill="#3F8C87"/>
+        <text x="210" y="210" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="14" font-weight="700">Out-of-domain jargon</text>
+        <text x="210" y="238" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">internal codenames, ticket dialects</text>
+        <rect x="400" y="175" width="320" height="90" rx="10" fill="#B8923F"/>
+        <text x="560" y="210" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">Asymmetric query ≠ doc</text>
+        <text x="560" y="238" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12">short question vs long runbook</text>
+      </svg>
+      <figcaption>Figure 2. High cosine ≠ “correct answer”. Yeh failure modes APP 305 chunking, hybrid search, aur rerankers ke justification hain — pehle yahan diagnose karna seekho.</figcaption>
+    </figure>
+
+    <h2>4. When embeddings fail — honest list</h2>
+    <p>
+      <strong>Negation.</strong> “Service is healthy” aur “Service is not healthy” lexical overlap
+      se bharpur hain. Bag-of-ngrams embedders (lab ka <code>LocalEmbedder</code>) inhe almost
+      twins treat karte hain — lab isi failure ko pytest se document karti hai. Neural models better
+      ho sakte hain, lekin short negations pe ab bhi retrieval stacks fool ho sakte hain; truth-
+      sensitive gates ke liye sirf top-1 cosine mat use karo.
+    </p>
+    <p>
+      <strong>Antonyms.</strong> Distributional training similar contexts ko qareeb laati hai.
+      “Increase replica count” vs “decrease replica count” structurally mirror images hain —
+      embedding space kabhi-kabhi unhe neighbors bana deta hai. Agar aapka use-case polarity care
+      karta hai (allow vs deny), embedding neighbor list ke upar explicit rules / classifiers rakho.
+    </p>
+    <p>
+      <strong>Tables aur code.</strong> Markdown tables, JSON blobs, stack traces — models inhe
+      often flattened prose ki tarah dekhte hain. Column alignment, identifier scope, aur operator
+      precedence “meaning” mein reliably nahi jaate. Practical pattern: code/tables ko alag chunk
+      strategy (APP 305) aur kabhi-kabhi specialized encoders; pure general text embedder pe
+      over-trust mat karo.
+    </p>
+    <p>
+      <strong>Out-of-domain jargon.</strong> Internal project codenames (“Project Falcon authz”)
+      public web pe rare hote hain. General embedding models unhe galat neighborhood mein map kar
+      sakte hain. Mitigations: domain fine-tuning / adapters (baad ke PROD modules), glossary
+      expansion before embed, ya hybrid lexical+vector search.
+    </p>
+    <p>
+      <strong>Asymmetric query vs document.</strong> User ki query 8 tokens ki hoti hai; runbook
+      800. Simple embed-both-the-same-way kaam karta hai jab tak model / prefixes us asymmetry ke
+      liye trained hon (Cohere <code>input_type</code>, Nomic <code>search_query:</code> /
+      <code>search_document:</code>). Bina uske, long docs ka “average meaning” query se mismatch
+      kar sakta hai — yeh chunking aur title-weighting ka asl reason hai, buzzword nahi.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Embedding upgrade ke baad pura index rebuild bhoolna. Vectors ek model version + dimension
+        + prefix policy ke saath married hote hain. Naya model, naya <code>D</code>, ya naya
+        instruction prefix = re-embed. Mixed index silent garbage retrieval deta hai — unit tests
+        green reh sakte hain jab tak aapne golden queries nahi rakhe.
+      </p>
+    </div>
+
+    <h2>5. Lab + known-good checkpoint</h2>
+    <p>
+      Convergent lab <code>genai-gurukul-labs/core-204/</code> mein aap embed interface,
+      <code>LocalEmbedder</code>, cosine rank, aur <code>negation_failure_demo</code> implement
+      karte ho. Tests <code>GURUKUL_LAB=starter|solution</code> se import karti hain — CORE 201/202
+      wala pattern. Paid API required nahi.
+    </p>
+    <p>
+      Checkpoint <code>genai-gurukul-labs/checkpoints/core-204/</code> pe frozen correct helpers
+      hain. APP 305 default yahi se <code>sys.path</code> insert karke import kare. Learner apna
+      solution tab swap kare jab <code>pytest core-204/tests</code> green ho — warna capstone
+      known-good pe rahe. README English mein import contract detail karti hai.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · core-204</span>
+      <p>
+        <code>genai-gurukul-labs/core-204/</code> — implement <code>LocalEmbedder.embed</code>,
+        <code>cosine_similarity</code>, <code>rank_documents</code>,
+        <code>negation_failure_demo</code>, aur <code>FixtureEmbedder.embed</code>.
+        Success:
+        <code>GURUKUL_LAB=solution .venv/bin/pytest core-204/tests -q</code>.
+        Optional neural path (not graded):
+        <code>ollama pull nomic-embed-text</code> then
+        <code>GURUKUL_EMBEDDER=ollama</code> with <code>OllamaEmbedder</code>.
+        OpenAI/Cohere calls agar aap khud try karo to unhe
+        <strong>[PAID — approx cost]</strong> treat karo aur pehle pricing docs check karo
+        (August 2026).
+      </p>
+    </div>
+
+    <h2>6. Citations (8b)</h2>
+    <ol>
+      <li>
+        OpenAI Embeddings guide —
+        <a href="https://platform.openai.com/docs/guides/embeddings">platform.openai.com/docs/guides/embeddings</a>
+        — model names, default dimensions, <code>dimensions</code> shortening (paraphrased above).
+      </li>
+      <li>
+        OpenAI Create embeddings API reference —
+        <a href="https://platform.openai.com/docs/api-reference/embeddings">platform.openai.com/docs/api-reference/embeddings</a>
+        — request fields / input limits.
+      </li>
+      <li>
+        Cohere Embed models —
+        <a href="https://docs.cohere.com/docs/cohere-embed">docs.cohere.com/docs/cohere-embed</a>
+        — family table, dimensions, multilingual notes.
+      </li>
+      <li>
+        Cohere Embed API —
+        <a href="https://docs.cohere.com/reference/embed">docs.cohere.com/reference/embed</a>
+        — <code>output_dimension</code>, embedding types.
+      </li>
+      <li>
+        Cohere semantic search with Embed —
+        <a href="https://docs.cohere.com/docs/semantic-search-embed">docs.cohere.com/docs/semantic-search-embed</a>
+        — <code>search_document</code> / <code>search_query</code> input types.
+      </li>
+      <li>
+        Nomic Embed v1.5 model card —
+        <a href="https://huggingface.co/nomic-ai/nomic-embed-text-v1.5">huggingface.co/nomic-ai/nomic-embed-text-v1.5</a>
+        — 768-D, Matryoshka sizes, task prefixes.
+      </li>
+      <li>
+        Ollama <code>nomic-embed-text</code> —
+        <a href="https://ollama.com/library/nomic-embed-text">ollama.com/library/nomic-embed-text</a>
+        — local pull / embed-only usage.
+      </li>
+      <li>
+        Ollama Embed API —
+        <a href="https://docs.ollama.com/api/embed">docs.ollama.com/api/embed</a>
+        — HTTP <code>/api/embed</code> contract.
+      </li>
+    </ol>
+    <p>
+      Pricing URLs perishable hain — kisi bhi OpenAI/Cohere cost model ko ship karne se pehle
+      <em>vendor pricing page check karo as of August 2026</em>. Is lesson ne dollar figures invent
+      nahi kiye.
+    </p>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> FOUND 101 cosine aur CORE 204 embedding mein relation kya hai, aur .NET analogy kahan toot-ti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Cosine wahi geometry hai — embedding model sirf text → vector map provide karta hai.
+            Analogy toot-ti hai kyunki vectors learned/distributional hain, schema hashes nahi;
+            score calibrated “percent relevant” nahi hota bina eval ke.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> OpenAI <code>text-embedding-3-small</code> default dimension kya hai, aur aap use kab shorten karenge?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Official guide: default <strong>1536</strong>. Shorten via API <code>dimensions</code>
+            when storage/latency pressure ho — phir apne golden queries pe recall re-measure;
+            vendor MTEB aapka corpus nahi.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Lab ka <code>negation_failure_demo</code> kya assert karta hai, aur production implication kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Affirmative vs negated sentence ka cosine, unrelated topic se <em>zyada</em> hota hai
+            under naive ngram embeddings — failure mode ko honestly document karta hai. Production
+            mein truth-sensitive retrieval ko sirf raw embedding neighbors pe mat chhodo; hybrid
+            checks, rerankers, ya explicit rules consider karo.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — CORE 204</h2>
+      <ul class="dod-checklist">
+        <li>Book-like Hinglish lesson; design system; transcript strip; Prev → CORE 203</li>
+        <li>≥2 SVG diagrams (embed→rank pipeline; failure-mode panel)</li>
+        <li>Must-cover: vectors↔FOUND cosine, OpenAI/Cohere/Ollama-HF trade-offs, dimensionality, failure modes</li>
+        <li>Paid API mentions labeled <code>[PAID — approx cost]</code> with local/Ollama alternative</li>
+        <li>Lab starter/solution/pytest offline with LocalEmbedder; optional Ollama documented</li>
+        <li>Known-good <code>checkpoints/core-204/</code> importable for APP 305</li>
+        <li>§ Citations (8b) with primary URLs; no invented price/benchmark claims</li>
+        <li>Formative quiz; pointer that CORE track challenge comes next</li>
+      </ul>
+    </section>
+
+    <p>
+      CORE track ka next gate ab live hai: embedding-model decision challenge. Usse pehle
+      201–204 concepts ko apne words mein explain kar paana chahiye — tokens, attention,
+      training sketch, aur embedding failure modes.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="core-203-llm-training.html">
+        <span class="dir">Prev</span>
+        <span class="label">CORE 203 · How LLMs Are Trained</span>
+      </a>
+      <a class="next" href="core-challenge.html">
+        <span class="dir">Next</span>
+        <span class="label">CORE Track Challenge</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · CORE 204</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

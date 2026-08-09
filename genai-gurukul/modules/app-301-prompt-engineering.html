@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 301 — Prompt Engineering Mastery · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Prompting &amp; Application Layer</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-301/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-301"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 301 · Prompt Engineering Mastery</p>
+    <h1>System prompts, few-shot, CoT, structured JSON — prompts ko config treat karo, magic nahi</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-301/</code></span>
+      <span>Local Ollama only · free</span>
+      <span>Prereq: CORE challenge rubric self-score</span>
+    </div>
+
+    <div class="gate-banner">
+      <strong>GATE · CORE → APP</strong>
+      <p>
+        Score yourself against the CORE track challenge rubric before starting APP.
+        Pass rule (from the challenge page): no dimension below 2, and average at least 3.0.
+      </p>
+    </div>
+
+    <p>
+      CORE track ne aapko tokens, attention, training sketch, aur embedding geometry diya. Ab APP
+      track pe pehla practical skill yeh hai: model se predictable behaviour nikaalna — bina har
+      turn pe “please be careful” type vibe prompting ke. Senior .NET / backend engineer ke liye
+      prompts magic spells nahi hain. Woh zyada tar <em>runtime configuration</em> hain: system
+      prompt ≈ appsettings + policy defaults; few-shot examples ≈ golden fixtures; output schema ≈
+      typed DTO contract; chain-of-thought ≈ “debug logging on” for reasoning tasks — with the
+      caveat ke model ke andar ka “thought” aapka structured log nahi hota.
+    </p>
+    <p>
+      Is chapter mein aap system prompts, few-shot, chain-of-thought (CoT), aur structured output
+      patterns padhoge. Structured JSON yahan <strong>prompt + parse + Pydantic validate</strong>
+      se seekhenge — local Ollama pe. Vendor “JSON mode” / function schemas APP 302 ka topic hai.
+      Prompt injection ke <em>basics</em> bhi aayenge, lekin sirf <strong>user-typed</strong>
+      (direct) patterns — RAG documents se aane wala indirect injection PROD 403 ka scope hai.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · CORE 201 / challenge</span>
+      <p>
+        System prompt bhi tokens khaata hai (CORE 201). Lambi “helpful assistant” policy bina
+        count ke ship mat karo. Challenge ne measure-then-decide muscle train kiya — yahan bhi
+        same: prompt change = behaviour change; claim karo to chhota held-out set pe dekho, vibe pe nahi.
+      </p>
+    </div>
+
+    <div class="callout paid">
+      <span class="callout-label">[FREE — local only]</span>
+      <p>
+        APP 301 labs <strong>paid cloud SDKs require nahi karti</strong>. Default path:
+        local Ollama HTTP API (<code>http://localhost:11434</code>), assumed model
+        <code>llama3.2</code> until your environment confirms otherwise. Pytest
+        <strong>FakeCompleter</strong> se bina live server ke green hota hai. OpenAI / Anthropic /
+        Bedrock SDKs is module mein mat lao — woh APP 302.
+      </p>
+    </div>
+
+    <h2>1. System prompt — defaults, constraints, output contract</h2>
+    <p>
+      Chat APIs usually messages ki list leti hain jisme pehla useful layer
+      <code>role: system</code> hota hai (Ollama chat API bhi yeh roles support karti hai). System
+      text model ko batata hai: tum kaun ho, kya allow hai, kya refuse karna hai, aur kab structured
+      shape mein jawab dena hai. .NET analogy: yeh global middleware + feature flags ka mix hai —
+      request-scoped user message se pehle apply hota hai, lekin “hard OS kernel” nahi. Model ab bhi
+      user text ko instructions jaisa treat kar sakta hai; isliye system prompt defence ka ek hissa
+      hai, poora security boundary nahi.
+    </p>
+    <p>
+      Achhi system prompt teen blocks clear rakhti hai. (1) <strong>Role / scope</strong> — “IT ops
+      triage assistant for internal runbooks; no legal advice.” (2) <strong>Constraints</strong> —
+      “never invent ticket IDs; if evidence missing, say so; refuse secrets.” (3)
+      <strong>Output contract</strong> — “reply in plain prose” ya “emit one JSON object matching
+      fields X.” Lab ka <code>build_system_prompt</code> inhi teen knobs ko deterministic string mein
+      jodta hai taaki aap config diffs review kar sako jaise appsettings change.
+    </p>
+
+    <figure class="diagram" aria-label="Message stack: system, few-shot, user">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Chat message stack (config → examples → request)</text>
+        <rect x="60" y="55" width="640" height="55" rx="8" fill="#12172B"/>
+        <text x="380" y="78" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="600">system · role + constraints + output contract</text>
+        <text x="380" y="98" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">≈ appsettings / policy defaults</text>
+        <rect x="60" y="125" width="300" height="55" rx="8" fill="#3F8C87"/>
+        <text x="210" y="148" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">user · few-shot example</text>
+        <text x="210" y="168" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">fixture input</text>
+        <rect x="380" y="125" width="320" height="55" rx="8" fill="#2a3348"/>
+        <text x="540" y="148" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">assistant · few-shot ideal</text>
+        <text x="540" y="168" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">golden expected shape</text>
+        <rect x="60" y="200" width="640" height="55" rx="8" fill="#B8923F"/>
+        <text x="380" y="223" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">user · live query (untrusted)</text>
+        <text x="380" y="243" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">treat like any other client input</text>
+        <text x="60" y="280" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Model ek hi token stream dekhta hai — roles soft labels hain, cryptographic trust zones nahi.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Prompt engineering = how you assemble the message stack. System sets policy;
+        few-shot shows the shape; the final user turn is the live request you must not blindly trust.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Feature flag socho: <code>TriageMode=StrictJson</code>. System prompt us flag ka human-readable
+        form hai. Flag change karte waqt aap PR review karte ho; system prompt change pe bhi same
+        discipline rakho — diff, owner, aur ek chhota regression set (APP 304 evaluation se pehle
+        bhi manually).
+      </p>
+    </div>
+
+    <h2>2. Few-shot — fixtures, not essays</h2>
+    <p>
+      Zero-shot matlab sirf instruction. Few-shot matlab aap 1–N completed (user, assistant) pairs
+      context mein daalte ho taaki model format, tone, aur edge-case handling copy kare. Backend
+      mental model: yeh integration-test fixtures hain jo runtime pe ship ho rahe hain. Har example
+      tokens khata hai (phir se CORE 201), isliye “das lambi stories” usually worse hai “do crisp
+      goldens” se.
+    </p>
+    <p>
+      Achhi few-shot discipline: examples real distribution se aayein (happy path + ek refusal /
+      missing-data case); assistant side wohi schema follow kare jo aap live pe expect karte ho;
+      contradictory examples mat mix karo. Lab ka <code>few_shot_messages</code> system string +
+      example pairs + final user query ko Ollama-compatible <code>{role, content}</code> list mein
+      fold karta hai.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Few-shot mein secrets, real customer PII, ya internal URLs paste mat karo “kyunki example
+        better lagega”. Jo context window mein gaya, woh log, cache, aur vendor retention policies
+        ke under leak surface ban sakta hai. Synthetic tickets use karo.
+      </p>
+    </div>
+
+    <h2>3. Chain-of-thought — kab “soch ke” jawab maango</h2>
+    <p>
+      Chain-of-thought (CoT) prompting model ko intermediate reasoning steps likhne ko kehta hai —
+      “step by step”, “pehle facts list karo, phir conclude”. Multi-hop triage, math-ish counting,
+      ya conflicting evidence pe yeh kabhi-kabhi accuracy badhata hai. Lekin yeh free lunch nahi:
+      zyada tokens, zyada latency, aur kabhi-kabhi confident-looking nonsense with pretty steps.
+    </p>
+    <p>
+      Production mapping: CoT ≈ verbose diagnostic mode. Customer-facing UI pe raw chain mat
+      dump karo by default — sensitive reasoning leak ho sakti hai, aur users “steps” ko audited
+      proof samajh baithe. Internal tools mein aap chain ko separate field mein rakh sakte ho, final
+      answer alag. Yeh lesson CoT ko pattern ke tor pe introduce karta hai; deep eval APP 304.
+    </p>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Socho Structured logging vs user-visible error message. CoT “debug log” hai; final answer
+        “HTTP response body”. Dono mix karke ek hi string mein bhejna = production log ko browser
+        mein print karna.
+      </p>
+    </div>
+
+    <h2>4. Structured output — prompt + parse + validate (Ollama lab)</h2>
+    <p>
+      Agents aur tools ko free-form prose se zyada typed objects chahiye: severity enum, booleans,
+      short summary. Pattern jo APP 301 lab enforce karti hai: (1) system/user mein clearly bolo
+      “return one JSON object with keys …”; (2) model se string lo; (3) markdown fences / preamble
+      strip karke JSON extract karo; (4) <strong>Pydantic</strong> se validate — fail closed.
+      Yeh wahi discipline hai jo aap unknown JSON ko <code>JsonSerializer</code> + DataAnnotations
+      se parse karte waqt use karte ho.
+    </p>
+    <p>
+      Hosted providers often offer stronger knobs: JSON mode, response_format, ya schema-constrained
+      decoding / function calling. Unka exact HTTP shape vendor-specific hai aur <strong>APP 302</strong>
+      mein aayega. Yahan simplification intentionally labeled hai: local Ollama pe aap pehle
+      <em>contract + validation</em> seekho; constrained decoding baad mein optimization hai, replacement
+      for validation nahi.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Ollama Chat API</span>
+      <p>
+        Ollama, Generate a chat message,
+        <a href="https://docs.ollama.com/api/chat">docs.ollama.com/api/chat</a>.
+        Paraphrase (as of August 2026 docs): <code>POST /api/chat</code> accepts a model name and a
+        <code>messages</code> array of role/content objects (including <code>system</code>,
+        <code>user</code>, <code>assistant</code>); non-streaming responses return an assistant
+        <code>message.content</code> string. Lab solution uses this HTTP contract via
+        <code>httpx</code> — no OpenAI SDK.
+      </p>
+    </div>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Structured outputs (vendor — APP 302 preview)</span>
+      <p>
+        OpenAI, Structured Outputs guide,
+        <a href="https://platform.openai.com/docs/guides/structured-outputs">platform.openai.com/docs/guides/structured-outputs</a>.
+        Paraphrase: providers may constrain model output to match a JSON Schema so that valid JSON
+        matching the schema is produced when the feature is used correctly. <strong>Simplification
+        label:</strong> APP 301 does <em>not</em> require that API. We teach the portable pattern —
+        instruct JSON + parse + Pydantic — against Ollama; treat provider JSON-mode / schema
+        features as an APP 302 topic. Pricing and exact parameter names perishable — re-check vendor
+        docs before production (August 2026).
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="Structured output pipeline with validation">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Structured output loop (Ollama-local lab)</text>
+        <rect x="40" y="60" width="150" height="70" rx="8" fill="#12172B"/>
+        <text x="115" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">messages</text>
+        <text x="115" y="110" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">+ JSON contract</text>
+        <text x="205" y="100" fill="#3F8C87" font-size="22">→</text>
+        <rect x="230" y="60" width="150" height="70" rx="8" fill="#3F8C87"/>
+        <text x="305" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">Completer</text>
+        <text x="305" y="110" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">Ollama or Fake</text>
+        <text x="395" y="100" fill="#3F8C87" font-size="22">→</text>
+        <rect x="420" y="60" width="140" height="70" rx="8" fill="#2a3348"/>
+        <text x="490" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">raw text</text>
+        <text x="490" y="110" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">maybe noisy</text>
+        <text x="575" y="100" fill="#3F8C87" font-size="22">→</text>
+        <rect x="600" y="60" width="120" height="70" rx="8" fill="#B8923F"/>
+        <text x="660" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">Pydantic</text>
+        <text x="660" y="110" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">fail closed</text>
+        <rect x="40" y="160" width="680" height="70" rx="8" fill="#1c2438"/>
+        <text x="380" y="190" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">
+          Tests inject FakeCompleter — no live Ollama required for pytest green
+        </text>
+        <text x="380" y="212" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">
+          Solution OllamaCompleter: POST http://localhost:11434/api/chat · stream=false
+        </text>
+      </svg>
+      <figcaption>
+        Figure 2. Dependency-inject a Completer. Solution talks to local Ollama; tests swap in a
+        FakeCompleter so CI stays offline and free.
+      </figcaption>
+    </figure>
+
+    <h2>5. Prompt injection basics — user-typed only</h2>
+    <p>
+      Prompt injection tab hota hai jab attacker-controlled text model ko aise behave karne pe
+      majboor kare jo developer ne intend nahi kiya — policy ignore, secrets leak, tool misuse.
+      OWASP LLM Top 10 is risk ko <strong>LLM01: Prompt Injection</strong> ke under rakhta hai, aur
+      direct (user types the payload) vs indirect (payload lives in external content the model later
+      reads) forms document karta hai. APP 301 sirf <strong>direct / user-typed</strong> basics
+      cover karti hai. Indirect / RAG-borne injection — documents, tickets, web pages ke andar
+      hidden instructions — <strong>PROD 403</strong> ka scope hai; yahan usko “solved” mat samjho.
+    </p>
+    <p>
+      Lab ka <code>detect_simple_injection</code> teaching-scale heuristics hai: phrases jaise
+      “ignore previous instructions”, “reveal your system prompt”, “you are now DAN”, role-override
+      cosplay. Yeh production WAF replacement nahi hai — false positives/negatives dono honge.
+      Real defence-in-depth: least-privilege tools, human approval for side effects, output
+      filtering, monitoring, aur architecture jo untrusted text ko “data” treat kare. Heuristics
+      pehli tripwire hain, last line of defence nahi.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · OWASP LLM01</span>
+      <p>
+        OWASP GenAI Security Project, “LLM01:2025 Prompt Injection”,
+        <a href="https://genai.owasp.org/llmrisk/llm01-prompt-injection/">genai.owasp.org/llmrisk/llm01-prompt-injection</a>
+        (see also the OWASP Top 10 for LLM Applications 2025 PDF on the OWASP project pages).
+        Paraphrase: a prompt injection vulnerability occurs when user prompts alter the LLM’s
+        behaviour or output in unintended ways; OWASP discusses direct and indirect forms and notes
+        that RAG / fine-tuning alone do not fully eliminate the risk. Jailbreaking is described as
+        related (often overlapping) behaviour where inputs push the model to disregard safety
+        protocols. <strong>Simplification:</strong> this lesson’s detector is a didactic keyword /
+        pattern heuristic for user-typed payloads only — not an OWASP-complete control set.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “System prompt mein likh diya ‘never reveal yourself’” ko airtight security mat samjho.
+        Model instructions soft hain. Jo cheez leak nahi honi chahiye (API keys, internal URLs,
+        customer data), use prompt mein daalo hi mat — secret store / server-side tools mein rakho.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · genai-gurukul-labs/app-301</span>
+      <p>
+        Implement starter: <code>build_system_prompt</code>, <code>few_shot_messages</code>,
+        <code>ask_structured</code> (Completer protocol + JSON extract + Pydantic),
+        <code>detect_simple_injection</code>, aur solution-side <code>OllamaCompleter</code>
+        (<code>httpx</code> → local <code>/api/chat</code>). Tests FakeCompleter inject karti hain —
+        live Ollama optional for manual smoke only.
+      </p>
+      <p>
+        <code>cd genai-gurukul-labs && GURUKUL_LAB=solution .venv/bin/pytest app-301/tests -q</code>
+      </p>
+    </div>
+
+    <h2>6. Citations</h2>
+    <ol>
+      <li>
+        Ollama Chat API —
+        <a href="https://docs.ollama.com/api/chat">docs.ollama.com/api/chat</a>
+        — local <code>/api/chat</code> message roles and response shape used by the lab client.
+      </li>
+      <li>
+        OpenAI Structured Outputs guide —
+        <a href="https://platform.openai.com/docs/guides/structured-outputs">platform.openai.com/docs/guides/structured-outputs</a>
+        — cited only as the provider-constrained-JSON pattern deferred to APP 302; not required for this lab.
+      </li>
+      <li>
+        OWASP LLM01:2025 Prompt Injection —
+        <a href="https://genai.owasp.org/llmrisk/llm01-prompt-injection/">genai.owasp.org/llmrisk/llm01-prompt-injection</a>
+        — primary framing for direct vs indirect injection; this module covers user-typed basics only.
+      </li>
+      <li>
+        OWASP Top 10 for LLM Applications (project / PDF) —
+        <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/">owasp.org/www-project-top-10-for-large-language-model-applications</a>
+        — broader LLM risk index; treat specific control checklists as living docs (re-check as of August 2026).
+      </li>
+    </ol>
+    <p>
+      API parameter names, model IDs, and vendor pricing are perishable. Koi bhi production wiring
+      se pehle primary docs <em>as of August 2026</em> verify karo. Is lesson ne dollar costs invent
+      nahi kiye — lab free/local hai.
+    </p>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> System prompt ko .NET/config mental model se kaise map karoge, aur woh mapping kahan toot-ti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Map: role/constraints/output contract ≈ appsettings + policy defaults applied before the
+            user request. Breaks: unlike signed middleware, the model can still treat user text as
+            instructions — system prompt soft policy hai, hard security boundary nahi.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> APP 301 structured JSON lab OpenAI JSON-mode kyun require nahi karti?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Kyunki portable skill prompt contract + parse + Pydantic validation hai, jo local Ollama
+            pe FakeCompleter/OllamaCompleter se seekhi jaati hai. Provider JSON-mode / schema
+            constraints APP 302 topic hain; validation phir bhi rakhni chahiye.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> User-typed injection heuristics kya catch karti hain, aur RAG-borne injection kahan cover hoga?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Heuristics common direct phrases detect karti hain (“ignore previous instructions”,
+            system-prompt exfiltration asks, etc.) as a teaching tripwire — not complete prevention.
+            Indirect / document-borne injection PROD 403 ka scope hai (OWASP LLM01 dono forms note
+            karta hai).
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 301</h2>
+      <ul class="dod-checklist">
+        <li>Book-like Hinglish lesson; design system; transcript <code>data-current="app-301"</code></li>
+        <li>Gate banner: score yourself on CORE challenge rubric before APP</li>
+        <li>≥2 SVG diagrams (message stack; structured-output loop)</li>
+        <li>Must-cover: system prompts, few-shot, CoT, structured JSON pattern, user-typed injection basics</li>
+        <li>Labs Ollama-only (<code>httpx</code> / local API); no OpenAI/Anthropic/Bedrock SDKs</li>
+        <li>Starter/solution/tests with FakeCompleter DI; pytest green offline</li>
+        <li>§ Citations (8b): OWASP LLM01 + Ollama chat (+ structured-outputs preview carefully labeled)</li>
+        <li>Formative 3-question quiz; Prev → core-challenge; Next → app-302</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="core-challenge.html">
+        <span class="dir">Prev</span>
+        <span class="label">CORE Track Challenge</span>
+      </a>
+      <a class="next" href="app-302-llm-apis.html">
+        <span class="dir">Next</span>
+        <span class="label">APP 302 · LLM APIs &amp; SDKs</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 301</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

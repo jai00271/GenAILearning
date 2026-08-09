@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CAP 502 — Portfolio &amp; GenAI Interview Prep · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">CAP · Capstone &amp; Career</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/capstone/interview/">Interview one-pagers</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="cap-502"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">CAP 502 · Portfolio &amp; GenAI Interview Prep</p>
+    <h1>Interview mein architecture diagram se pehle eval · cost · failure modes bolo</h1>
+    <div class="lesson-meta">
+      <span>Track: CAP</span>
+      <span>Materials: <code>genai-gurukul-labs/capstone/interview/</code> (English)</span>
+      <span>Prereq: CAP 501 scaffold + acceptance evidence</span>
+      <span>Next: Catalog</span>
+    </div>
+
+    <p>
+      CAP 501 ne Ops Incident Copilot (Option A) ke against written bar diya. CAP 502 us
+      evidence ko <em>interview language</em> mein translate karta hai. Lesson voice Hinglish
+      ho sakti hai; jo aap print/share karoge — system-design prompts, presenting guide,
+      Q bank — <strong>English files</strong> hain
+      <code>genai-gurukul-labs/capstone/interview/</code> ke under.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · CAP 501 acceptance</span>
+      <p>
+        Golden ≥40 · Recall@5 ≥ 0.60 · TTFT + total p95 · cost model · auth/trace/rate-limit/failover
+        · failure modes (indirect injection + cost blowup). Interviewer ko yahi “production
+        GenAI” signal hai — Lambda demo nahi.
+      </p>
+    </div>
+
+    <h2>1. Portfolio kaise dikhao (3-minute spine)</h2>
+    <ol>
+      <li><strong>Problem</strong> — on-call noise; runbooks scattered; unsafe next steps.</li>
+      <li><strong>System</strong> — multi-format RAG + optional agent; prod edge controls.</li>
+      <li><strong>Proof</strong> — Recall@5, latency p95, $/1k queries, two failure modes.</li>
+      <li><strong>Judgment</strong> — what you postponed (multi-agent crew, auto-remediation) and when you reverse.</li>
+    </ol>
+    <p>
+      Detail: English one-pager
+      <code>interview/presenting-capstone.md</code> — eval + cost + failure modes order
+      fixed rakho. Diagram baad mein; metrics pehle.
+    </p>
+
+    <figure class="diagram" aria-label="Interview narrative order">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="240" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Interview order — proof before logos</text>
+        <rect x="36" y="70" width="150" height="70" rx="8" fill="#12172B"/>
+        <text x="111" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">eval bar</text>
+        <text x="111" y="120" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="10">R@5 · golden</text>
+        <text x="198" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="220" y="70" width="150" height="70" rx="8" fill="#3F8C87"/>
+        <text x="295" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">cost model</text>
+        <text x="295" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="10">$/1k queries</text>
+        <text x="382" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="404" y="70" width="150" height="70" rx="8" fill="#1c2438"/>
+        <text x="479" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">failure modes</text>
+        <text x="479" y="120" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">inject · blowup</text>
+        <text x="566" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="588" y="70" width="140" height="70" rx="8" fill="#B8923F"/>
+        <text x="658" y="110" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">design Qs</text>
+        <text x="36" y="185" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">English one-pagers live under genai-gurukul-labs/capstone/interview/</text>
+      </svg>
+      <figcaption>
+        Figure 1. Lead with measurable proof, then system-design depth. Framework names last.
+      </figcaption>
+    </figure>
+
+    <h2>2. GenAI system-design questions (roles)</h2>
+    <p>
+      Practice bank English file:
+      <code>interview/system-design-onepager.md</code> aur
+      <code>interview/genai-interview-bank.md</code>. Sample themes:
+    </p>
+    <ul>
+      <li>RAG vs fine-tune for ops runbooks — when each wins.</li>
+      <li>Where to put auth, rate limits, and tenancy for an internal copilot.</li>
+      <li>How you evaluate retrieval vs generation vs agent trajectories.</li>
+      <li>Indirect injection in retrieved tickets — defenses and residual risk.</li>
+      <li>Cost controls for tool-calling loops (caps, caching, model routing).</li>
+      <li>Failover: degraded answer vs hard error; what you log.</li>
+    </ul>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · drill</span>
+      <p>
+        Ek mock: 10 minute CAP 501 walkthrough using only
+        <code>writeups/eval_report.md</code>, <code>cost_model.md</code>,
+        <code>failure_modes.md</code>. Agar bina unke architecture pe jump karo, CAP 502
+        incomplete.
+      </p>
+    </div>
+
+    <h2>3. Red flags interviewers catch instantly</h2>
+    <ul>
+      <li>“We put docs on Lambda / Bedrock KB” with no eval protocol.</li>
+      <li>Recall claimed without labeled golden or without stating <code>k</code>.</li>
+      <li>Agent demos with unbounded steps and no $/query story.</li>
+      <li>Safety = “we told the model to be careful” only.</li>
+      <li>Cannot name one residual risk after mitigations.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Portfolio artifact map">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Artifacts interviewers can open</text>
+        <rect x="40" y="60" width="200" height="80" rx="8" fill="#12172B"/>
+        <text x="140" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">capstone README</text>
+        <text x="140" y="115" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="10">acceptance table</text>
+        <rect x="280" y="60" width="200" height="80" rx="8" fill="#1c2438"/>
+        <text x="380" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">writeups/</text>
+        <text x="380" y="115" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">eval · cost · FM</text>
+        <rect x="520" y="60" width="200" height="80" rx="8" fill="#3F8C87"/>
+        <text x="620" y="95" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">interview/</text>
+        <text x="620" y="115" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="10">English one-pagers</text>
+        <text x="40" y="190" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">Link these from your resume/portfolio — not a private Colab without metrics.</text>
+        <text x="40" y="220" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Course catalog is next; keep practicing with the bank under interview/.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Portfolio map: acceptance README, English writeups, interview one-pagers.
+      </figcaption>
+    </figure>
+
+    <section class="quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Interview walkthrough ka pehla block kya hona chahiye?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Eval evidence (golden size, Recall@5, protocol) — logos/diagrams later.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> English interview files kahan hain?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p><code>genai-gurukul-labs/capstone/interview/</code></p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Do failure modes jo CAP 501 ne force kiye?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Indirect prompt injection (retrieved docs) and cost blowup (unbounded loops/context).</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — CAP 502</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish teaching lesson; English interview materials under <code>capstone/interview/</code></li>
+        <li>How to present capstone: eval + cost + failure modes order</li>
+        <li>System-design themes for GenAI roles; red flags called out</li>
+        <li>≥2 SVG diagrams; quiz; <code>data-current="cap-502"</code></li>
+        <li>Prev → CAP 501; Next → catalog; no <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="cap-501-capstone.html">
+        <span class="dir">Prev</span>
+        <span class="label">CAP 501 · Capstone: Production RAG + Agent</span>
+      </a>
+      <a class="next" href="../index.html">
+        <span class="dir">Next</span>
+        <span class="label">Catalog</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · CAP 502</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

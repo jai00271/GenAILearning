@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP Challenge — RAG + single-agent slice · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Track Challenge</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/challenges/app/">Challenge brief</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-challenge"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP Challenge · after APP 308</p>
+    <h1>Chhota RAG + single agent — multi-agent flex se pehle constraints mein ship</h1>
+    <div class="lesson-meta">
+      <span>Track gate: APP → PROD</span>
+      <span>Brief: <code>genai-gurukul-labs/challenges/app/</code></span>
+      <span>No starter · no solution · rubric-graded</span>
+      <span>Prereq: APP 301–308 (esp. 304 eval, 305 RAG, 307–308 agents)</span>
+    </div>
+
+    <div class="gate-banner">
+      <strong>GATE · APP → PROD</strong>
+      <p>
+        Score yourself against the rubric before starting the PROD track.
+        Pass rule: no dimension below 2, and average across the four dimensions at least 3.0.
+      </p>
+    </div>
+
+    <p>
+      APP track ne prompts, APIs, memory, eval, RAG, vectors, agents, aur orchestration tak
+      laaya. Ab last page pe koi naya framework chapter nahi — ek <em>constrained design</em>
+      hai. Aap ek <strong>small RAG + single-agent</strong> slice design (aur ideally thin
+      prototype) karoge: retrieval tool + one agent loop, multi-agent crew default nahi.
+      APP 304 metrics report karoge. English trade-off memo likhoge. Starter folder nahi.
+      Solution folder nahi. Pass = rubric, green pytest nahi.
+    </p>
+    <p>
+      Kyun single-agent? APP 308 ne explicitly bola: orchestration tax prove ke bina mat lo.
+      Challenge us muscle ko force karta hai — permissions, latency budget, aur eval pehle;
+      “add a critic agent” baad mein.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 304 · 305 · 307 · 308</span>
+      <p>
+        Eval beat = metric · data · pass-fail (APP 304). RAG = retrieve then generate with
+        citations/refusals (APP 305). Agent = tools + loop + halt + trajectory (APP 307).
+        Multi-agent only when allowlists / parallelism justify it (APP 308). Challenge un
+        threads ko ek portfolio artifact mein bandh'ta hai.
+      </p>
+    </div>
+
+    <h2>1. Challenge kya hai — aur kya nahi</h2>
+    <p>
+      Design a <strong>small</strong> IT-ops (or coherent domain) assistant: corpus → chunk /
+      embed / retrieve → expose retrieval as a tool → single agent that may call that tool
+      (and at most a tiny auxiliary tool set). Report APP 304-style metrics on a frozen
+      query set (e.g. Recall@k / MRR / P@k — jo aap defend kar sako) plus at least one
+      systems signal (latency, hops, or tool-error rate). Write an English trade-off memo:
+      why single-agent, what you postponed (multi-agent, reranker, managed vector DB), and
+      when you would reverse.
+    </p>
+    <p>
+      Yeh full multi-agent crew nahi hai. Yeh CAP 501 capstone nahi hai. Yeh “fine-tune the
+      model” nahi hai. Agar aapne metrics ke bina architecture diagram paste kiya, Evaluation
+      evidence pe fail. Agar memo missing hai, Correctness/artifact pe fail.
+    </p>
+
+    <figure class="diagram" aria-label="APP challenge constrained slice">
+      <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="250" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · APP track gate — constrained RAG + single agent</text>
+        <rect x="28" y="58" width="130" height="70" rx="8" fill="#12172B"/>
+        <text x="93" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Corpus</text>
+        <text x="93" y="110" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">ops docs</text>
+        <text x="170" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="195" y="58" width="130" height="70" rx="8" fill="#3F8C87"/>
+        <text x="260" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">RAG retrieve</text>
+        <text x="260" y="110" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">as a tool</text>
+        <text x="338" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="360" y="58" width="150" height="70" rx="8" fill="#1c2438"/>
+        <text x="435" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Single agent</text>
+        <text x="435" y="110" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">loop + halt</text>
+        <text x="522" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="545" y="58" width="185" height="70" rx="8" fill="#B8923F"/>
+        <text x="637" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">Metrics + memo</text>
+        <text x="637" y="110" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">APP 304 · English</text>
+        <text x="28" y="175" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">No starter. No solution. Multi-agent only if you justify it — default is single agent.</text>
+        <text x="28" y="200" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">PROD track se pehle is rubric pe self-score — gate yahi hai.</text>
+        <text x="28" y="225" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Brief: genai-gurukul-labs/challenges/app/README.md</text>
+      </svg>
+      <figcaption>
+        Figure 1. Track gate: constrained RAG tool + one agent + APP 304 metrics + English
+        trade-off memo. Framework names without evidence do not pass.
+      </figcaption>
+    </figure>
+
+    <h2>2. Kaise approach karo</h2>
+    <p>
+      Pehle constraints freeze karo (latency ceiling, corpus size, max tool set, local-first
+      bias). Phir golden queries + relevance labels. Retrieval metrics APP 304 checkpoint
+      style socho. Agent ke liye trajectory sample rakho (even if FakeLLM/scripted). Memo
+      mein explicitly likho: multi-agent kyun <em>nahi</em> (ya kab haan).
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · brief location</span>
+      <p>
+        English deliverables + full rubric copy:
+        <a href="../../genai-gurukul-labs/challenges/app/README.md"><code>genai-gurukul-labs/challenges/app/README.md</code></a>.
+        Optional ops-style fixtures remain under <code>challenges/core/corpus/</code> if you
+        want a starting domain — extend or replace, keep coherence.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Challenge ko CrewAI demo mein convert mat karo just because APP 308 padha. Rubric
+        Engineering judgment pe single-agent default expect karti hai unless you show a
+        real boundary. Doosra pitfall: retrieval metrics skip karke sirf “agent felt smart”.
+      </p>
+    </div>
+
+    <h2>3. Portfolio-facing English — deliverables</h2>
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Trade-off memo requirements</span>
+      <p>
+        Write a one-page trade-off memo (approximately 400–600 words) in clear English.
+        Describe your small RAG + single-agent slice: corpus domain, retrieval tool contract,
+        agent stop conditions, and constraints you accepted (latency, cost, local-only,
+        max tools). Include a compact metrics table using APP 304-style measures on a stated
+        query set (for example Recall@k or MRR, plus at least one systems metric such as
+        p95 latency or mean tool hops). Explain why you did <em>not</em> default to
+        multi-agent orchestration (or justify a narrow exception). End with reverse
+        conditions: when you would add a second agent, change the vector store, or widen
+        the tool catalog. Do not submit starter scaffolding — there is none — and do not
+        expect a reference solution folder.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Suggested constraints</span>
+      <p>
+        Keep the corpus small enough to re-embed while debugging. Prefer local embedders /
+        Ollama over paid APIs unless labeled and compared. Cap the agent at a small tool
+        set (retrieval plus at most one or two auxiliaries). Freeze max steps / hops. If you
+        use a framework, name what you still own: tool catalog, trajectory log, and eval
+        gates (APP 308 lock-in lesson).
+      </p>
+    </div>
+
+    <h2>4. Rubric — score yourself before PROD</h2>
+    <div class="callout intuition" lang="en">
+      <span class="callout-label">Portfolio-facing English · Pass rule</span>
+      <p>
+        Each dimension is scored from 1 to 4. You pass the APP track challenge only when
+        <strong>no dimension is below 2</strong> and the <strong>average across the four
+        dimensions is at least 3.0</strong>. Anything less means revise the artifact before
+        treating PROD 401 as unlocked for yourself.
+      </p>
+    </div>
+
+    <table class="rubric" lang="en">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>1 — Inadequate</th>
+          <th>2 — Developing</th>
+          <th>3 — Solid</th>
+          <th>4 — Exemplary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Correctness / artifact</td>
+          <td>Deliverables are missing, not in English, or do not describe a real RAG + single-agent slice under stated constraints.</td>
+          <td>A memo and some design notes exist, but the slice is vague, incomplete, or mixes incompatible setups without disclosure.</td>
+          <td>A one-page English memo plus a readable metrics table describe a constrained RAG tool + single-agent design with a clear recommendation.</td>
+          <td>Artifacts are crisp, reproducible, and would be credible in a design review; tables, trajectory notes, and memo align.</td>
+        </tr>
+        <tr>
+          <td>Evaluation evidence</td>
+          <td>Claims rely on vibes, screenshots, or demos with no APP 304-style metrics on a stated query set.</td>
+          <td>Some numbers appear, but the protocol (queries, relevance, <code>k</code>, metric definition) is vague or unreproducible.</td>
+          <td>A small labeled query set and stated APP 304-style metrics (for example Recall@k or MRR) plus one systems metric support the write-up.</td>
+          <td>Evidence includes honest misses, trajectory or hop observations, and enough detail that a peer could re-run the comparison.</td>
+        </tr>
+        <tr>
+          <td>Engineering judgment</td>
+          <td>Defaults to multi-agent or a heavy framework without trade-offs, or ignores the single-agent constraint.</td>
+          <td>Notes a trade-off superficially but does not connect choices to constraints and the retrieval+agent job.</td>
+          <td>Weighs single-agent vs multi-agent, tool-catalog scope, and storage/retrieval choices; states when the call reverses.</td>
+          <td>Judgment reads like production triage: clear default, explicit reverse conditions, scoped next experiments.</td>
+        </tr>
+        <tr>
+          <td>Production awareness</td>
+          <td>Ignores cost, latency, halt conditions, data residency, or dependency/lock-in risk entirely.</td>
+          <td>Mentions one production concern in passing without tying it to the recommendation.</td>
+          <td>Addresses latency and/or cost and at least one operational concern (halt/max-steps, tool allowlists, vendor lock-in, or local-first needs).</td>
+          <td>Treats the slice as deployable: failure modes, monitoring or re-eval triggers, and framework-seam ownership are named.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="dod">
+      <h2>Definition of Done — APP challenge</h2>
+      <ul class="dod-checklist">
+        <li>Small RAG + single-agent slice designed under explicit constraints</li>
+        <li>APP 304-style metrics table (quality + ≥1 systems metric)</li>
+        <li>One-page English trade-off memo (portfolio-facing)</li>
+        <li>Self-score on all four rubric dimensions; pass rule met (no dim &lt; 2, avg ≥ 3)</li>
+        <li>No reliance on a starter/ or solution/ folder — none ship for this gate</li>
+        <li>Gate banner: score yourself before PROD</li>
+      </ul>
+    </section>
+
+    <div class="gate-banner">
+      <strong>GATE</strong>
+      <p>
+        Score yourself against the rubric before starting the next track (PROD).
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Next track warning</span>
+      <p>
+        PROD 401 (Evaluation in Production) APP gate clear hone ke baad sense banata hai.
+        Agar aap metrics + memo skip karke aage badhte ho, production eval pe wapas
+        “demo confidence” aa jayega. Self-score first, phir PROD.
+      </p>
+    </div>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-308-multi-agent.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP 308 · Multi-Agent Systems &amp; Orchestration</span>
+      </a>
+      <a class="next" href="prod-401-eval-production.html">
+        <span class="dir">Next</span>
+        <span class="label">PROD 401 · Evaluation in Production</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP Challenge</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

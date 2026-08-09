@@ -1,0 +1,16 @@
+Title: Auth service CrashLoopBackOff runbook
+Service: auth-api
+Severity: SEV-2 when login error rate > 5%
+
+Symptoms:
+- Pod restarts every 30–90 seconds
+- Readiness probe failing on /healthz
+- Recent deploy of auth-api coinciding with spike
+
+First checks:
+1. kubectl describe pod -n identity -l app=auth-api — look for OOMKilled vs Error
+2. Compare current ConfigMap AUTH_ISSUER_URL with previous release
+3. Verify Redis session store connectivity from the pod network
+4. Roll back only if error rate remains elevated after config fix
+
+Do not restart dependent payment pods as a first response.

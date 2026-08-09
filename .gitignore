@@ -6,8 +6,9 @@ venv/
 .env
 .env.*
 
-# Jupyter
+# Jupyter / pytest
 .ipynb_checkpoints/
+.pytest_cache/
 
 # OS / IDE
 .DS_Store

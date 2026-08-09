@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 308 — Multi-Agent Systems &amp; Orchestration · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Building GenAI Applications</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-308/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-308"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 308 · Multi-Agent Systems &amp; Orchestration</p>
+    <h1>Doosra agent add karna pehle prove karo — orchestration tax real hai</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-308/</code></span>
+      <span>Offline lab · pure Python graph</span>
+      <span>Prereq: APP 307 agents &amp; tools</span>
+      <span>Next: APP track challenge</span>
+    </div>
+
+    <p>
+      APP 307 ne single agent dikhaya: tools, loop, stop condition, trajectory log.
+      Yahan temptation yeh hai ke turant “multi-agent crew” bana do — researcher, writer,
+      critic, ops lead. Reality: har extra agent = extra prompts, extra hops, extra failure
+      modes, aur eval jo ab <em>trajectory</em> pe chalti hai, sirf final string pe nahi.
+      Pehla engineering sawaal marketing deck pe nahi hota: <strong>kya ek well-prompted
+      single agent + shared tools kaafi hai?</strong>
+    </p>
+    <p>
+      Scope: LangGraph-style graphs aur CrewAI-style role crews — concepts, kab worth it,
+      kab overkill. <strong>MCP / shared tool catalogs</strong> across agents. Mandatory
+      <strong>framework lock-in</strong> lesson: LangChain / LangGraph / LlamaIndex kya
+      abstract karte hain, kab raw SDK better. Lab mein heavy framework install nahi —
+      supervisor + worker edges pure Python mein simulate. Eval hook: multi-agent
+      trajectories merge karke measure.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 307 · APP 304 · APP 305</span>
+      <p>
+        Agent = model + tools + loop + halt (APP 307). Eval beat pehle declare (APP 304) —
+        multi-agent pe metric aksar “did the right worker call the right tool in order?”
+        hota hai, sirf Recall@k nahi. RAG retrieval ek tool ban sakta hai (APP 305/306);
+        multi-agent us tool ko duplicate mat karo bina reason ke.
+      </p>
+    </div>
+
+    <h2>1. Multi-agent kab worth it — aur kab tax</h2>
+    <p>
+      Single well-prompted agent tab jeet'ta hai jab: ek clear goal, shared tool surface,
+      aur failures ek trajectory pe debug-able hain. Multi-agent tab sense banata hai jab
+      <em>roles genuinely conflict or specialize</em> — alag permissions, alag context
+      budgets, parallel fan-out with merge, ya human-in-the-loop gates per lane. “Teen
+      personas in one prompt” multi-agent nahi hai; woh roleplay hai.
+    </p>
+    <ul>
+      <li><strong>Worth complexity:</strong> ticket triage worker (PII-scoped tools) vs research worker (KB-only); parallel evidence gather + merge; explicit handoff contracts.</li>
+      <li><strong>Not worth it (yet):</strong> same tools, same model, same prompt split across “agents” for blog aesthetics; no eval on trajectories; no allowlists.</li>
+      <li><strong>Cost signal:</strong> hops × tokens × tool latency — APP 307 max-steps breaker yahan per-graph <code>max_hops</code> ban'ta hai.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Supervisor and workers sharing one tool catalog">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="320" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Supervisor → workers → merge — shared MCP-shaped catalog</text>
+
+        <rect x="280" y="50" width="200" height="56" rx="8" fill="#12172B"/>
+        <text x="380" y="75" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">supervisor</text>
+        <text x="380" y="94" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">route · allowlist</text>
+
+        <text x="380" y="125" text-anchor="middle" fill="#3F8C87" font-size="18">↓</text>
+
+        <rect x="70" y="140" width="180" height="70" rx="8" fill="#3F8C87"/>
+        <text x="160" y="170" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">worker_ticket</text>
+        <text x="160" y="192" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">ticket_lookup · summarize</text>
+
+        <rect x="510" y="140" width="180" height="70" rx="8" fill="#2a3348"/>
+        <text x="600" y="170" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">worker_research</text>
+        <text x="600" y="192" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">search_kb · summarize</text>
+
+        <text x="160" y="230" text-anchor="middle" fill="#3F8C87" font-size="18">↓</text>
+        <text x="600" y="230" text-anchor="middle" fill="#3F8C87" font-size="18">↓</text>
+
+        <rect x="250" y="240" width="260" height="56" rx="8" fill="#B8923F"/>
+        <text x="380" y="265" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">merge + trajectory</text>
+        <text x="380" y="284" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">seq-ordered eval hook</text>
+
+        <rect x="28" y="140" width="28" height="70" rx="4" fill="#1c2438"/>
+        <text x="42" y="180" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="10" transform="rotate(-90 42 180)">catalog</text>
+      </svg>
+      <figcaption>
+        Figure 1. One shared tool catalog; workers get allowlisted views. Supervisor routes;
+        merge node builds the final answer and a single ordered trajectory for eval.
+      </figcaption>
+    </figure>
+
+    <h2>2. LangGraph vs CrewAI — mental models, not religion</h2>
+    <p>
+      <strong>LangGraph</strong> (LangChain ecosystem) graphs pe soch'ta hai: nodes, state,
+      conditional edges, checkpoints. Control-flow explicit hota hai — backend engineer ke
+      liye state machine vibe. <strong>CrewAI</strong> roles + tasks + “crew” collaboration
+      pe pitch karta hai — faster to sketch human org charts as agents. Dono perishable
+      APIs hain (re-check docs August 2026+). Lab mein hum edges ko dict + functions se
+      simulate karte hain taaki concept framework wheel ke bina clear rahe.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Shape</th>
+          <th>When it helps</th>
+          <th>Watch-outs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Graph (LangGraph-like)</strong></td>
+          <td>Explicit routes, cycles with halt, durable state</td>
+          <td>Easy to over-node; debugging = reading the path</td>
+        </tr>
+        <tr>
+          <td><strong>Crew / roles (CrewAI-like)</strong></td>
+          <td>Human-readable role split, task briefs</td>
+          <td>Hidden orchestration; role sprawl without tool isolation</td>
+        </tr>
+        <tr>
+          <td><strong>Single agent</strong></td>
+          <td>One goal, one catalog, one trajectory</td>
+          <td>Context bloat if you fake multi-role in one prompt</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “We use CrewAI/LangGraph” portfolio line empty hai bina: (1) edge diagram, (2) tool
+        allowlists, (3) trajectory sample, (4) kab single agent enough tha. Framework name
+        skill nahi hai — orchestration judgment skill hai.
+      </p>
+    </div>
+
+    <h2>3. MCP across agents — shared tool catalogs</h2>
+    <p>
+      Model Context Protocol tools ko server-side catalog banata hai: <code>tools/list</code>,
+      <code>tools/call</code>, JSON Schema params. Multi-agent world mein sabse clean pattern:
+      <strong>ek shared catalog</strong>, har agent ko <em>allowlisted view</em>. Duplicate
+      handlers per agent = drift. APP 307 ka ToyMCPClient single loop ke liye tha; yahan
+      <code>SharedToolCatalog.allowlist(...)</code> worker isolation sikhata hai — ticket
+      worker <code>search_kb</code> nahi dekh'ta.
+    </p>
+    <p>
+      Production mein MCP servers process boundaries cross kar sakte hain; lab in-process
+      hai. Idea same: catalog ownership central, permissions per agent, call results
+      trajectory pe structured.
+    </p>
+
+    <h2>4. Framework lock-in — mandatory judgment call</h2>
+    <p>
+      Yeh section skip mat karna. Frameworks speed dete hain; woh <em>your</em> contracts
+      bhi hide karte hain. Jaano kya abstract ho raha hai, phir decide karo own vs buy.
+    </p>
+
+    <figure class="diagram" aria-label="What frameworks abstract versus raw SDK">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Lock-in stack — know the seam before you cement it</text>
+
+        <rect x="40" y="55" width="200" height="210" rx="10" fill="#12172B"/>
+        <text x="140" y="85" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="13" font-weight="700">Raw SDK / HTTP</text>
+        <text x="140" y="120" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">chat.completions</text>
+        <text x="140" y="145" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">tool JSON you own</text>
+        <text x="140" y="170" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">your retry / budget</text>
+        <text x="140" y="210" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">Max control</text>
+        <text x="140" y="230" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">More glue code</text>
+
+        <rect x="280" y="55" width="200" height="210" rx="10" fill="#1c2438"/>
+        <text x="380" y="85" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="13" font-weight="700">LC / LGraph / LI</text>
+        <text x="380" y="120" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">chains · agents</text>
+        <text x="380" y="145" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">indexes · retrievers</text>
+        <text x="380" y="170" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">graph state helpers</text>
+        <text x="380" y="210" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">Fast scaffolds</text>
+        <text x="380" y="230" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">API churn risk</text>
+
+        <rect x="520" y="55" width="200" height="210" rx="10" fill="#2a3348"/>
+        <text x="620" y="85" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="13" font-weight="700">Your seam</text>
+        <text x="620" y="125" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">tool catalog</text>
+        <text x="620" y="150" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">traj / eval hooks</text>
+        <text x="620" y="175" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">tenant + policy</text>
+        <text x="620" y="210" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="11">Own these even if</text>
+        <text x="620" y="230" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="11">you use a framework</text>
+      </svg>
+      <figcaption>
+        Figure 2. LangChain / LangGraph / LlamaIndex accelerate glue; they should not own your
+        tool contracts, eval trajectories, or tenancy. Raw SDK when those seams are the product.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Lock-in lesson · own the seams</span>
+      <p>
+        <strong>LangChain</strong> historically chains, tools, memory adapters abstract karta
+        hai. <strong>LangGraph</strong> durable graph execution / state. <strong>LlamaIndex</strong>
+        ingestion + index + query abstractions (APP 305). Use them when team velocity &gt;
+        custom control <em>and</em> aap tool catalog + eval hooks + policy boundaries bahar
+        extract kar sakte ho. Raw OpenAI / Anthropic / Bedrock / Ollama SDK choose karo jab:
+        streaming + cost accounting tumhari competitive edge hai, framework upgrades break
+        prod, ya compliance ko thin dependency graph chahiye. “Never use frameworks” dogma
+        utna hi kharab hai jitna “always LangChain”.
+      </p>
+    </div>
+
+    <h2>5. Eval hook — multi-agent trajectories</h2>
+    <p>
+      RAG metrics (P@k, R@k, MRR — APP 304) final answer quality ke liye zinda rehte hain
+      jab retrieval involved ho. Multi-agent pe <em>additional</em> beat: merged trajectory
+      — kaunsa agent, kaunsa tool, kis order mein, halt hua ya nahi. Lab
+      <code>trajectory_eval_summary</code> counts by agent/kind + tool names return karti
+      hai. Deep agent-eval methodology PROD 401 mein; yahan habit yeh hai ke path log bina
+      ship mat karo.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · app-308</span>
+      <p>
+        <code>genai-gurukul-labs/app-308/</code> —
+        <code>orchestrator.py</code>: <code>SharedToolCatalog</code> (register / allowlist /
+        MCP list+call), supervisor + ticket/research workers, <code>merge_trajectories</code>,
+        <code>run_supervisor_graph</code>. Success:
+        <code>GURUKUL_LAB=solution pytest app-308/tests -q</code>.
+        No langgraph wheel in CI.
+      </p>
+    </div>
+
+    <h2>6. Portfolio-facing English — when multi-agent wins</h2>
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        Prefer a single agent with a shared tool catalog unless you can name a permission
+        boundary, parallelism need, or context-budget split that a second agent uniquely
+        provides. If you adopt LangGraph or CrewAI, keep tool descriptors, trajectory
+        logging, and stop conditions outside the framework’s opaque defaults so you can
+        swap runtimes without rewriting policy. Evaluate with merged trajectories plus any
+        task-level quality metrics — not demos alone.
+      </p>
+    </div>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Multi-agent kab overkill hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Jab same tools + same model + same goal ko sirf personas mein split kiya, bina
+            permission/parallelism/context reason ke — aur bina trajectory eval ke.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Shared MCP catalog ka point kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Ek jagah tool contracts; agents ko allowlisted views. Drift aur accidental
+            powerful-tool access kam.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Framework lock-in lesson — kya own karna hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Tool catalog, trajectory/eval hooks, tenant/policy seams — even if LC/LGraph/LI
+            scaffolding use karo. Raw SDK jab yeh seams product edge hon.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Multi-agent eval hook lab mein kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Merged trajectory (seq-ordered) + per-agent/kind counts + tool names — RAG@k ke
+            saath, uski jagah nahi jab retrieval matter kare.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>5.</strong> LangGraph vs CrewAI one-line?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Graph = explicit state/edges; Crew = role/task collaboration skin. Pick for the
+            control story you need; measure hops and failures either way.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 308</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; design system; transcript <code>data-current="app-308"</code></li>
+        <li>When multi-agent worth it vs single well-prompted agent</li>
+        <li>LangGraph + CrewAI conceptual map (no mandatory heavy install)</li>
+        <li>MCP / shared tool catalogs across agents</li>
+        <li>Mandatory framework lock-in: LC / LGraph / LlamaIndex vs raw SDK</li>
+        <li>Eval hook: multi-agent trajectories (+ APP 304 metrics when retrieval involved)</li>
+        <li>≥2 SVG diagrams; quiz; citations</li>
+        <li>Lab <code>app-308/{starter,solution,tests}</code>; offline; GURUKUL_LAB pattern</li>
+        <li>Prev → <code>app-307-agents.html</code>; Next → <code>app-challenge.html</code></li>
+        <li>No <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Citations · primary</span>
+      <ul>
+        <li>Model Context Protocol — Tools: <a href="https://modelcontextprotocol.io/specification/2025-03-26/server/tools">specification (2025-03-26)</a></li>
+        <li>LangGraph documentation: <a href="https://langchain-ai.github.io/langgraph/">langchain-ai.github.io/langgraph</a></li>
+        <li>CrewAI documentation: <a href="https://docs.crewai.com/">docs.crewai.com</a></li>
+        <li>LlamaIndex documentation: <a href="https://docs.llamaindex.ai/">docs.llamaindex.ai</a></li>
+      </ul>
+    </div>
+
+    <p>
+      Agla step APP track challenge hai — chhota RAG + single-agent slice constraints ke
+      andar, APP 304 metrics + English trade-off memo. Multi-agent flex challenge mein
+      default nahi hai; prove karo single-agent slice pehle.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-307-agents.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP 307 · Agents &amp; Tool Use</span>
+      </a>
+      <a class="next" href="app-challenge.html">
+        <span class="dir">Next</span>
+        <span class="label">APP Challenge · Track gate</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 308</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

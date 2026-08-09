@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PROD 401 — Evaluation in Production · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">PROD · Customization &amp; Production</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/prod-401/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="prod-401"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">PROD 401 · Evaluation in Production</p>
+    <h1>Judge disagree kare humans se — ship mat karo; trajectory + regression pehle</h1>
+    <div class="lesson-meta">
+      <span>Track: PROD</span>
+      <span>Labs: <code>genai-gurukul-labs/prod-401/</code></span>
+      <span>Offline lab · FakeJudge + traj + gate</span>
+      <span>Prereq: APP track gate · APP 304 eval fundamentals</span>
+      <span>Next: PROD 402 Fine-Tuning &amp; PEFT</span>
+    </div>
+
+    <div class="gate-banner">
+      <strong>GATE · APP → PROD</strong>
+      <p>Score yourself against the APP track challenge rubric before treating PROD as started. Pass rule: no dimension below 2, average ≥ 3.</p>
+    </div>
+
+    <p>
+      APP 304 ne metric / data / pass-fail ka beat sikhaya — P@k, κ, golden sets.
+      Production mein sawaal badal jata hai: LLM-as-judge scale deta hai, lekin
+      <em>humans se disagree</em> kare to kya? Agent ka final answer theek ho, tool path
+      galat — score kaise? Prompt tweak ke baad ek number upar, do neeche — ship?
+      Yeh module wahi production eval mindset hai: bias jaano, trajectory score karo,
+      regression gate se fail-closed raho.
+    </p>
+    <p>
+      Scope: LLM-as-judge (position / self-preference), human eval loop, multi-step
+      agent trajectory scoring, online vs offline, regression mindset. Lab offline hai —
+      <code>FakeJudge</code>, <code>score_trajectory</code>, <code>regression_gate</code>.
+      Paid judge APIs required nahi.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 304 · APP 307 · APP 308</span>
+      <p>
+        Eval beat pehle declare (APP 304). Agents tool-call logs chhodte hain (APP 307);
+        multi-agent merged trajectories (APP 308). PROD 401 un logs ko
+        <em>gradable path</em> banata hai — sirf final string nahi.
+      </p>
+    </div>
+
+    <h2>1. Eval beat production mein — offline pehle, online baad mein</h2>
+    <p>
+      <strong>Offline:</strong> frozen golden / labeled trajectories; CI mein repeatable;
+      prompt tweak se pehle baseline freeze. <strong>Online:</strong> shadow scores, human
+      spot-checks, live disagreement queues — distribution shift pakadne ke liye.
+      Online bina offline regression gate ke = demo confidence with production blast radius.
+    </p>
+    <ul>
+      <li><strong>Offline gate:</strong> candidate vs baseline, <code>max_drop</code> hard fail.</li>
+      <li><strong>Online watch:</strong> judge–human agreement, tool-error rate, traj overall.</li>
+      <li><strong>Eval beat:</strong> har change ke saath metric + slice + pass-fail likho.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Offline golden to online shadow to regression gate">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Offline golden → candidate → regression gate → online shadow</text>
+
+        <rect x="40" y="70" width="160" height="70" rx="8" fill="#12172B"/>
+        <text x="120" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">baseline</text>
+        <text x="120" y="120" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">frozen scores</text>
+
+        <text x="220" y="110" fill="#3F8C87" font-size="22">→</text>
+
+        <rect x="250" y="70" width="160" height="70" rx="8" fill="#1c2438"/>
+        <text x="330" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">candidate</text>
+        <text x="330" y="120" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">prompt tweak</text>
+
+        <text x="430" y="110" fill="#3F8C87" font-size="22">→</text>
+
+        <rect x="460" y="70" width="240" height="70" rx="8" fill="#B8923F"/>
+        <text x="580" y="100" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">regression_gate</text>
+        <text x="580" y="120" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">max_drop · fail-closed</text>
+
+        <rect x="40" y="180" width="660" height="60" rx="8" fill="#2a3348"/>
+        <text x="370" y="215" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">
+          Online shadow only after gate PASS — agreement + traj watches, not vibes
+        </text>
+      </svg>
+      <figcaption>
+        Figure 1. Production order: freeze baseline, score candidate offline, gate on
+        max drop, then online shadow. Reverse order is how “small prompt edits” ship regressions.
+      </figcaption>
+    </figure>
+
+    <h2>2. LLM-as-judge — scale with known failure modes</h2>
+    <p>
+      Strong judges humans se high agreement de sakte hain (MT-Bench / Chatbot Arena
+      line of work — Zheng et al.), lekin <strong>position bias</strong>,
+      <strong>verbosity bias</strong>, aur <strong>self-enhancement / self-preference</strong>
+      documented hain. Lab ka <code>FakeJudge</code> in biases ko deterministic mode se
+      dikhata hai — production judge replacement nahi, muscle memory ke liye.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Bias</th>
+          <th>Symptom</th>
+          <th>Mitigation habit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Position</strong></td>
+          <td>A ya B order pe winner flip</td>
+          <td>Swap positions; average / require consistency</td>
+        </tr>
+        <tr>
+          <td><strong>Self-preference</strong></td>
+          <td>Judge apne family ke outputs ko boost</td>
+          <td>Blind IDs; cross-model judges; human audit</td>
+        </tr>
+        <tr>
+          <td><strong>Rubric drift</strong></td>
+          <td>Same item, alag din alag score</td>
+          <td>Frozen rubric + calibration set</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “GPT-judge bola pass” ≠ ship. Agreement human gold se measure karo. Agar judge
+        humans se systematically disagree kare — auto-ship band.
+      </p>
+    </div>
+
+    <h2>3. Judge disagrees with humans — what next</h2>
+    <p>
+      Yeh pehla-class failure mode hai, footnote nahi. Lab
+      <code>judge_human_disagreement</code> agreement + disagreed indices +
+      <code>recommended_next</code> return karti hai. Agreement &lt; 0.8 teaching threshold
+      pe recommended path:
+    </p>
+    <ol>
+      <li><strong>pause_auto_ship</strong> — candidate ko prod default mat banao.</li>
+      <li><strong>adjudicate_disagreements_with_humans</strong> — contested items pe rubric resolve.</li>
+      <li><strong>inspect_judge_rubric_and_bias</strong> — position swap / self-marker tests.</li>
+      <li><strong>recalibrate_or_replace_judge</strong> — model, prompt, ya human-only slice.</li>
+      <li><strong>expand_golden_set_on_failure_slices</strong> — jahan disagreement cluster ho.</li>
+    </ol>
+    <p>
+      High agreement pe bhi <em>spot_check_sample</em> + audit — regression mindset yeh
+      maanti hai ke silent drift aayega.
+    </p>
+
+    <h2>4. Agent trajectory scoring — answer ≠ path</h2>
+    <p>
+      Final answer sahi ho sakta hai galat tool se (lucky retrieval), ya sahi tool galat
+      args se (ticket id typo), ya extra calls se (cost + confused deputy surface).
+      <code>score_trajectory</code> expected tool plan se compare karke flags set karta hai:
+    </p>
+    <ul>
+      <li><code>right_answer_wrong_tool</code> — answer_ok but tool slots miss.</li>
+      <li><code>right_tool_wrong_args</code> — tool name match, args drift.</li>
+      <li><code>has_extra_calls</code> — plan se zyada calls jab <code>allow_extra=False</code>.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Trajectory scoring components">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Trajectory score = tools + args + extras + answer</text>
+
+        <rect x="50" y="70" width="150" height="90" rx="8" fill="#12172B"/>
+        <text x="125" y="110" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">tools</text>
+        <text x="125" y="135" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">matched slots</text>
+
+        <rect x="220" y="70" width="150" height="90" rx="8" fill="#1c2438"/>
+        <text x="295" y="110" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">args</text>
+        <text x="295" y="135" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">exact plan</text>
+
+        <rect x="390" y="70" width="150" height="90" rx="8" fill="#2a3348"/>
+        <text x="465" y="110" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">extras</text>
+        <text x="465" y="135" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">penalty</text>
+
+        <rect x="560" y="70" width="150" height="90" rx="8" fill="#3F8C87"/>
+        <text x="635" y="110" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">answer</text>
+        <text x="635" y="135" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">final_ok</text>
+
+        <rect x="150" y="200" width="460" height="60" rx="8" fill="#B8923F"/>
+        <text x="380" y="235" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">
+          passed only if tool_path_ok AND final_answer_ok
+        </text>
+      </svg>
+      <figcaption>
+        Figure 2. Lucky correct answers with wrong tools must not look like green agent evals.
+        Path quality is first-class.
+      </figcaption>
+    </figure>
+
+    <h2>5. Regression gate — prompt tweak ke baad score drop</h2>
+    <p>
+      Classic incident: ek metric 2 points up, task F1 8 points down, “overall vibes better”.
+      <code>regression_gate(baseline, candidate, max_drop=0.05)</code> har required metric pe
+      absolute drop check karti hai — missing metric = fail-closed. CI annotation helper:
+      <code>summarize_prompt_tweak_regression</code>.
+    </p>
+
+    <div class="callout intuition">
+      <span class="callout-label">Regression mindset</span>
+      <p>
+        Har prompt / tool / model candidate ek <em>build</em> hai. Baseline freeze,
+        diff scores, max-drop contract. “Average thoda better” ship criterion nahi —
+        slice regressions chhupate hain.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · prod-401</span>
+      <p>
+        <code>genai-gurukul-labs/prod-401/</code> —
+        <code>FakeJudge</code> (lexical / position_biased / self_prefer),
+        <code>judge_human_disagreement</code>, <code>score_trajectory</code>,
+        <code>regression_gate</code>. Success:
+        <code>GURUKUL_LAB=solution pytest prod-401/tests -q</code>. Offline only.
+      </p>
+    </div>
+
+    <h2>6. Human eval — still the gold standard for contested slices</h2>
+    <p>
+      Humans expensive hain; isliye unhe <em>targeted</em> use karo: disagreement queue,
+      new failure slices, rubric changes. Pure human grading har PR pe unrealistic hai —
+      pure judge-without-audit bhi. Hybrid: judge scales, humans adjudicate, gate enforces.
+    </p>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        Treat LLM-as-judge as a scalable approximate preference model with known
+        position and self-preference biases. When judge–human agreement drops, pause
+        auto-ship, adjudicate disagreements, and recalibrate before trusting scores.
+        Score agent systems on trajectories (tool, args, extras) plus task quality, and
+        block prompt or model candidates that exceed a frozen max-drop regression gate.
+      </p>
+    </div>
+
+    <h2>7. Citations (8b)</h2>
+    <ol>
+      <li>
+        Zheng et al., “Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena” —
+        <a href="https://arxiv.org/abs/2306.05685">arxiv.org/abs/2306.05685</a>
+        — LLM-as-judge agreement with humans; position / verbosity / self-enhancement biases.
+      </li>
+      <li>
+        FastChat LLM judge resources —
+        <a href="https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge">github.com/lm-sys/FastChat/…/llm_judge</a>
+        — MT-Bench materials (re-check as of August 2026).
+      </li>
+      <li>
+        APP 304 metrics checkpoint (in-repo) — Precision@k / Recall@k / κ identities reused as
+        the offline eval vocabulary this module gates on.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Judge humans se disagree kare to pehla production step?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Auto-ship pause; disagreements adjudicate; judge rubric/bias inspect; golden
+            failure slices expand — scores ko blind trust mat do.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> <code>right_answer_wrong_tool</code> ka matlab?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Final answer labeled OK hai lekin expected tool plan miss hua — lucky/incorrect
+            path; agent eval mein fail hona chahiye agar path contract hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Offline vs online ek line?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Offline = frozen repeatable gate; online = live drift / shadow. Online bina
+            offline regression contract ke nahi.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Position bias lab mein kaise simulate hota hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            <code>FakeJudge(mode="position_biased")</code> content ignore karke
+            <code>bias_position</code> A/B prefer karta hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>5.</strong> Regression gate missing metric pe kya karti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Fail-closed — missing required metric failed list mein, passed=False.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — PROD 401</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; design system; transcript <code>data-current="prod-401"</code></li>
+        <li>Judge–human disagreement playbook; LLM-as-judge bias (position / self-preference)</li>
+        <li>Agent trajectory scoring: wrong tool / wrong args / extra calls</li>
+        <li>Regression gate after prompt tweak; online vs offline; regression mindset</li>
+        <li>≥2 SVG diagrams; quiz; § Citations (8b)</li>
+        <li>Lab <code>prod-401/{starter,solution,tests}</code>; FakeJudge + traj + gate; offline</li>
+        <li>Prev → <code>app-challenge.html</code>; Next → <code>prod-402-fine-tuning.html</code></li>
+        <li>No <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <p>
+      Agla step PROD 402 — fine-tune vs RAG vs prompting, lekin sirf tab jab eval evidence
+      aur regression habit pe grip ho. Bina 401 ke FT = demo-driven weights.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-challenge.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP Challenge · Track gate</span>
+      </a>
+      <a class="next" href="prod-402-fine-tuning.html">
+        <span class="dir">Next</span>
+        <span class="label">PROD 402 · Fine-Tuning &amp; PEFT</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · PROD 401</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

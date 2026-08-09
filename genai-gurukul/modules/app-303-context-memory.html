@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 303 — Context &amp; Memory Engineering · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Building GenAI Applications</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-303/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-303"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 303 · Context &amp; Memory Engineering</p>
+    <h1>Context window vs retrieve-later: yaad rakhna seekho — dump mat karo</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-303/</code></span>
+      <span>Offline lab · FakeSummarizer</span>
+      <span>Prereq: APP 302 APIs · CORE 201 budgets</span>
+      <span>Next: APP 304 eval → APP 305 RAG</span>
+    </div>
+
+    <p>
+      CORE 203 ne context-window size ko protocol limit bataya; CORE 201 ne token counting aur
+      <code>fit_messages</code> trim sikhaya. APP 302 ne messages list ko API pe bhejna sikhaya.
+      Ab product sawaal alag hai: <em>us window mein kya jana chahiye</em>, aur kya side store /
+      retrieval pe rehna chahiye? Yeh module woh <strong>decision layer</strong> hai — long-context
+      stuffing vs RAG, conversation memory, session state, summarization / compaction — pehle se
+      pehle eval (APP 304) aur full retrieval pipeline (APP 305) ke.
+    </p>
+    <p>
+      Yahan full RAG nahi banega. Chunking, vector index, reranker — woh 305. Yahan aap decide
+      karte ho: “yeh runbook live ticket ke saath window mein thopein, ya query-time pe lao?”
+      Backend instincts help karti hain — Redis session, cache TTL, request body vs side store —
+      lekin GenAI analog do jagah toot-ta hai: <strong>non-determinism</strong> aur
+      <strong>token budgets</strong>.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · CORE 201 / 203 · APP 302</span>
+      <p>
+        Token budget characters nahi — CORE 201 framing + OpenAI tiktoken cookbook. Window size =
+        model/API protocol limit (CORE 203). Messages array = request payload (APP 302). APP 303 =
+        payload <em>design</em>: kya append karna, kab compact karna, kya retrieve-later label karna.
+      </p>
+    </div>
+
+    <h2>1. Long-context vs RAG — trade-off pehle, pipeline baad mein</h2>
+    <p>
+      Marketing slide kehti hai “1M context — sab kuch daal do.” Engineering reality alag hai.
+      Anthropic ka context-windows guide clearly kehta hai: zyada context automatically better nahi;
+      token count badhne se accuracy/recall degrade ho sakti hai (<em>context rot</em>), isliye
+      curate karna utna hi zaroori hai jitna space. OpenAI model cards (jaise GPT-4o) context window
+      aur max output alag list karti hain — input dump free nahi; har token latency, cost, aur
+      attention competition hai.
+    </p>
+    <p>
+      <strong>Long-context stuffing</strong> tab sensible hai jab: (a) material isne turn ke liye
+      genuinely joint reasoning maangta hai, (b) corpus chhota aur stable hai, (c) aap cost/latency
+      accept karte ho, (d) aap empirically check karte ho ki model middle/end facts miss nahi kar
+      raha. <strong>RAG / retrieve-later</strong> tab jab: corpus bada, frequently updated, multi-tenant,
+      ya PII/policy se “sirf zarurat pe fetch” better hai. Hybrid common hai: short live state window
+      mein, long docs retrieve pe.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · context windows (as of August 2026)</span>
+      <p>
+        Prefer the <em>decision framework</em> over memorizing exact token limits — vendor numbers
+        move. Illustrative cites: OpenAI GPT-4o model page lists a
+        <strong>128,000</strong>-token context window and
+        <strong>16,384</strong> max output tokens
+        (<a href="https://platform.openai.com/docs/models/gpt-4o">platform.openai.com/docs/models/gpt-4o</a>).
+        Anthropic context-windows doc: depending on model, windows are documented up to
+        <strong>1M</strong> tokens (e.g. newer Opus/Sonnet lines) or <strong>200k</strong> for other
+        Claude models; more context ≠ automatically better — curate against context rot
+        (<a href="https://platform.claude.com/docs/en/build-with-claude/context-windows">platform.claude.com/docs/en/build-with-claude/context-windows</a>).
+        Re-check vendor model pages before you hard-code budgets in production.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="Long-context stuffing versus retrieve-later">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="320" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Stuff the window vs retrieve later</text>
+
+        <rect x="40" y="55" width="320" height="230" rx="10" fill="#12172B"/>
+        <text x="200" y="85" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Long-context path</text>
+        <text x="200" y="115" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="11">system + history</text>
+        <text x="200" y="140" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="11">+ runbooks dump</text>
+        <text x="200" y="165" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="11">+ wiki pages…</text>
+        <text x="200" y="200" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">one request · high tokens</text>
+        <text x="200" y="225" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">joint reasoning possible</text>
+        <text x="200" y="255" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">risk: cost · rot · PII sprawl</text>
+
+        <rect x="400" y="55" width="320" height="230" rx="10" fill="#1c2438"/>
+        <text x="560" y="85" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="14" font-weight="700">Retrieve-later path</text>
+        <rect x="430" y="105" width="260" height="44" rx="6" fill="#2a3348"/>
+        <text x="560" y="132" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">window: live ticket + goal</text>
+        <rect x="430" y="165" width="260" height="44" rx="6" fill="#3F8C87"/>
+        <text x="560" y="192" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">side store → fetch on need</text>
+        <text x="560" y="235" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">smaller prompt · fresher docs</text>
+        <text x="560" y="260" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">needs retrieval design (APP 305)</text>
+      </svg>
+      <figcaption>
+        Figure 1. Same ops copilot, do architectures. Left: dump everything into the context window.
+        Right: keep live session state in-window; pull runbooks/wiki when the turn needs them.
+        APP 303 chooses the split; APP 305 wires the retriever.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition · .NET / backend</span>
+      <p>
+        Socho HTTP request body vs Redis / DB. Body = abhi is request ke liye zaroori state.
+        Side store = badi / shared / sensitive / infrequently needed data. Context window ≈ body
+        (+ response room). RAG index ≈ queryable side store. Cache TTL intuition useful hai —
+        “session goal 30 min sticky; live ticket status 60s stale-ok; PII never in long-lived
+        prompt cache.” Analogy toot-ti hai: LLM non-deterministic hai, aur “body size” tokens +
+        attention competition se measure hoti hai, JSON bytes se nahi.
+      </p>
+    </div>
+
+    <h2>2. Conversation memory &amp; session state</h2>
+    <p>
+      Chat product mein teen layers confuse mat karo:
+    </p>
+    <ol>
+      <li>
+        <strong>Turn payload</strong> — jo messages list is API call mein jaati hai (APP 302).
+      </li>
+      <li>
+        <strong>Conversation memory</strong> — multi-turn history ka managed view: raw turns +
+        compacted summaries. Lab ka <code>ConversationMemory</code> yahi hai.
+      </li>
+      <li>
+        <strong>Session / durable state</strong> — user id, open INC, preferred region, tool
+        credentials handles — aksar Redis/DB; model ko sirf <em>projection</em> dikhao.
+      </li>
+    </ol>
+    <p>
+      Backend mein aap session cookie + server store se yeh split pehle se jaante ho. GenAI mein
+      extra constraint: har projection token budget khaati hai, aur summary ek lossy compress hai —
+      galat compact = silent bug, crash nahi.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Where the analog breaks</span>
+      <p>
+        Redis <code>GET</code> deterministic hai. Summarizer / model call nahi — isi liye lab
+        <code>FakeSummarizer</code> injectable rakhta hai taaki pytest offline deterministic rahe.
+        Production mein compaction ko versioned prompts + eval golden sets (APP 304) se treat karo,
+        “kabhi kabhi theek lagta hai” se nahi. Token budgets bhi soft nahi: overflow = 400 /
+        truncated generation, silent “ignore middle of prompt” behavior ke saath.
+      </p>
+    </div>
+
+    <h2>3. Summarization / compaction strategies</h2>
+    <p>
+      Jab history budget cross kare, common patterns:
+    </p>
+    <ul>
+      <li>
+        <strong>Drop oldest</strong> — CORE 201 <code>fit_messages</code>: simple, lekin early
+        constraints / ticket IDs kho sakte hain.
+      </li>
+      <li>
+        <strong>Summarize-then-keep-recent</strong> — purani turns → ek summary message; last N
+        turns verbatim. Lab default yahi hai.
+      </li>
+      <li>
+        <strong>Structured state extract</strong> — “open INC, severity, last action” fields DB mein;
+        prose history compact. Agents ke liye often best.
+      </li>
+      <li>
+        <strong>Vendor compaction / context editing</strong> — kuch APIs server-side summarize /
+        tool-result clearing offer karti hain (Anthropic docs: compaction / context editing). Product
+        control vs ops convenience trade-off; phir bhi aapko decide karna hai kya <em>never</em>
+        summarize hona chahiye (authz decisions, raw PII).
+      </li>
+    </ul>
+    <p>
+      Token accounting ke liye production mein model-matched encoding use karo. Teaching + offline
+      tests: CORE 201 framing (per-message overhead + priming) aur
+      <a href="https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken">OpenAI tiktoken cookbook</a>
+      — count tokens, don’t guess characters.
+    </p>
+
+    <figure class="diagram" aria-label="Compaction keeps recent turns and summarizes older ones">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Budget overflow → compact</text>
+
+        <text x="40" y="70" fill="#4a5268" font-family="Inter, sans-serif" font-size="12">Before (over budget)</text>
+        <rect x="40" y="85" width="90" height="36" rx="6" fill="#2a3348"/>
+        <text x="85" y="108" text-anchor="middle" fill="#F5F1E6" font-size="11" font-family="JetBrains Mono, monospace">sys</text>
+        <rect x="140" y="85" width="90" height="36" rx="6" fill="#2a3348"/>
+        <text x="185" y="108" text-anchor="middle" fill="#F5F1E6" font-size="11" font-family="JetBrains Mono, monospace">u1</text>
+        <rect x="240" y="85" width="90" height="36" rx="6" fill="#2a3348"/>
+        <text x="285" y="108" text-anchor="middle" fill="#F5F1E6" font-size="11" font-family="JetBrains Mono, monospace">a1</text>
+        <rect x="340" y="85" width="90" height="36" rx="6" fill="#2a3348"/>
+        <text x="385" y="108" text-anchor="middle" fill="#F5F1E6" font-size="11" font-family="JetBrains Mono, monospace">u2</text>
+        <rect x="440" y="85" width="90" height="36" rx="6" fill="#3F8C87"/>
+        <text x="485" y="108" text-anchor="middle" fill="#fff" font-size="11" font-family="JetBrains Mono, monospace">uN</text>
+        <rect x="540" y="85" width="90" height="36" rx="6" fill="#3F8C87"/>
+        <text x="585" y="108" text-anchor="middle" fill="#fff" font-size="11" font-family="JetBrains Mono, monospace">aN</text>
+        <text x="650" y="108" fill="#9b3d3d" font-family="Inter, sans-serif" font-size="13" font-weight="700">✗ over</text>
+
+        <text x="380" y="160" text-anchor="middle" fill="#3F8C87" font-size="22">↓ FakeSummarizer / real summarizer</text>
+
+        <text x="40" y="200" fill="#4a5268" font-family="Inter, sans-serif" font-size="12">After (fits)</text>
+        <rect x="40" y="215" width="90" height="36" rx="6" fill="#2a3348"/>
+        <text x="85" y="238" text-anchor="middle" fill="#F5F1E6" font-size="11" font-family="JetBrains Mono, monospace">sys</text>
+        <rect x="140" y="215" width="200" height="36" rx="6" fill="#B8923F"/>
+        <text x="240" y="238" text-anchor="middle" fill="#12172B" font-size="11" font-family="JetBrains Mono, monospace">SUMMARY(u1…a…)</text>
+        <rect x="350" y="215" width="90" height="36" rx="6" fill="#3F8C87"/>
+        <text x="395" y="238" text-anchor="middle" fill="#fff" font-size="11" font-family="JetBrains Mono, monospace">uN</text>
+        <rect x="450" y="215" width="90" height="36" rx="6" fill="#3F8C87"/>
+        <text x="495" y="238" text-anchor="middle" fill="#fff" font-size="11" font-family="JetBrains Mono, monospace">aN</text>
+        <text x="570" y="238" fill="#2f6e4a" font-family="Inter, sans-serif" font-size="13" font-weight="700">✓ ≤ budget</text>
+
+        <text x="40" y="280" fill="#6b7389" font-family="Inter, sans-serif" font-size="12">Keep system + recent turns verbatim; compress the middle. Measure with tiktoken / CORE 201 framing.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Compaction is intentional lossy compression under a hard token budget — not “delete
+        randomly until it fits.”
+      </figcaption>
+    </figure>
+
+    <h2>4. Window vs retrieve-later — decision table</h2>
+    <p>
+      IT ops copilot example: har item pe ek placement call. Lab
+      <code>decide_placement(item) → "window" | "retrieve_later"</code> isi table ko code mein
+      lock karta hai.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Default placement</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Live ticket / INC status</td>
+          <td><code>window</code></td>
+          <td>Current turn reasoning; freshness high; small</td>
+        </tr>
+        <tr>
+          <td>Session goal / user prefs</td>
+          <td><code>window</code></td>
+          <td>Sticky across turns; tiny; shapes every reply</td>
+        </tr>
+        <tr>
+          <td>Stable runbook / wiki page</td>
+          <td><code>retrieve_later</code></td>
+          <td>Large, shared, versioned — fetch when relevant</td>
+        </tr>
+        <tr>
+          <td>PII note (employee phone, SSN fragment)</td>
+          <td><code>retrieve_later</code></td>
+          <td>Minimize dwell in prompts/logs; fetch under policy</td>
+        </tr>
+        <tr>
+          <td>Any item with <code>sensitivity=pii</code></td>
+          <td><code>retrieve_later</code></td>
+          <td>Override — even if kind looks “live”</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout intuition">
+      <span class="callout-label">Heuristic, not law</span>
+      <p>
+        Agar live ticket ke saath 40-page runbook <em>is turn</em> mein jointly edit/compare karna
+        hai, short-term window stuff OK ho sakta hai — phir compact/drop. Default table pehle safe
+        split seekhati hai; exceptions ko eval (APP 304) se justify karo.
+      </p>
+    </div>
+
+    <h2>5. Hands-on lab</h2>
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · app-303</span>
+      <p>
+        <code>genai-gurukul-labs/app-303/</code> —
+        <code>memory.py</code>: append messages, CORE 201–style token framing via tiktoken,
+        <code>compact_if_needed</code> with injectable <code>FakeSummarizer</code>.
+        <code>placement.py</code>: <code>decide_placement</code> for the decision table above.
+        No paid APIs. Success:
+        <code>GURUKUL_LAB=solution pytest app-303/tests -q</code>.
+      </p>
+    </div>
+
+    <h2>6. Citations</h2>
+    <ol>
+      <li>
+        OpenAI GPT-4o model page —
+        <a href="https://platform.openai.com/docs/models/gpt-4o">platform.openai.com/docs/models/gpt-4o</a>
+        — context window / max output (illustrative; re-verify as of August 2026).
+      </li>
+      <li>
+        Anthropic, “Context windows” —
+        <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows">platform.claude.com/docs/en/build-with-claude/context-windows</a>
+        — window sizes by model, context rot, compaction pointers (as of August 2026).
+      </li>
+      <li>
+        OpenAI Cookbook, “How to count tokens with tiktoken” —
+        <a href="https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken">developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken</a>
+        — token budgeting (CORE 201); do not count characters.
+      </li>
+      <li>
+        Anthropic engineering, “Effective context engineering for AI agents” —
+        <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a>
+        — curation over naive stuffing.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Long-context stuffing kab default mat banao, aur RAG kab?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Stuffing: chhota/joint corpus, aap cost+rot accept karte ho. RAG/retrieve-later: bada,
+            changing, multi-tenant, ya policy-sensitive material. Hybrid: live state window, docs
+            retrieve. Window size marketing ≠ free infinite memory.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Session Redis vs conversation memory vs turn payload — farq?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Durable session = server store (INC id, prefs). Conversation memory = managed history
+            (raw + summaries) jo turns feed karti hai. Turn payload = is API call ki messages list.
+            Same data teen projections ho sakti hain; tokens sirf payload pe meter hote hain.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Runbook, live ticket, PII note — default placements?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Live ticket → <code>window</code>. Runbook → <code>retrieve_later</code>. PII note (ya
+            koi bhi <code>sensitivity=pii</code>) → <code>retrieve_later</code>. Lab heuristic yahi
+            encode karti hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Backend cache TTL analogy GenAI mein kahan toot-ti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Cache reads deterministic; summarizers/LLMs nahi. Plus hard token budgets aur attention
+            competition — bytes fit hone ka matlab model ne fact use kiya, nahi hota. Isliye
+            FakeSummarizer + eval, sirf TTL knobs nahi.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 303</h2>
+      <ul class="dod-checklist">
+        <li>First-class APP module (not a CORE 203 bullet); book-like Hinglish; design system</li>
+        <li>Long-context vs RAG trade-off section present; no full RAG pipeline</li>
+        <li>≥2 SVG diagrams; callouts; formative quiz; transcript strip</li>
+        <li>Backend mapping: request vs side store / TTL instincts + where analog breaks</li>
+        <li>Vendor context-size claims cited + dated August 2026; decision framework primary</li>
+        <li>Token budgeting points to CORE 201 / tiktoken cookbook</li>
+        <li>Lab <code>app-303/{starter,solution,tests}</code>; FakeSummarizer; offline pytest</li>
+        <li>Prev → APP 302; Next → APP 304</li>
+      </ul>
+    </section>
+
+    <p>
+      Agla module <strong>APP 304 — Evaluation Fundamentals</strong>: measure pehle, fancy retrieval
+      baad mein. Uske baad <strong>APP 305 — RAG</strong> isi placement decision ko pipeline mein
+      wire karega.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-302-llm-apis.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP 302 · LLM APIs &amp; SDKs</span>
+      </a>
+      <a class="next" href="app-304-evaluation-fundamentals.html"><span class="dir">Next</span><span class="label">APP 304 · Evaluation Fundamentals</span></a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 303</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>
