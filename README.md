@@ -11,15 +11,24 @@ Job-ready practitioner course in Generative AI — production RAG, agents, evalu
 
 Serve from the **repo root** (parent of both `genai-gurukul/` and `genai-gurukul-labs/`). If you start the server only inside `genai-gurukul/`, browser links to `genai-gurukul-labs/...` return **404**.
 
+Use `serve.py` (not plain `http.server`) so the bottom-right **Ask Gurukul** chat can call Cursor:
+
 ```bash
 # From this folder (GEN AI / repo root)
-python3 -m http.server 8080
+pip install cursor-sdk
+# .env already has CURSOR_API_KEY=...
+python serve.py
 ```
 
-- Course site: http://localhost:8080/genai-gurukul/
+- Course site: http://localhost:8080/genai-gurukul/  (or http://127.0.0.1:8080/genai-gurukul/)
 - Example lab folder: http://localhost:8080/genai-gurukul-labs/found-101/
+- Chat health: http://localhost:8080/api/tutor/health
 
 Catalog/transcript come from `genai-gurukul/assets/modules.js`. Module cards, transcript codes, Labs links, and external docs open in a **new tab**.
+
+Lesson pages auto-link key terms (dashed teal). Click → right **concept sidepanel** with a deeper Hinglish explainer, SVG diagram/chart, and pitfalls (`assets/concepts.js`).
+
+Bottom-right **chat icon** opens Ask Gurukul (Cursor agent, current lesson as context). Key stays in `.env`, never in the browser.
 
 **All 24 modules are available**, plus CORE/APP/PROD track-challenge pages.
 

@@ -73,8 +73,6 @@
         el.className = "module-card" + (available ? "" : " is-locked");
         if (available) {
           el.href = resolveHref(mod, base);
-          el.target = "_blank";
-          el.rel = "noopener noreferrer";
         }
         el.innerHTML =
           '<span class="code">' +
