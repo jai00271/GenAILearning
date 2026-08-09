@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CAP 501 — Capstone: Production RAG + Agent · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">CAP · Capstone</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/capstone/">Capstone scaffold</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="cap-501"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">CAP 501 · Capstone: Production RAG + Agent</p>
+    <h1>Portfolio pe “chat with docs on Lambda” mat daalo — written acceptance pe ship karo</h1>
+    <div class="lesson-meta">
+      <span>Track: CAP</span>
+      <span>Scaffold: <code>genai-gurukul-labs/capstone/</code></span>
+      <span>Default build: Option A · Ops Incident Copilot</span>
+      <span>Prereq: PROD track challenge · APP 304–308 · PROD 401/403</span>
+      <span>Next: CAP 502 Portfolio &amp; Interview Prep</span>
+    </div>
+
+    <div class="gate-banner">
+      <strong>CAPSTONE · written acceptance</strong>
+      <p>
+        Yeh demo reel nahi hai. Pass = acceptance table ke against measurable evidence
+        (corpus/scale, latency, cost, golden eval, prod stubs, English writeups). Generic
+        “chat with your docs on Lambda” <strong>fails</strong> — eval, cost model, failure
+        modes, aur prod controls ke bina.
+      </p>
+    </div>
+
+    <p>
+      FOUND → CORE → APP → PROD ne building blocks diye: tokenization se leke RAG, agents,
+      production eval, guardrails. CAP 501 unhe <em>ek portfolio system</em> mein bandhta
+      hai — ops/enterprise leaning, interviewer-readable English artifacts, aur scaffold jo
+      aap expand karte ho. Lesson Hinglish hai; jo aap submit karte ho (README, eval report,
+      cost model, failure modes) <strong>English</strong> hona chahiye.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 304 · PROD 401 · PROD 403</span>
+      <p>
+        Eval beat = metric · data · pass-fail (APP 304). Production mein offline golden +
+        regression mindset (PROD 401). Retrieved docs pe indirect injection first-class
+        risk (PROD 403). Capstone in teeno ko deliverables mein force karta hai.
+      </p>
+    </div>
+
+    <h2>1. Pehle portfolio options — 2–3 concrete pitches</h2>
+    <p>
+      Capstone start karne se pehle <em>product</em> choose karo, framework nahi. Neeche
+      teen ops/enterprise pitches hain — har ek one-line. Aap Option B/C defend kar sakte
+      ho, lekin course default <strong>Option A</strong> hai taaki scaffold, golden template,
+      aur acceptance table align rahein.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>One-line pitch</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A · Ops Incident Copilot</strong> (default)</td>
+          <td>
+            Runbooks + tickets + alert pages se retrieve karke on-call ko next-safe-step
+            suggest kare — citations, halt, aur cost/latency budgets ke saath.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>B · Ops runbook + ticket copilot</strong></td>
+          <td>
+            ITSM tickets ko runbook passages se ground karke draft replies / checklists
+            generate kare — queue triage ke liye, full auto-remediation nahi.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>C · ServiceNow-style workflow agent</strong></td>
+          <td>
+            Change/incident workflow forms pe tool-calling agent: state transitions +
+            allowlisted actions, human approval gates ke bahar side-effects nahi.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Related flavor (optional stretch): observability incident copilot — metrics/log
+      summaries + runbook retrieval. Agar A choose karte ho to yahi atmosphere default
+      scaffold cover karta hai (alerts + runbooks + tickets).
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Select · Option A</span>
+      <p>
+        <strong>Default build = Ops Incident Copilot.</strong> Scaffold
+        <code>genai-gurukul-labs/capstone/</code> isi option ke against likha gaya hai:
+        multi-format corpus stubs, FastAPI prod stubs, ≥40 golden template, writeup
+        templates. Option B/C tabhi le jab aap acceptance table ko map karke same bar
+        clear karo — bar kam mat karo.
+      </p>
+    </div>
+
+    <h2>2. Acceptance criteria (PRD table) — yahi pass/fail hai</h2>
+    <p>
+      Neeche wali table English deliverable bhi hai — README mein copy/paste karke apne
+      measured values bharo. Numbers defendable hone chahiye; vibes nahi.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Criterion</th>
+          <th>Bar (must clear)</th>
+          <th>Evidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Scale / corpus</strong></td>
+          <td>
+            Multi-source ops corpus; <strong>≥3 formats</strong> (e.g. Markdown runbook,
+            JSON ticket, HTML alert). Fixtures may be small; README must instruct how to
+            expand toward production scale (target narrative: ~10k+ chunks / multi-service).
+          </td>
+          <td>Corpus tree + expand instructions; ingestion notes</td>
+        </tr>
+        <tr>
+          <td><strong>Latency</strong></td>
+          <td>
+            Declare path + hardware. <strong>TTFT p95</strong> and <strong>total
+            end-to-end p95</strong> measured on a frozen query sample (state both numbers
+            and method).
+          </td>
+          <td>Latency section in eval report or README appendix</td>
+        </tr>
+        <tr>
+          <td><strong>Cost model</strong></td>
+          <td>
+            Written <strong>$ / 1k queries</strong> (or equivalent) with token, retrieval,
+            and failover-path assumptions — not a screenshot of a single bill.
+          </td>
+          <td><code>writeups/cost_model.md</code></td>
+        </tr>
+        <tr>
+          <td><strong>Eval</strong></td>
+          <td>
+            Golden set <strong>≥ 40</strong> Q&amp;A (labeled). Retrieval quality:
+            <strong>Recall@5 ≥ 0.60</strong> on frozen labels. Protocol (k, labeling) stated.
+          </td>
+          <td><code>eval/</code> + <code>writeups/eval_report.md</code></td>
+        </tr>
+        <tr>
+          <td><strong>Prod features</strong></td>
+          <td>
+            Wired stubs (or real impl): <strong>auth</strong> header check,
+            <strong>tracing</strong>, <strong>rate limit</strong>, <strong>failover</strong>
+            (secondary path when primary LLM/retriever fails).
+          </td>
+          <td><code>app/</code> + architecture notes</td>
+        </tr>
+        <tr>
+          <td><strong>English deliverables</strong></td>
+          <td>
+            Eval report; cost model; failure-mode writeup covering
+            <strong>indirect injection</strong> and <strong>cost blowup</strong>;
+            README + architecture.
+          </td>
+          <td><code>writeups/</code> + root README</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Fails acceptance</span>
+      <p>
+        Generic <strong>“chat with docs on Lambda”</strong> (or Bedrock/API Gateway clone)
+        without the table above — no golden≥40, no Recall@5 bar, no cost model, no
+        failure-mode writeup, no auth/trace/rate-limit/failover story — <em>fail</em>.
+        Framework logo ≠ production system.
+      </p>
+    </div>
+
+    <h2>3. Option A architecture — Ops Incident Copilot</h2>
+    <p>
+      On-call query aata hai → auth + rate limit → retrieve across runbooks/tickets/alerts
+      → agent (optional tool loop) drafts next steps with citations → tracing har hop pe →
+      primary path fail hone pe failover stub. Eval offline golden pe; cost model assumptions
+      freeze.
+    </p>
+
+    <figure class="diagram" aria-label="Ops Incident Copilot architecture">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="320" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Option A · Ops Incident Copilot (acceptance-aligned)</text>
+
+        <rect x="28" y="58" width="120" height="56" rx="8" fill="#3F8C87"/>
+        <text x="88" y="92" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12" font-weight="700">on-call query</text>
+
+        <text x="158" y="92" fill="#3F8C87" font-size="18">→</text>
+
+        <rect x="178" y="50" width="150" height="72" rx="8" fill="#12172B"/>
+        <text x="253" y="78" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="700">FastAPI edge</text>
+        <text x="253" y="98" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="10">auth · rate · trace</text>
+
+        <text x="338" y="92" fill="#3F8C87" font-size="18">→</text>
+
+        <rect x="358" y="50" width="160" height="72" rx="8" fill="#1c2438"/>
+        <text x="438" y="78" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="700">retrieve + agent</text>
+        <text x="438" y="98" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">citations · halt</text>
+
+        <text x="528" y="92" fill="#3F8C87" font-size="18">→</text>
+
+        <rect x="548" y="50" width="180" height="72" rx="8" fill="#B8923F"/>
+        <text x="638" y="78" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12" font-weight="700">answer + evidence</text>
+        <text x="638" y="98" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="10">eval · cost · FM</text>
+
+        <rect x="28" y="160" width="220" height="64" rx="8" fill="#2a3348"/>
+        <text x="138" y="188" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">corpus ≥3 formats</text>
+        <text x="138" y="208" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">md · json · html stubs</text>
+
+        <rect x="270" y="160" width="220" height="64" rx="8" fill="#2a3348"/>
+        <text x="380" y="188" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">golden ≥40</text>
+        <text x="380" y="208" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">Recall@5 ≥ 0.60</text>
+
+        <rect x="512" y="160" width="216" height="64" rx="8" fill="#2a3348"/>
+        <text x="620" y="188" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">failover stub</text>
+        <text x="620" y="208" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">secondary path</text>
+
+        <text x="28" y="270" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">English writeups required: eval report · cost model · failure modes (injection + cost blowup).</text>
+        <text x="28" y="295" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">“Chat with docs on Lambda” without this bar does not pass.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Default Option A flow: prod edge controls, multi-format retrieval, golden
+        eval bar, failover, and English portfolio writeups.
+      </figcaption>
+    </figure>
+
+    <h2>4. Scaffold kya ship hota hai</h2>
+    <p>
+      Convergent “fill the TODO” lab nahi — <strong>portfolio scaffold</strong> hai. Aap
+      retrieval, agent loop, aur real measurements fill karte ho. Tests sirf structure
+      check karte hain (AWS deploy nahi).
+    </p>
+    <ul>
+      <li><code>README.md</code> — English acceptance table + architecture pointer</li>
+      <li><code>corpus/fixtures/</code> — ≥3 formats; expand instructions</li>
+      <li><code>app/</code> — FastAPI skeleton: auth, rate limit, tracing, failover stubs</li>
+      <li><code>eval/golden_set.jsonl</code> — ≥40 synthetic Q&amp;A placeholders</li>
+      <li><code>writeups/</code> — eval report, cost model, failure modes templates</li>
+      <li><code>tests/</code> — scaffold structure pytest</li>
+    </ul>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · start here</span>
+      <p>
+        <code>cd genai-gurukul-labs &amp;&amp; pytest capstone/tests -q</code> — structure green
+        pehle. Phir corpus expand, retrieval wire, golden labels freeze, measurements
+        bharo. CAP 502 mein yahi artifacts interview pe present karoge.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="Capstone delivery loop">
+      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="220" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Build loop against the table — not against vibes</text>
+        <rect x="40" y="70" width="140" height="70" rx="8" fill="#12172B"/>
+        <text x="110" y="110" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">freeze golden</text>
+        <text x="195" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="220" y="70" width="140" height="70" rx="8" fill="#3F8C87"/>
+        <text x="290" y="110" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">measure</text>
+        <text x="375" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="400" y="70" width="140" height="70" rx="8" fill="#1c2438"/>
+        <text x="470" y="110" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">write English</text>
+        <text x="555" y="110" fill="#3F8C87" font-size="20">→</text>
+        <rect x="580" y="70" width="140" height="70" rx="8" fill="#B8923F"/>
+        <text x="650" y="110" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">self-score</text>
+        <text x="40" y="180" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">If Recall@5 &lt; 0.60 or writeups missing — iterate. Do not “ship the Lambda demo” early.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Capstone loop: freeze labels, measure latency/cost/quality, write English
+        evidence, self-score against the PRD table.
+      </figcaption>
+    </figure>
+
+    <h2>5. Failure modes jo likhne hi padenge</h2>
+    <p>
+      <code>writeups/failure_modes.md</code> template mein do pehle-class stories hain:
+    </p>
+    <ol>
+      <li>
+        <strong>Indirect prompt injection</strong> — poisoned runbook/ticket chunk retrieve
+        hota hai; model tool ya policy todne ki koshish karta hai (PROD 403 lineage).
+      </li>
+      <li>
+        <strong>Cost blowup</strong> — unbounded agent loops, giant context, or failover
+        storm → $/query explode. Caps, budgets, aur kill-switches dikhao.
+      </li>
+    </ol>
+
+    <section class="quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Course default portfolio option kaunsa hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Option A — Ops Incident Copilot (runbooks + tickets + alerts).</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Eval bar kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Golden set ≥ 40 labeled Q&amp;A; Recall@5 ≥ 0.60 on frozen labels.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Kaunsa deliverable style fail karta hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Generic “chat with docs on Lambda” (or equivalent) without acceptance evidence:
+            no cost model, no failure modes, no prod controls, no golden eval bar.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Prod feature stubs kaunse required hain?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Auth header, tracing, rate limit, and failover.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — CAP 501</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish lesson; 2–3 portfolio options then Option A default selected</li>
+        <li>Written acceptance table: scale, TTFT+total p95, cost, golden≥40 / Recall@5≥0.60, prod stubs, English writeups</li>
+        <li>Explicit fail: generic “chat with docs on Lambda”</li>
+        <li>Scaffold under <code>genai-gurukul-labs/capstone/</code> with structure tests</li>
+        <li>≥2 SVG diagrams; quiz; transcript <code>data-current="cap-501"</code></li>
+        <li>Prev → prod-challenge; Next → CAP 502; no <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <p>
+      Agla page <strong>CAP 502</strong>: portfolio framing + GenAI interview prep — wahi
+      eval/cost/failure-mode story ko interviewer language mein.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="prod-challenge.html">
+        <span class="dir">Prev</span>
+        <span class="label">PROD · Track Challenge</span>
+      </a>
+      <a class="next" href="cap-502-portfolio-interview.html">
+        <span class="dir">Next</span>
+        <span class="label">CAP 502 · Portfolio &amp; GenAI Interview Prep</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · CAP 501</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

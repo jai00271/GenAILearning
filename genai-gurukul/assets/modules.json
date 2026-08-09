@@ -94,7 +94,7 @@
     "code": "APP 304",
     "slug": "app-304-evaluation-fundamentals",
     "title": "Evaluation Fundamentals",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-304-evaluation-fundamentals.html",
     "track": "APP"
   },
@@ -103,7 +103,7 @@
     "code": "APP 305",
     "slug": "app-305-rag",
     "title": "RAG Deep-Dive",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-305-rag.html",
     "track": "APP"
   },
@@ -112,7 +112,7 @@
     "code": "APP 306",
     "slug": "app-306-vector-databases",
     "title": "Vector Databases & Semantic Search",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-306-vector-databases.html",
     "track": "APP"
   },
@@ -121,7 +121,7 @@
     "code": "APP 307",
     "slug": "app-307-agents",
     "title": "Agents & Tool Use",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-307-agents.html",
     "track": "APP"
   },
@@ -130,7 +130,7 @@
     "code": "APP 308",
     "slug": "app-308-multi-agent",
     "title": "Multi-Agent Systems & Orchestration",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-308-multi-agent.html",
     "track": "APP"
   },
@@ -139,7 +139,7 @@
     "code": "APP 309",
     "slug": "app-309-multimodal",
     "title": "Multimodal GenAI (survey)",
-    "status": "locked",
+    "status": "available",
     "href": "modules/app-309-multimodal.html",
     "track": "APP"
   },
@@ -148,7 +148,7 @@
     "code": "PROD 401",
     "slug": "prod-401-eval-production",
     "title": "Evaluation in Production",
-    "status": "locked",
+    "status": "available",
     "href": "modules/prod-401-eval-production.html",
     "track": "PROD"
   },
@@ -157,7 +157,7 @@
     "code": "PROD 402",
     "slug": "prod-402-fine-tuning",
     "title": "Fine-Tuning & PEFT",
-    "status": "locked",
+    "status": "available",
     "href": "modules/prod-402-fine-tuning.html",
     "track": "PROD"
   },
@@ -166,7 +166,7 @@
     "code": "PROD 403",
     "slug": "prod-403-guardrails",
     "title": "Guardrails, Safety & Responsible AI",
-    "status": "locked",
+    "status": "available",
     "href": "modules/prod-403-guardrails.html",
     "track": "PROD"
   },
@@ -175,7 +175,7 @@
     "code": "PROD 404",
     "slug": "prod-404-observability-cost",
     "title": "Observability & Cost Optimization",
-    "status": "locked",
+    "status": "available",
     "href": "modules/prod-404-observability-cost.html",
     "track": "PROD"
   },
@@ -184,7 +184,7 @@
     "code": "PROD 405",
     "slug": "prod-405-deploy-scale",
     "title": "Deploying GenAI Apps at Scale",
-    "status": "locked",
+    "status": "available",
     "href": "modules/prod-405-deploy-scale.html",
     "track": "PROD"
   },
@@ -193,7 +193,7 @@
     "code": "PROD 406",
     "slug": "prod-406-prompt-model-cicd",
     "title": "Prompt & Model CI/CD",
-    "status": "locked",
+    "status": "available",
     "href": "modules/prod-406-prompt-model-cicd.html",
     "track": "PROD"
   },
@@ -202,7 +202,7 @@
     "code": "CAP 501",
     "slug": "cap-501-capstone",
     "title": "Capstone: Production RAG + Agent",
-    "status": "locked",
+    "status": "available",
     "href": "modules/cap-501-capstone.html",
     "track": "CAP"
   },
@@ -211,7 +211,7 @@
     "code": "CAP 502",
     "slug": "cap-502-portfolio-interview",
     "title": "Portfolio & GenAI Interview Prep",
-    "status": "locked",
+    "status": "available",
     "href": "modules/cap-502-portfolio-interview.html",
     "track": "CAP"
   }

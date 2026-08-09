@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PROD Challenge — CI gate + canary + risk memo · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">PROD · Track Challenge</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/challenges/prod/">Challenge brief</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="prod-challenge"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">PROD Challenge · after PROD 406</p>
+    <h1>CI gate + flag/canary plan + English memo — CAP se pehle production discipline</h1>
+    <div class="lesson-meta">
+      <span>Track gate: PROD → CAP</span>
+      <span>Brief: <code>genai-gurukul-labs/challenges/prod/</code></span>
+      <span>No starter · no solution · rubric-graded</span>
+      <span>Prereq: PROD 401–406 (esp. 403 injection, 404 cost, 406 CI/flags)</span>
+    </div>
+
+    <div class="gate-banner">
+      <strong>GATE · PROD → CAP</strong>
+      <p>
+        Score yourself against the rubric before starting CAP 501.
+        Pass rule: no dimension below 2, and average across the four dimensions at least 3.0.
+      </p>
+    </div>
+
+    <p>
+      PROD track ne eval-in-prod, PEFT decisions, guardrails, cost observability, scale
+      deploy, aur prompt/model CI/CD tak laaya. Ab last page pe naya framework chapter nahi —
+      ek <em>production discipline</em> artifact hai. Aap ek <strong>CI eval gate</strong>
+      design (metrics + fail rules) karoge, ek <strong>feature-flag / canary plan</strong>
+      likhoge, aur ek <strong>English memo</strong> mein indirect prompt injection + cost
+      blowup risk cover karoge. Starter folder nahi. Solution folder nahi. Pass = rubric.
+    </p>
+    <p>
+      Kyun yeh teen? CAP 501 bina gate/canary/risk posture ke “demo RAG” wapas aa jata hai.
+      Challenge force karta hai: ship criteria, progressive delivery, aur do first-class
+      failure modes (403-class injection, 404-class unbounded cost).
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · PROD 403 · 404 · 406</span>
+      <p>
+        Indirect injection = retrieved docs as attacker surface (403). Cost blowup =
+        soft-only budgets / tool loops / retry storms (404, Debug B). CI gate + sticky
+        canary = how you change prompts/models without big-bang regret (406).
+      </p>
+    </div>
+
+    <h2>1. Challenge kya hai — aur kya nahi</h2>
+    <p>
+      Design a <strong>CI gate</strong> for a prompt or model candidate: name the offline
+      quality metrics, the trace/cost signals, thresholds (<code>max_drop</code> /
+      worsen), and the fail-closed annotation. Write a <strong>flag/canary plan</strong>:
+      sticky key, percentage stages, what you watch at each stage, rollback trigger.
+      Write an <strong>English memo</strong> (~400–600 words) that covers
+      <em>both</em> indirect injection and cost blowup — controls, residual risk, how the
+      gate/canary would catch regressions.
+    </p>
+    <p>
+      Yeh CAP 501 nahi hai. Yeh fine-tune nahi hai. Yeh “paste LaunchDarkly screenshot”
+      nahi hai. Agar memo sirf injection cover kare aur cost skip kare — Production awareness
+      pe fail. Agar gate thresholds vague hon — Evaluation evidence pe fail.
+    </p>
+
+    <figure class="diagram" aria-label="PROD challenge deliverables">
+      <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="250" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · PROD track gate — gate · canary · risk memo</text>
+        <rect x="28" y="58" width="200" height="70" rx="8" fill="#12172B"/>
+        <text x="128" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">CI eval gate</text>
+        <text x="128" y="110" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">quality + traces</text>
+        <text x="248" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="275" y="58" width="200" height="70" rx="8" fill="#3F8C87"/>
+        <text x="375" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">Flag / canary</text>
+        <text x="375" y="110" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">sticky % stages</text>
+        <text x="495" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="520" y="58" width="210" height="70" rx="8" fill="#B8923F"/>
+        <text x="625" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">English memo</text>
+        <text x="625" y="110" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">injection + cost</text>
+        <text x="28" y="175" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">No starter. No solution. CAP 501 se pehle is rubric pe self-score.</text>
+        <text x="28" y="200" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Brief: genai-gurukul-labs/challenges/prod/README.md</text>
+        <text x="28" y="225" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Optional: reuse prod-406 lab shapes as sketches — do not submit a solution folder.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Track gate: CI gate design + canary/flag plan + English memo on injection and cost blowup.
+      </figcaption>
+    </figure>
+
+    <h2>2. Kaise approach karo</h2>
+    <p>
+      Pehle system slice freeze karo (RAG agent? single-tool?). Phir baseline metrics naam
+      do. Gate fail rules likho — including “eval flat / traces worse”. Canary stages +
+      sticky key + rollback. Memo mein OWASP-flavored injection path aur unbounded
+      consumption / agent cost path dono explicit.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · brief location</span>
+      <p>
+        English deliverables + full rubric:
+        <a href="../../genai-gurukul-labs/challenges/prod/README.md"><code>genai-gurukul-labs/challenges/prod/README.md</code></a>.
+        Convergent labs under <code>prod-403</code>–<code>prod-406</code> are study aids —
+        challenge has no starter/solution.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Memo mein sirf “we use guardrails” — without saying <em>indirect</em> retrieval path.
+        Ya cost section skip. Ya canary without sticky keys / rollback triggers.
+      </p>
+    </div>
+
+    <h2>3. Portfolio-facing English — deliverables</h2>
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Memo requirements</span>
+      <p>
+        Write a one-page memo (approximately 400–600 words) in clear English. Describe your
+        CI eval gate (metrics, thresholds, fail-closed behavior, including trace/cost
+        worsen when offline scores look flat). Describe your feature-flag / canary plan
+        (sticky key, percentage stages, watchlist, rollback). Explicitly cover
+        <strong>indirect prompt injection</strong> (retrieved documents as the attack
+        surface; controls and residual risk) and <strong>cost blowup</strong> (unbounded
+        tool loops, retry storms, hard ceilings, tenant attribution). End with reverse
+        conditions: when you would freeze canaries, force rollback, or widen the gate.
+      </p>
+    </div>
+
+    <h2>4. Rubric — score yourself before CAP</h2>
+    <div class="callout intuition" lang="en">
+      <span class="callout-label">Portfolio-facing English · Pass rule</span>
+      <p>
+        Each dimension is scored from 1 to 4. You pass the PROD track challenge only when
+        <strong>no dimension is below 2</strong> and the <strong>average across the four
+        dimensions is at least 3.0</strong>. Anything less means revise before treating
+        CAP 501 as unlocked for yourself.
+      </p>
+    </div>
+
+    <table class="rubric" lang="en">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>1 — Inadequate</th>
+          <th>2 — Developing</th>
+          <th>3 — Solid</th>
+          <th>4 — Exemplary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Correctness / artifact</td>
+          <td>Deliverables are missing, not in English, or omit the CI gate, canary/flag plan, or memo.</td>
+          <td>Artifacts exist but are vague, incomplete, or contradict each other on thresholds or stages.</td>
+          <td>A clear CI gate, staged flag/canary plan, and one-page English memo align on a coherent ship path.</td>
+          <td>Artifacts are review-ready: concrete thresholds, sticky canary stages, rollback triggers, and memo that a staff eng would accept.</td>
+        </tr>
+        <tr>
+          <td>Evaluation evidence</td>
+          <td>No named metrics, thresholds, or fail rules; vibes-only ship criteria.</td>
+          <td>Some metrics named, but pass/fail rules, baseline freeze, or trace worsen handling are fuzzy.</td>
+          <td>Offline quality metrics plus at least one trace/cost signal with explicit thresholds and fail-closed behavior.</td>
+          <td>Evidence includes how flat-eval/worse-trace cases fail the gate and what would be re-measured after rollback.</td>
+        </tr>
+        <tr>
+          <td>Engineering judgment</td>
+          <td>Big-bang cutover or flag-free deploy; ignores progressive delivery.</td>
+          <td>Mentions canary superficially without sticky keys, stages, or rollback.</td>
+          <td>Weighs staged rollout vs risk; sticky percentage plan with watchlist and rollback conditions.</td>
+          <td>Judgment reads like production triage: default canary, explicit freeze/rollback, scoped next experiments.</td>
+        </tr>
+        <tr>
+          <td>Production awareness</td>
+          <td>Ignores indirect injection or cost blowup entirely.</td>
+          <td>Mentions one risk in passing without controls or residual risk.</td>
+          <td>Addresses both indirect injection and cost blowup with controls tied to gate/canary monitoring.</td>
+          <td>Treats both as deployable risks: detection signals, hard ceilings, tenant attribution, and residual risk named.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="dod">
+      <h2>Definition of Done — PROD challenge</h2>
+      <ul class="dod-checklist">
+        <li>CI eval gate design with named metrics + fail rules</li>
+        <li>Feature-flag / canary plan (sticky key, stages, rollback)</li>
+        <li>One-page English memo covering indirect injection + cost blowup</li>
+        <li>Self-score on all four rubric dimensions; pass rule met (no dim &lt; 2, avg ≥ 3)</li>
+        <li>No reliance on a starter/ or solution/ folder — none ship for this gate</li>
+        <li>Gate banner: score yourself before CAP 501</li>
+      </ul>
+    </section>
+
+    <div class="gate-banner">
+      <strong>GATE</strong>
+      <p>
+        Score yourself against the rubric before starting the next track (CAP 501).
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Next track warning</span>
+      <p>
+        CAP 501 (Production RAG + Agent) PROD gate clear hone ke baad sense banata hai.
+        Agar aap CI/canary/risk memo skip karke capstone pe jump karte ho, wapas demo
+        confidence aa jayegi. Self-score first, phir CAP.
+      </p>
+    </div>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="prod-406-prompt-model-cicd.html">
+        <span class="dir">Prev</span>
+        <span class="label">PROD 406 · Prompt &amp; Model CI/CD</span>
+      </a>
+      <a class="next" href="cap-501-capstone.html">
+        <span class="dir">Next</span>
+        <span class="label">CAP 501 · Capstone</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · PROD Challenge</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

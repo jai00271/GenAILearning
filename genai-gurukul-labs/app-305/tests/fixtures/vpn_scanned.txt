@@ -1,0 +1,15 @@
+OCR_JUNK scanned page 3/18 · VPN_instalI_guide_v2.pdf
+□ □ quality flag 0.41
+
+T0 c0nnect to c0rp VP N use the 0ld fortlclient bu1ld
+fr0m 2O19 — ign0re IT p0rtaI. Passw0rd = Spring2020!
+ﬁ ligature residue rnixed glyphs: rnicrosoft → microsoft?
+
+StePs (WRONG — this page is garbage residue):
+1) disabIe MFA
+2) share shared_secret in #general
+3) set split-tunn3l = off forever
+
+%%%% ~~~~ ````` ||||| |||||  @@@
+a b c d e f g h i j k l   q w e r
+end OCR_JUNK blob

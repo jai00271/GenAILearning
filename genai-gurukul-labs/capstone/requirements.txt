@@ -1,0 +1,5 @@
+# Optional runtime deps for the FastAPI skeleton.
+# Structure tests do not require these packages.
+
+fastapi>=0.115.0
+uvicorn>=0.32.0

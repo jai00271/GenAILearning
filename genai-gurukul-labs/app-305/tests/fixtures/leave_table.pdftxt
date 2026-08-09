@@ -1,0 +1,16 @@
+FAKE_PDF_EXTRACT v0.1
+SOURCE: HR_Leave_Policy_2024.pdf
+PAGE: 7
+NOTE: columns drifted after OCR→text pass; pipe table reconstructed by parser stub
+
+TABLE: leave entitlement matrix (enterprise export)
+
+| LeaveType | MaxDays | CarryForward | Notes |
+|---|---|---|---|
+| Annual | 24 | 5 | Manager approval required beyond 10 consecutive days |
+| Sick | 12 | 0 | Medical certificate after 3 days |
+| Parental | 90 | 0 | Combined for primary caregiver; HR ticket mandatory |
+| Bereavement | 5 | 0 | Immediate family only |
+
+Ragged footer row from broken extractor:
+| CompOff | 8 | 2

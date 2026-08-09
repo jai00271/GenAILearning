@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PROD 402 — Fine-Tuning &amp; PEFT · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">PROD · Customization &amp; Production</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/prod-402/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="prod-402"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">PROD 402 · Fine-Tuning &amp; PEFT</p>
+    <h1>Fine-tune tab jab golden jeete — demo jeetna kaafi nahi</h1>
+    <div class="lesson-meta">
+      <span>Track: PROD</span>
+      <span>Labs: <code>genai-gurukul-labs/prod-402/</code></span>
+      <span>Offline · decision fn + toy LoRA</span>
+      <span>Prereq: PROD 401 · CORE 203 training stages</span>
+      <span>Next: PROD 403 Guardrails</span>
+    </div>
+
+    <p>
+      Leadership deck mein “we fine-tuned the model” sexy lagta hai. Engineering reality:
+      prompting + RAG aksar jeet'te hain jab facts change hote hain, data messy hai, ya
+      <em>demo slice</em> golden se alag hai. PROD 401 ke baad rule seedha hai — adaptation
+      choice <strong>eval evidence</strong> se aati hai, LinkedIn carousel se nahi.
+    </p>
+    <p>
+      Scope: kab FT vs RAG vs prompting; data leakage into eval; catastrophic forgetting
+      intuition; “demo better, golden worse”; LoRA / QLoRA intuition; local toy LoRA math
+      (no huge download). Optional SageMaker = <strong>[PAID]</strong> with budget note.
+      Decision lab: English memo + rubric on page.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · CORE 203 · PROD 401 · APP 305</span>
+      <p>
+        SFT / preference stages (CORE 203) capability substrate ke baad behavior shape
+        karte hain. RAG facts ko weights mein bake kiye bina update karti hai (APP 305).
+        PROD 401 regression gate ke bina FT candidate ship mat karo.
+      </p>
+    </div>
+
+    <h2>1. FT vs RAG vs prompting — decide with numbers</h2>
+    <p>
+      Teen levers, alag jobs:
+    </p>
+    <ul>
+      <li><strong>Prompting</strong> — cheapest; style/format/tool policy; weak when knowledge missing.</li>
+      <li><strong>RAG</strong> — churning facts, citations, tenant docs; weak when behavior/style must change deeply.</li>
+      <li><strong>Fine-tune (PEFT)</strong> — stable domain format, tone, tool habits; dangerous when eval leaks or facts churn.</li>
+    </ul>
+    <p>
+      Lab <code>recommend_adaptation(evidence)</code> teaching policy: leakage / forgetting /
+      demo–golden gap / knowledge refresh pe fine-tune ineligible; warna best eligible score
+      with cost-first tie-break.
+    </p>
+
+    <figure class="diagram" aria-label="Decision gates before fine-tune">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="320" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Evidence gates before weights move</text>
+
+        <rect x="40" y="60" width="200" height="50" rx="8" fill="#12172B"/>
+        <text x="140" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">eval scores</text>
+
+        <text x="260" y="90" fill="#3F8C87" font-size="20">→</text>
+
+        <rect x="290" y="50" width="180" height="70" rx="8" fill="#1c2438"/>
+        <text x="380" y="80" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="700">gates</text>
+        <text x="380" y="100" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">leak · forget · demo≠golden</text>
+
+        <text x="490" y="90" fill="#3F8C87" font-size="20">→</text>
+
+        <rect x="520" y="40" width="200" height="40" rx="8" fill="#3F8C87"/>
+        <text x="620" y="65" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12" font-weight="700">prompting</text>
+        <rect x="520" y="90" width="200" height="40" rx="8" fill="#B8923F"/>
+        <text x="620" y="115" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12" font-weight="700">RAG</text>
+        <rect x="520" y="140" width="200" height="40" rx="8" fill="#2a3348"/>
+        <text x="620" y="165" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="700">finetune / LoRA</text>
+
+        <rect x="40" y="220" width="680" height="70" rx="8" fill="#2a3348"/>
+        <text x="380" y="250" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">
+          Knowledge churn → prefer RAG. Clean splits + golden win + low forgetting → FT eligible.
+        </text>
+        <text x="380" y="272" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">
+          recommend_adaptation(...) · defense bullets for the memo
+        </text>
+      </svg>
+      <figcaption>
+        Figure 1. Fine-tune is a gated option, not the default customization story.
+      </figcaption>
+    </figure>
+
+    <h2>2. Data leakage into eval — silent false wins</h2>
+    <p>
+      Agar FT train tickets aur golden items overlapping dumps se aaye, ft_score “magic”
+      dikhega. Yeh capability nahi — contamination hai. Habit: train/eval provenance
+      document karo; near-duplicate dedupe; leakage flag on hone pe FT refuse
+      (<code>eval_leakage_risk</code> in the lab).
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · demo better, golden worse</span>
+      <p>
+        Vendor demo slice pe LoRA 0.81, held-out golden 0.64 — classic trap. Lab
+        <code>compare_demo_vs_golden</code> / decision flag gap ≥ 0.15 pe FT block karti hai.
+        Ship signal = golden (+ regression vs baseline), demo nahi.
+      </p>
+    </div>
+
+    <h2>3. Catastrophic forgetting — intuition</h2>
+    <p>
+      Adaptation preferred behaviors boost karti hai; purane golden behaviors softly
+      decay kar sakte hain (lab ka <code>toy_preference_update</code> yahi cartoon hai).
+      Measure: before/after on <em>held-out</em> golden, not only the FT task.
+      <code>finetune_metric_comparison</code> <code>forgetting</code> tab true karti hai jab
+      golden_delta &lt; 0.
+    </p>
+
+    <h2>4. LoRA / QLoRA — PEFT intuition (no cluster required)</h2>
+    <p>
+      Full fine-tune har weight move karti hai — storage + multi-tenant hosting expensive.
+      <strong>LoRA</strong> (Hu et al.) pretrained <code>W</code> freeze karke low-rank
+      update <code>ΔW = scale · (B A)</code> seekhti hai: <code>A</code> is (r × in),
+      <code>B</code> is (out × r). Trainable params ≈ <code>r·(in+out)</code> instead of
+      <code>in·out</code>. <strong>QLoRA</strong> intuition: base weights quantized (4-bit
+      class recipes) + LoRA adapters trainable — memory down, recipe complexity up.
+      Course lab huge models download nahi karti; NumPy se <code>apply_lora</code> math.
+    </p>
+
+    <figure class="diagram" aria-label="LoRA adapter shapes">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · W' = W + scale · (B @ A) — frozen base, tiny adapters</text>
+
+        <rect x="60" y="80" width="140" height="120" rx="8" fill="#12172B"/>
+        <text x="130" y="140" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">W frozen</text>
+        <text x="130" y="165" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">out × in</text>
+
+        <text x="220" y="145" fill="#3F8C87" font-size="28">+</text>
+
+        <rect x="260" y="70" width="100" height="140" rx="8" fill="#3F8C87"/>
+        <text x="310" y="140" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">B</text>
+        <text x="310" y="165" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">out × r</text>
+
+        <text x="380" y="145" fill="#3F8C87" font-size="28">×</text>
+
+        <rect x="420" y="100" width="140" height="80" rx="8" fill="#B8923F"/>
+        <text x="490" y="140" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">A</text>
+        <text x="490" y="160" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">r × in</text>
+
+        <text x="580" y="145" fill="#3F8C87" font-size="28">→</text>
+
+        <rect x="620" y="90" width="100" height="100" rx="8" fill="#2a3348"/>
+        <text x="670" y="140" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">W'</text>
+        <text x="670" y="165" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">same shape</text>
+      </svg>
+      <figcaption>
+        Figure 2. Teaching shapes for LoRA. Lab checks shapes + param counts — not GPU training.
+      </figcaption>
+    </figure>
+
+    <div class="callout source">
+      <span class="callout-label">[PAID] · Optional SageMaker</span>
+      <p>
+        Managed training (e.g. Amazon SageMaker Training Jobs) optional hai agar team cloud
+        pe experiment kare. <strong>Budget note:</strong> instance-hours + storage + artifact
+        registry cost add hote hain — ship se pehle current AWS pricing
+        <em>as of August 2026</em> check karo; is lesson ne dollar figures invent nahi kiye.
+        Local/fallback: toy LoRA math + (optional) small open model on your own machine —
+        course CI mein koi huge download required nahi.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · prod-402</span>
+      <p>
+        Convergent: <code>recommend_adaptation</code>, <code>apply_lora</code> /
+        <code>lora_param_count</code>, <code>toy_preference_update</code>,
+        <code>finetune_metric_comparison</code>.
+        <code>GURUKUL_LAB=solution pytest prod-402/tests -q</code>.
+        Decision lab memo: <code>prod-402/decision-lab/</code> (English, rubric below).
+      </p>
+    </div>
+
+    <h2>5. Decision lab — written defense + rubric</h2>
+    <p>
+      Scenario (full text in <code>decision-lab/README.md</code>): demo LoRA 0.81 vs golden
+      0.64; RAG golden ~0.77; monthly entitlement churn; suspected train/golden leakage;
+      optional [PAID] SageMaker. Write a one-page English memo choosing prompting / RAG / FT.
+    </p>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Rubric · pass = no dimension &lt; 2 and average ≥ 3.0</span>
+      <p>
+        Dimensions (1–4): <strong>Correctness / artifact</strong>,
+        <strong>Eval evidence</strong> (demo vs golden),
+        <strong>Risk awareness</strong> (leakage, forgetting, churn),
+        <strong>Production judgment</strong> (regression gate, when to revisit FT).
+        Same table lives in the decision-lab README for portfolio submitters.
+      </p>
+    </div>
+
+    <h2>6. Citations (8b)</h2>
+    <ol>
+      <li>
+        Hu et al., “LoRA: Low-Rank Adaptation of Large Language Models” —
+        <a href="https://arxiv.org/abs/2106.09685">arxiv.org/abs/2106.09685</a>
+        — frozen base weights + low-rank adapters; param-efficiency motivation.
+      </li>
+      <li>
+        Microsoft Research LoRA page —
+        <a href="https://www.microsoft.com/en-us/research/publication/lora-low-rank-adaptation-of-large-language-models/">microsoft.com/en-us/research/publication/lora-…</a>
+        — publication landing (re-check August 2026).
+      </li>
+      <li>
+        Ouyang et al., InstructGPT / RLHF stack (CORE 203 cite) — preference data shapes
+        behavior; FT is not “more pretraining” alone.
+      </li>
+      <li>
+        Dettmers et al., QLoRA (search primary paper when you implement for real) —
+        quantized base + LoRA adapters; treat recipes as perishable, verify before prod.
+      </li>
+      <li>
+        AWS SageMaker Training documentation —
+        <a href="https://docs.aws.amazon.com/sagemaker/latest/dg/train-model.html">docs.aws.amazon.com/sagemaker/latest/dg/train-model.html</a>
+        — optional [PAID] path; pricing pages separate and time-sensitive.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Kab FT ko pehle refuse karoge even if ft_score high ho?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Eval leakage risk, catastrophic forgetting delta above threshold, demo≫golden
+            gap, ya knowledge churn that RAG should own.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> LoRA mein trainable matrices kaunsi?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Low-rank <code>A</code> aur <code>B</code>; base <code>W</code> frozen. Update
+            <code>W + scale·(B A)</code>.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> “Demo better, golden worse” ship signal kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Do not ship on demo. Golden (+ regression vs baseline) decide karti hai; investigate
+            slice mismatch / leakage.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> SageMaker is lesson mein kya label hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Optional <strong>[PAID]</strong> with budget note — verify live pricing; CI does
+            not require it.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — PROD 402</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; design system; transcript <code>data-current="prod-402"</code></li>
+        <li>FT vs RAG vs prompting with eval evidence; leakage; forgetting; demo vs golden</li>
+        <li>LoRA/QLoRA intuition; toy LoRA lab (no huge download); optional [PAID] SageMaker note</li>
+        <li>Decision lab + rubric on page / <code>decision-lab/</code></li>
+        <li>≥2 SVG diagrams; quiz; § Citations (8b) training methods</li>
+        <li>Lab <code>prod-402/{starter,solution,tests}</code>; pytest offline</li>
+        <li>Prev → 401; Next → 403; no <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="prod-401-eval-production.html">
+        <span class="dir">Prev</span>
+        <span class="label">PROD 401 · Evaluation in Production</span>
+      </a>
+      <a class="next" href="prod-403-guardrails.html">
+        <span class="dir">Next</span>
+        <span class="label">PROD 403 · Guardrails</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · PROD 402</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

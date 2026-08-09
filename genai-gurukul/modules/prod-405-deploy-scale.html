@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PROD 405 — Deploying GenAI Apps at Scale · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">PROD · Customization &amp; Production</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/prod-405/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="prod-405"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">PROD 405 · Deploying GenAI Apps at Scale</p>
+    <h1>TTFT green, total red — ek budget se dono nahi bachenge</h1>
+    <div class="lesson-meta">
+      <span>Track: PROD</span>
+      <span>Labs: <code>genai-gurukul-labs/prod-405/</code></span>
+      <span>Offline · latency + TPM + failover</span>
+      <span>Prereq: APP 302 APIs · PROD 404 cost meters</span>
+      <span>Next: PROD 406 Prompt &amp; Model CI/CD</span>
+    </div>
+
+    <p>
+      Scale pe GenAI deploy karna sirf “zyada replicas” nahi. Streaming UX
+      <strong>TTFT</strong> maangti hai; batch jobs <strong>total latency</strong>. Provider
+      <strong>TPM</strong> ceilings perishable hain. Models 5xx / mid-stream hang karte hain —
+      multi-provider failover + timeout chahiye. Shared vector stores pe tenant isolation
+      bhoolna = data leak class incident. Rollback / degraded mode bina plan ke “all hands”
+      ban jata hai.
+    </p>
+    <p>
+      Scope (all first-class): TTFT vs total separate budgets; TPM capacity planning;
+      model/provider failure modes + multi-provider failover + mid-stream timeout; tenant
+      isolation in shared vector stores; rollback / degraded mode. Lab offline — no live
+      keys.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · APP 302 · CORE 201 · PROD 404</span>
+      <p>
+        APP 302 ne streaming vs batch latency alag sochna sikhaya; CORE 201 TPM ko token
+        reality se joda; PROD 404 ne retry storms + provider circuits. Yahan budgets,
+        capacity math, aur failover router concrete karte hain.
+      </p>
+    </div>
+
+    <h2>1. TTFT vs total — alag budgets</h2>
+    <p>
+      Chat UI: pehla token late = “broken”. Summarization job: total wall time matter.
+      Ek hi p95 number dono ko hide kar sakta hai — TTFT blow up, total still “ok”, ya
+      ulat. Lab <code>check_latency_budgets</code> dono gates alag pass/fail karta hai
+      (<code>failed_budgets: ["ttft"]</code> vs <code>["total"]</code>).
+    </p>
+
+    <figure class="diagram" aria-label="TTFT versus total latency budgets">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Two clocks on one request</text>
+        <rect x="50" y="70" width="200" height="80" rx="8" fill="#3F8C87"/>
+        <text x="150" y="105" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">TTFT budget</text>
+        <text x="150" y="128" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="12">time → first token</text>
+        <rect x="300" y="70" width="200" height="80" rx="8" fill="#12172B"/>
+        <text x="400" y="105" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Total budget</text>
+        <text x="400" y="128" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="12">time → last token</text>
+        <rect x="540" y="70" width="180" height="80" rx="8" fill="#8f6f2c"/>
+        <text x="630" y="105" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Gate each</text>
+        <text x="630" y="128" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="12">p_threshold</text>
+        <text x="50" y="200" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Streaming SLO ≠ batch SLO. Report both; page on the one your UX actually feels.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Separate budgets prevent “green dashboard, angry users.”
+      </figcaption>
+    </figure>
+
+    <h2>2. TPM capacity planning</h2>
+    <p>
+      Rough demand: <code>rpm × (avg_tokens_in + avg_tokens_out)</code>. Usable capacity:
+      <code>provider_tpm_limit × safety_factor</code> (headroom for spikes / retries).
+      Overshoot pe options: reduce tokens, queue/shed, raise limit, shard across keys /
+      providers. <strong>Published TPM numbers change</strong> — OpenAI/Anthropic dashboards
+      pe verify; lab fixtures didactic hain.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · Provider rate limits</span>
+      <p>
+        OpenAI rate limits guide:
+        <a href="https://platform.openai.com/docs/guides/rate-limits">platform.openai.com/docs/guides/rate-limits</a>.
+        Anthropic rate limits:
+        <a href="https://docs.anthropic.com/en/api/rate-limits">docs.anthropic.com/en/api/rate-limits</a>.
+        Treat TPM/RPM as operational inputs, not forever constants.
+      </p>
+    </div>
+
+    <h2>3. Failure modes · failover · mid-stream timeout</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Failure</th>
+          <th>Symptom</th>
+          <th>Mitigation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hard 5xx / auth</td>
+          <td>Immediate error</td>
+          <td>Failover to next provider; open circuit after N fails</td>
+        </tr>
+        <tr>
+          <td>429 TPM/RPM</td>
+          <td>Throttles + retry storm risk</td>
+          <td>Backoff + jitter; shed; capacity plan (PROD 404 storm detector)</td>
+        </tr>
+        <tr>
+          <td>Mid-stream hang</td>
+          <td>TTFT ok, tokens stall</td>
+          <td>Mid-stream timeout → cancel → failover</td>
+        </tr>
+        <tr>
+          <td>Quality regress</td>
+          <td>200s but wrong</td>
+          <td>Not a router problem — eval gate / rollback (406)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Lab <code>route_with_failover</code>: ordered providers, skip open circuits, treat
+      <code>total_ms &gt; mid_stream_timeout_ms</code> as timeout even if fixture claims
+      <code>ok=True</code>.
+    </p>
+
+    <figure class="diagram" aria-label="Multi-provider failover with timeout">
+      <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="250" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Primary → timeout → secondary</text>
+        <rect x="40" y="70" width="160" height="60" rx="8" fill="#8f6f2c"/>
+        <text x="120" y="105" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">primary</text>
+        <text x="220" y="105" fill="#3F8C87" font-size="20">→</text>
+        <rect x="250" y="70" width="180" height="60" rx="8" fill="#12172B"/>
+        <text x="340" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">mid-stream</text>
+        <text x="340" y="115" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">timeout → open</text>
+        <text x="450" y="105" fill="#3F8C87" font-size="20">→</text>
+        <rect x="480" y="70" width="220" height="60" rx="8" fill="#3F8C87"/>
+        <text x="590" y="105" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">secondary · serve</text>
+        <text x="40" y="180" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Degraded mode: smaller model, cached FAQ, or “try again” with honest UX — pre-declare.</text>
+        <text x="40" y="210" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Rollback: pin previous model/prompt artifact (PROD 406 versioning).</text>
+      </svg>
+      <figcaption>
+        Figure 2. Failover without mid-stream timeout leaves hung streams on the primary forever.
+      </figcaption>
+    </figure>
+
+    <h2>4. Tenant isolation in shared vector stores</h2>
+    <p>
+      Shared index + missing tenant filter = cross-tenant retrieval (security incident,
+      not “relevance bug”). Patterns: per-tenant collections/namespaces; mandatory
+      metadata filter on every query; separate credentials; periodic access tests.
+      APP 306 vector lessons pe yeh production constraint harden karo — deploy checklist
+      item, optional feature nahi.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · OWASP LLM data risks</span>
+      <p>
+        Cross-tenant leakage sits near sensitive-information and vector/RAG abuse themes in
+        the OWASP LLM Top 10 — start from
+        <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/">owasp.org/www-project-top-10-for-large-language-model-applications</a>
+        and your vector vendor’s multi-tenancy docs (e.g. metadata filtering / namespaces).
+      </p>
+    </div>
+
+    <h2>5. Rollback &amp; degraded mode</h2>
+    <p>
+      Pre-declare: (1) pin previous model/prompt version; (2) degrade to smaller/local
+      model or retrieval-only FAQ; (3) feature-flag kill switch (406). Without a degraded
+      path, failover to “also down” peers sirf latency badhata hai. Combine with PROD 404
+      cost ceilings taaki degraded path bhi unbounded na ho.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Sirf total latency SLO. Streaming users TTFT pe churn karte hain. Doosra: failover
+        without timeout. Teesra: shared vectors without tenant predicate.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · prod-405</span>
+      <p>
+        <code>check_latency_budgets</code>, <code>plan_tpm</code> /
+        <code>plan_tpm_from_mix</code>, <code>route_with_failover</code>.
+        <code>GURUKUL_LAB=solution pytest prod-405/tests -q</code>.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        Budget TTFT and total latency separately; capacity-plan TPM with explicit headroom;
+        fail over across providers with mid-stream timeouts and open circuits; enforce
+        tenant predicates on every vector query; rehearse rollback and degraded mode before
+        you need them on a Saturday.
+      </p>
+    </div>
+
+    <h2>6. Citations (8b)</h2>
+    <ol>
+      <li>
+        OpenAI rate limits —
+        <a href="https://platform.openai.com/docs/guides/rate-limits">platform.openai.com/docs/guides/rate-limits</a>
+        — RPM/TPM planning inputs (verify live).
+      </li>
+      <li>
+        Anthropic rate limits —
+        <a href="https://docs.anthropic.com/en/api/rate-limits">docs.anthropic.com/en/api/rate-limits</a>.
+      </li>
+      <li>
+        OpenAI API pricing —
+        <a href="https://openai.com/api/pricing/">openai.com/api/pricing</a>
+        — cost side of capacity (verify before finance).
+      </li>
+      <li>
+        Datadog LLM Observability —
+        <a href="https://docs.datadoghq.com/llm_observability/">docs.datadoghq.com/llm_observability</a>
+        — latency/error dashboards for TTFT vs total.
+      </li>
+      <li>
+        OWASP Top 10 for LLM Applications —
+        <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/">owasp.org/…/large-language-model-applications</a>
+        — data leakage / consumption risk framing for multi-tenant RAG.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> TTFT aur total alag kyun?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Streaming UX pehla token maangti hai; batch total wall-clock. Ek metric dono
+            failure modes hide kar sakta hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> TPM demand ka rough formula?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p><code>rpm × (avg_tokens_in + avg_tokens_out)</code>; usable = limit × safety_factor.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Mid-stream timeout kya catch karta hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Hang after first tokens — hard error nahi, lekin UX dead. Cancel + failover.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Shared vector store isolation?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Namespace/collection ya mandatory tenant metadata filter on every retrieve —
+            optional nahi.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — PROD 405</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; transcript <code>data-current="prod-405"</code></li>
+        <li>TTFT vs total; TPM planning; failover + mid-stream timeout; tenant vector isolation; rollback/degraded</li>
+        <li>≥2 SVG; quiz; citations for API/rate/security</li>
+        <li>Lab latency + TPM + failover; pytest offline</li>
+        <li>Prev → 404; Next → 406; no <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="prod-404-observability-cost.html">
+        <span class="dir">Prev</span>
+        <span class="label">PROD 404 · Observability &amp; Cost</span>
+      </a>
+      <a class="next" href="prod-406-prompt-model-cicd.html">
+        <span class="dir">Next</span>
+        <span class="label">PROD 406 · Prompt &amp; Model CI/CD</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · PROD 405</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

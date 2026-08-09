@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APP 306 — Vector Databases &amp; Semantic Search · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">APP · Building GenAI Applications</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/app-306/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="app-306"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">APP 306 · Vector Databases &amp; Semantic Search</p>
+    <h1>Vectors store karna ≠ search product — index, filter, tenant, phir measure</h1>
+    <div class="lesson-meta">
+      <span>Track: APP</span>
+      <span>Labs: <code>genai-gurukul-labs/app-306/</code></span>
+      <span>Offline lab · NumPy index</span>
+      <span>Prereq: APP 305 RAG · CORE 204 embeddings · APP 304 eval beat</span>
+      <span>Next: APP 307 agents</span>
+    </div>
+
+    <p>
+      APP 305 ne RAG plumbing dikhayi: chunk → embed → retrieve → (optional) rerank → generate.
+      Yahan sawaal alag hai: <em>wo vectors kahan rehte hain</em>, kaise index hote hain, metadata
+      filter kab lagta hai, aur multi-tenant product mein isolation kaunsi layer pe enforce hoti
+      hai. “Humne Pinecone laga diya” architecture nahi hai — local vs managed, exact vs ANN,
+      filter-before-score vs filter-after, aur <strong>tenant boundary</strong> decide karna hai.
+    </p>
+    <p>
+      Scope tight: Chroma / FAISS-style local indexes, Pinecone free-tier shape, <strong>AWS
+      OpenSearch Serverless</strong> k-NN, aur <strong>pgvector</strong> — trade-offs + indexing
+      knobs. Lab NumPy brute-force index hai (FAISS install optional; CI heavy deps se bachte
+      hain). Tenant isolation <em>yahan name</em> hoti hai; PROD 405 deepen karega — shared
+      collection + forgotten filter ko “multi-tenant-safe” mat samjho.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · CORE 204 · APP 304 · APP 305</span>
+      <p>
+        Embedding = text → vector; cosine / IP ranking (CORE 204). Eval beat =
+        metric · data · pass-fail (APP 304) — yahan latency_ms + Recall@k. RAG pipeline vectors
+        ko store/query karta hai (APP 305); yeh module store/query engine choose + isolate karti
+        hai.
+      </p>
+    </div>
+
+    <h2>1. Vector DB kya hai — .NET / backend framing</h2>
+    <p>
+      Relational instinct: table + B-tree index + <code>WHERE</code>. Vector store roughly:
+      <strong>(id, vector[D], metadata JSON)</strong> + similarity operator
+      (<code>ORDER BY cosine(query, vec) DESC LIMIT k</code>) + optional metadata predicate.
+      Difference: similarity search exact SQL sort nahi — billion-scale pe Approximate Nearest
+      Neighbor (ANN) graphs / inverted lists use hote hain. Exact scan chhote corpora pe theek;
+      large pe latency budget tod deta hai.
+    </p>
+    <ul>
+      <li><strong>Collection / index / namespace</strong> — logical bag of vectors (vendor names vary).</li>
+      <li><strong>Upsert / delete</strong> — embedding model version change = re-embed (CORE 204 pitfall).</li>
+      <li><strong>Metadata filters</strong> — tenant, locale, ACL, doc_type — product correctness yahi se aati hai.</li>
+      <li><strong>Hybrid</strong> — lexical (BM25) + vector; OpenSearch natural fit; Pinecone/pgvector patterns vary.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Query path through a vector index with metadata filter">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Semantic search path — embed → filter → score → top-k</text>
+
+        <rect x="28" y="60" width="120" height="70" rx="8" fill="#12172B"/>
+        <text x="88" y="92" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">query text</text>
+        <text x="88" y="112" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">+ tenant_id</text>
+
+        <text x="160" y="100" fill="#3F8C87" font-size="22" font-family="Inter, sans-serif">→</text>
+
+        <rect x="180" y="60" width="120" height="70" rx="8" fill="#1c2438"/>
+        <text x="240" y="92" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="13" font-weight="700">embed</text>
+        <text x="240" y="112" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">vector[D]</text>
+
+        <text x="312" y="100" fill="#3F8C87" font-size="22" font-family="Inter, sans-serif">→</text>
+
+        <rect x="332" y="50" width="150" height="90" rx="8" fill="#3F8C87"/>
+        <text x="407" y="85" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">metadata filter</text>
+        <text x="407" y="108" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">tenant_id=acme</text>
+        <text x="407" y="126" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="11">AND doc_type=…</text>
+
+        <text x="494" y="100" fill="#3F8C87" font-size="22" font-family="Inter, sans-serif">→</text>
+
+        <rect x="514" y="60" width="100" height="70" rx="8" fill="#2a3348"/>
+        <text x="564" y="92" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">ANN / exact</text>
+        <text x="564" y="112" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">cosine / IP</text>
+
+        <text x="626" y="100" fill="#3F8C87" font-size="22" font-family="Inter, sans-serif">→</text>
+
+        <rect x="646" y="60" width="90" height="70" rx="8" fill="#B8923F"/>
+        <text x="691" y="100" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">top-k</text>
+
+        <rect x="28" y="180" width="704" height="90" rx="10" fill="#1c2438"/>
+        <text x="48" y="215" fill="#B8923F" font-family="Inter, sans-serif" font-size="13" font-weight="700">Pitfall</text>
+        <text x="48" y="240" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Filter skip = shared collection se foreign-tenant hits. Lab demo isi bug ko pytest se pakadti hai.</text>
+        <text x="48" y="262" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">PROD 405 isolation deepen karega — yahan pehle naam + proof.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Semantic search is not “nearest vectors in the universe” — it is nearest
+        vectors <em>inside the authorized slice</em>. Filter and score order is vendor-specific;
+        correctness still demands an enforced tenant predicate.
+      </figcaption>
+    </figure>
+
+    <h2>2. Local vs managed — pick for the job, not the blog</h2>
+    <p>
+      Practitioner map (as of August 2026 — re-check vendor docs before locking SKUs):
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>Where it shines</th>
+          <th>Trade-offs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Chroma</strong> (local / embedded)</td>
+          <td>Prototypes, laptop RAG, pytest-friendly collections</td>
+          <td>Ops / HA / multi-region not the point; treat as app-local store</td>
+        </tr>
+        <tr>
+          <td><strong>FAISS</strong> (library)</td>
+          <td>Fast exact / IVF / HNSW-style indexes in-process</td>
+          <td>You own persistence, sharding, filters, ACL; not a full DB</td>
+        </tr>
+        <tr>
+          <td><strong>Pinecone</strong> (managed; free tier for learning)</td>
+          <td>Hosted ANN + metadata filters without cluster babysitting</td>
+          <td>Vendor lock / cost at scale; free tier limits — check current quotas</td>
+        </tr>
+        <tr>
+          <td><strong>AWS OpenSearch Serverless</strong></td>
+          <td>k-NN + lexical hybrid in AWS estate; serverless capacity units</td>
+          <td>Mapping / engine choices matter; cold-start + AOSS auth model</td>
+        </tr>
+        <tr>
+          <td><strong>pgvector</strong> (Postgres extension)</td>
+          <td>Vectors next to relational truth; transactions, joins, RLS</td>
+          <td>ANN indexes (IVFFlat / HNSW) tune karo; huge corpora pe dedicated vector DB compete</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Lab default: <strong>NumPy exact index</strong> — FAISS semantics bina FAISS wheel ke.
+      Production mein FAISS tab jab aap process-local speed chahte ho aur persistence/ACL khud
+      own karoge. Managed tab jab team index ops nahi chahati. pgvector tab jab Postgres already
+      source of truth hai aur RLS / tenant columns natural hain.
+    </p>
+
+    <div class="callout paid">
+      <span class="callout-label">[PAID — approx cost] · managed tiers</span>
+      <p>
+        Pinecone free tier / AWS OpenSearch Serverless OCU / hosted Postgres — meters change.
+        <em>Check current vendor pricing as of August 2026</em> before demos. Local Chroma /
+        FAISS / lab NumPy: $0 for CI. Paid path labeled; not required to pass pytest.
+      </p>
+    </div>
+
+    <h2>3. Indexing trade-offs — exact, IVF, HNSW, and rebuilds</h2>
+    <p>
+      Index type = latency ↔ recall dial (APP 304 vocabulary reuse):
+    </p>
+    <ol>
+      <li>
+        <strong>Exact / flat</strong> — har candidate score. Recall ceiling high; N·D badhne pe
+        latency toot-ti hai. Lab <code>probe_fraction=1.0</code> yahi hai.
+      </li>
+      <li>
+        <strong>IVF / nprobe</strong> — space ko lists mein todo; query sirf kuch lists probe
+        karti hai. Zyada <code>nprobe</code> ≈ zyada recall + zyada latency. Lab ka
+        <code>probe_fraction</code> deterministic teaching stand-in hai.
+      </li>
+      <li>
+        <strong>HNSW / graph</strong> — <code>efSearch</code> jaisa budget neighbors expand
+        karta hai. Build-time <code>M</code> / <code>efConstruction</code> memory + build cost
+        badhate hain.
+      </li>
+      <li>
+        <strong>Rebuild / re-embed</strong> — naya embedding model, naya D, naya distance
+        metric, ya filter cardinality explosion → plan a cutover. Mixed-model indexes silent
+        garbage dete hain.
+      </li>
+    </ol>
+
+    <figure class="diagram" aria-label="Latency versus recall tradeoff for ANN probe budget">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="320" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Eval beat — probe budget vs Recall@k (teaching curve)</text>
+
+        <!-- axes -->
+        <line x1="80" y1="260" x2="520" y2="260" stroke="#2a3348" stroke-width="2"/>
+        <line x1="80" y1="260" x2="80" y2="60" stroke="#2a3348" stroke-width="2"/>
+        <text x="300" y="290" text-anchor="middle" fill="#4a5268" font-family="Inter, sans-serif" font-size="12">probe_fraction / nprobe / efSearch →</text>
+        <text x="28" y="160" fill="#4a5268" font-family="Inter, sans-serif" font-size="12" transform="rotate(-90 28 160)">Recall@k</text>
+
+        <!-- curve -->
+        <path d="M100 230 C 180 220, 220 140, 300 110 S 420 80, 500 75" fill="none" stroke="#3F8C87" stroke-width="3"/>
+        <circle cx="120" cy="225" r="6" fill="#12172B"/>
+        <circle cx="280" cy="120" r="6" fill="#3F8C87"/>
+        <circle cx="480" cy="78" r="6" fill="#B8923F"/>
+
+        <text x="120" y="250" text-anchor="middle" fill="#6b7389" font-family="JetBrains Mono, monospace" font-size="10">0.25</text>
+        <text x="280" y="250" text-anchor="middle" fill="#6b7389" font-family="JetBrains Mono, monospace" font-size="10">0.5</text>
+        <text x="480" y="250" text-anchor="middle" fill="#6b7389" font-family="JetBrains Mono, monospace" font-size="10">1.0</text>
+
+        <rect x="540" y="70" width="196" height="170" rx="10" fill="#12172B"/>
+        <text x="638" y="100" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="13" font-weight="700">Pass-fail (example)</text>
+        <text x="560" y="130" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Metric: Recall@3</text>
+        <text x="560" y="152" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Data: fixture queries</text>
+        <text x="560" y="174" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Gate: R@3 ≥ 0.9</text>
+        <text x="560" y="196" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">+ p95 latency budget</text>
+        <text x="560" y="220" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">measure_latency_recall</text>
+
+        <text x="80" y="310" fill="#6b7389" font-family="Inter, sans-serif" font-size="12">Lab: lower probe_fraction → usually lower recall on the fixture; exact (1.0) recovers gold.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Same APP 304 beat: pick metric (Recall@k), data (fixture / golden queries),
+        pass-fail (recall floor + latency ceiling). ANN knobs move you along the curve — they
+        do not invent relevance.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition · SQL vs ANN</span>
+      <p>
+        Socho IVF lists ≈ partition pruning: kam partitions scan = tez, miss risk. HNSW
+        <code>efSearch</code> ≈ “kitni door graph walk”. Exact = full table scan with a fancy
+        distance. Product decision: p95 latency SLO ke under minimum acceptable Recall@k
+        (APP 304). Vibes se nprobe mat badhao.
+      </p>
+    </div>
+
+    <h2>4. Tenant isolation — named here, deepened in PROD 405</h2>
+    <p>
+      SaaS RAG almost always multi-tenant hai. Dangerous default: <strong>ek shared
+      collection</strong> mein saari companies ke chunks, aur hope ki app layer
+      <code>filter={tenant_id}</code> kabhi na bhule. Bhool gaye to semantic search
+      <em>correctly</em> kisi aur tenant ka password-reset runbook top pe laa sakta hai —
+      cosine “helpful” hai, authorization nahi.
+    </p>
+    <p>
+      Patterns (increasing hardness):
+    </p>
+    <ol>
+      <li>
+        <strong>Filter-enforced shared index</strong> — har query pe mandatory
+        <code>tenant_id</code> (ya workspace) predicate. App bug = data leak. Lab isi failure
+        ko <code>tenant_isolation_bug_demo</code> se dikhati hai.
+      </li>
+      <li>
+        <strong>Per-tenant collection / namespace / index</strong> — blast radius chhota; ops
+        cost / cold-start / quota zyada.
+      </li>
+      <li>
+        <strong>Postgres RLS + pgvector</strong> — DB session tenant context; still verify
+        vector queries RLS respect karti hain under your extension/plan.
+      </li>
+      <li>
+        <strong>PROD 405</strong> — tenancy, key management, audit, red-team retrieval leaks.
+        Yahan sirf: <em>shared collection ≠ multi-tenant-safe</em> by itself.
+      </li>
+    </ol>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · “metadata hai toh secure hai”</span>
+      <p>
+        Metadata field exist karna ≠ every code path filter lagati hai. Batch jobs, eval
+        notebooks, “debug top-20”, agent tools — sab leak surface hain. Treat missing tenant
+        filter as a security bug, not a nicety. Do not pretend filter-optional APIs are
+        tenant-safe.
+      </p>
+    </div>
+
+    <h2>5. Eval beat on a fixture — latency + recall</h2>
+    <p>
+      APP 304 ke teen boxes yahan concrete:
+    </p>
+    <ul>
+      <li><strong>Metric:</strong> mean Recall@k (+ mean latency_ms secondary).</li>
+      <li><strong>Data:</strong> <code>build_multitenant_fixture()</code> — known vectors, two tenants.</li>
+      <li><strong>Pass-fail:</strong> e.g. exact probe recovers R@3 = 1.0 on fixture; low probe must not silently ship.</li>
+    </ul>
+    <p>
+      <code>measure_latency_recall</code> har <code>probe_fraction</code> pe timed search chalata
+      hai (tenant filter <em>on</em> — isolation correct path). Aap curve dekh ke decide karte
+      ho: kitna approx budget product SLO ke under hai. Real FAISS/OpenSearch knobs alag names
+      rakhte hain; discipline same rehti hai.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Sources · primary docs (paraphrased; verify current)</span>
+      <p>
+        FAISS wiki / indexes overview; Chroma docs (collections + where filters); Pinecone
+        metadata filtering guides; AWS OpenSearch Service k-NN documentation (including
+        Serverless considerations); pgvector README (IVFFlat / HNSW). Links in Citations.
+      </p>
+    </div>
+
+    <h2>6. Hands-on lab</h2>
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · app-306</span>
+      <p>
+        <code>genai-gurukul-labs/app-306/</code> —
+        <code>vector_index.py</code>: <code>NumpyVectorIndex</code> (add / search + metadata
+        AND filters + <code>probe_fraction</code>), <code>tenant_isolation_bug_demo</code>,
+        <code>measure_latency_recall</code>, fixture builders. Pure NumPy — FAISS not required.
+        Success:
+        <code>GURUKUL_LAB=solution pytest app-306/tests -q</code>.
+      </p>
+    </div>
+
+    <h2>7. Citations</h2>
+    <ol>
+      <li>
+        FAISS — “Guidelines to choose an index” /
+        <a href="https://github.com/facebookresearch/faiss/wiki/Guidelines-to-choose-an-index">github.com/facebookresearch/faiss/wiki/Guidelines-to-choose-an-index</a>
+      </li>
+      <li>
+        Chroma documentation —
+        <a href="https://docs.trychroma.com/">docs.trychroma.com</a>
+      </li>
+      <li>
+        Pinecone — metadata filtering —
+        <a href="https://docs.pinecone.io/guides/search/filter-by-metadata">docs.pinecone.io/guides/search/filter-by-metadata</a>
+      </li>
+      <li>
+        Amazon OpenSearch Service — k-NN —
+        <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/knn.html">docs.aws.amazon.com/opensearch-service/latest/developerguide/knn.html</a>
+      </li>
+      <li>
+        pgvector —
+        <a href="https://github.com/pgvector/pgvector">github.com/pgvector/pgvector</a>
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Shared vector collection multi-tenant-safe kab hoti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Kabhi “by default” nahi. Tabhi jab <em>har</em> read path pe tenant (ya stronger)
+            predicate enforce ho — ideally DB/index policy, not hope. Omitted filter = cross-tenant
+            semantic leak. Per-tenant indexes / RLS stronger patterns; PROD 405 deepen karega.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> FAISS library vs Pinecone managed — kab kaunsa?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            FAISS: in-process speed, aap persistence/ACL/ops own karte ho. Pinecone: hosted ANN +
+            filters, less cluster toil, vendor meter/limits. Lab NumPy exact — CI bina heavy wheels.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> <code>nprobe</code> / <code>probe_fraction</code> badhane ka expected effect?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Zyada candidates score → aksar higher Recall@k, higher latency. Eval beat: measure
+            both on a golden/fixture set; pick operating point under latency SLO.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> pgvector kab strong default hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Jab relational data already Postgres mein hai, transactions/joins/RLS chahiye, aur
+            corpus size ANN indexes se handle-able hai. Ultra-large dedicated vector estates pe
+            specialized stores compete — measure, don’t dogma.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>5.</strong> AWS OpenSearch Serverless yahan kyun explicitly named?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            AWS-heavy teams ke liye k-NN + lexical hybrid ek familiar managed surface hai
+            (Serverless capacity model alag from provisioned domains). Mapping/engine choices
+            matter — primary AWS k-NN docs se verify karo.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — APP 306</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; design system; transcript <code>data-current="app-306"</code></li>
+        <li>Local (Chroma/FAISS) vs managed (Pinecone free tier, AWS OpenSearch Serverless, pgvector)</li>
+        <li>Indexing trade-offs: exact / IVF-nprobe / HNSW / rebuild</li>
+        <li>Tenant isolation named; shared collection not pretended safe; PROD 405 pointer</li>
+        <li>Eval beat: latency + recall on fixture (<code>measure_latency_recall</code>)</li>
+        <li>≥2 SVG diagrams; quiz; citations with primary URLs</li>
+        <li>Lab <code>app-306/{starter,solution,tests}</code>; NumPy offline; GURUKUL_LAB pattern</li>
+        <li>Prev → <code>app-305-rag.html</code>; Next → <code>app-307-agents.html</code></li>
+        <li>No <code>modules.json</code> edit</li>
+      </ul>
+    </section>
+
+    <p>
+      Agla module <strong>APP 307 — Agents &amp; Tool Use</strong>: tools / loops / stop
+      conditions. Retrieval ab aapka ek tool ban sakta hai — tenant filter us tool contract ka
+      hissa hona chahiye, afterthought nahi.
+    </p>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="app-305-rag.html">
+        <span class="dir">Prev</span>
+        <span class="label">APP 305 · RAG Deep-Dive</span>
+      </a>
+      <a href="app-307-agents.html">
+        <span class="dir">Next</span>
+        <span class="label">APP 307 · Agents &amp; Tool Use</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · APP 306</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

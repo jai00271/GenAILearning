@@ -1,0 +1,3 @@
+{"id": "dq1", "question": "How many MaxDays of Sick leave are in the leave policy table?", "expected_doc_id": "leave_policy", "expected_contains": "12"}
+{"id": "dq2", "question": "How do I reset an Okta password from Admin?", "expected_doc_id": "okta", "expected_contains": "Reset password"}
+{"id": "dq3", "question": "Is parental leave 90 days and is an HR ticket mandatory?", "expected_doc_id": "leave_policy", "expected_contains": "90"}

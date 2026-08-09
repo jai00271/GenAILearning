@@ -1,0 +1,4 @@
+{"id": "q1", "question": "How do I reset an Okta password for an employee?", "relevant_ids": ["okta_reset"]}
+{"id": "q2", "question": "How many parental leave days are allowed and is HR ticket mandatory?", "relevant_ids": ["leave_table"]}
+{"id": "q3", "question": "Auth pods in CrashLoopBackOff — what should I check first?", "relevant_ids": ["auth_health"]}
+{"id": "q4", "question": "What is the MaxDays value for Sick leave in the leave entitlement matrix?", "relevant_ids": ["leave_table"]}
