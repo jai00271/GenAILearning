@@ -35,6 +35,7 @@ GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core
 - **CORE 203** — mean NLL / perplexity + toy DPO-style preference loss
 - **CORE 204** — LocalEmbedder, cosine rank, negation failure demo; checkpoint under `checkpoints/core-204/`
 - **CORE challenge** — `challenges/core/` (no starter/solution; rubric-graded English memo)
+- **APP 303** — conversation memory under token budget + window vs retrieve_later placement
 
 ## Layout
 
