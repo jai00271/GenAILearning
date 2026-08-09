@@ -11,7 +11,7 @@ source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Ollama is **not** required for FOUND 101–103 or CORE 201. Default local models for APP 301+ will be documented there. Assumption until confirmed: `llama3.2` and `nomic-embed-text`.
+Ollama is **not** required for FOUND 101–103 or CORE 201–204 convergent labs (CORE 204 uses a deterministic local embedder; optional Ollama path is documented on the lesson). Assumption for APP 301+: `llama3.2` and `nomic-embed-text` until confirmed.
 
 ## How labs are graded
 
@@ -21,8 +21,8 @@ Ollama is **not** required for FOUND 101–103 or CORE 201. Default local models
 | Debug / decision / track challenge | later tracks | rubric on the lesson page |
 
 ```bash
-pytest found-101/tests found-102/tests found-103/tests core-201/tests core-202/tests core-204/tests -q
-GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core-201/tests core-202/tests core-204/tests -q
+pytest found-101/tests found-102/tests found-103/tests core-20*/tests -q
+GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core-20*/tests -q
 ```
 
 ## Module map (available)
@@ -32,17 +32,18 @@ GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core
 - **FOUND 103** — TinyMLP forward / backward intuition / train loop
 - **CORE 201** — tiktoken counting, encoding compare, chat budget trim, toy BPE
 - **CORE 202** — scaled dot-product attention, causal mask, multi-head (NumPy)
+- **CORE 203** — mean NLL / perplexity + toy DPO-style preference loss
 - **CORE 204** — LocalEmbedder, cosine rank, negation failure demo; checkpoint under `checkpoints/core-204/`
+- **CORE challenge** — `challenges/core/` (no starter/solution; rubric-graded English memo)
 
 ## Layout
 
 ```
 found-101/ … prod-406/     convergent modules
-core-201/                  tokenization lab
 checkpoints/               known-good snapshots (from CORE 204 onward)
 challenges/                track gates — no starter, no solution
 debug-labs/                broken systems, no TODO markers
 capstone/                  CAP 501
 ```
 
-Track 0 and CORE 201 are free/local. Later paid steps (Bedrock, SageMaker, OpenAI) are labeled on the lesson page with a local fallback where one exists.
+Paid cloud steps (Bedrock, SageMaker, OpenAI) are labeled on lesson pages with a local fallback where one exists.
