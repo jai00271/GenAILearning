@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FOUND-101 · Python for GenAI — GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">FOUNDATIONS</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/found-101/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="found-101"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">FOUND-101 · Foundations</p>
+    <h1>Python for GenAI</h1>
+    <div class="lesson-meta">
+      <span>Track: FOUND</span>
+      <span>Labs: <code>genai-gurukul-labs/found-101/</code></span>
+      <span>Prereq: basic Python comfort</span>
+    </div>
+
+    <p>
+      GenAI ka saara production stack, practically bolu toh, Python pe khada hai.
+      Model call karna ho, embedding nikaalna ho, schema validate karna ho, ya parallel API hits fire karne hon —
+      agar aapka Python setup fragile hai, toh baaki saari “AI magic” bhi fragile lagti hai.
+      Is module ka kaam fancy frameworks sikhana nahi hai. Kaam yeh hai ki aap woh teen engineering muscles
+      strong kar lo jo har GenAI project mein baar-baar aati hain: <strong>isolated environments</strong>,
+      <strong>vector math with NumPy</strong>, aur <strong>async I/O + typed schemas</strong>.
+    </p>
+
+    <p>
+      Socho jaise aap kisi naye laptop pe pehli baar project clone kar rahe ho. Agar dependencies globally mix ho gayi,
+      kal koi model SDK update aaya aur aapka RAG script toot gaya. Agar aap cosine similarity “approximately”
+      calculate karte ho, retrieval ranking silently galat ho sakti hai. Aur agar aap sequential awaits se 20 tool
+      calls chalaate ho, latency bill aur user wait dono badhte hain. Yeh chapter unhi pitfalls ko pehle se
+      sterilize karta hai.
+    </p>
+
+    <h2>1. Virtual environments aur dependency hygiene</h2>
+    <p>
+      Python ka default temptation yeh hai ki aap <code>pip install</code> seedha system Python pe maar do.
+      Short term mein yeh tez lagta hai; long term mein yeh dependency hell banata hai. GenAI projects mein libraries
+      tez evolve karti hain — OpenAI SDK, httpx, pydantic, tiktoken, vector DBs — versions drift karte rehte hain.
+      Isliye har project ka apna <em>venv</em> hona chahiye: ek isolated folder jisme interpreter + packages us project
+      ke liye locked hain.
+    </p>
+
+    <p>
+      Typical flow simple hai. Project root mein <code>python3 -m venv .venv</code> se environment banao,
+      activate karo, phir <code>pip install -r requirements.txt</code>. Windows pe activation script alag hoti hai,
+      macOS/Linux pe <code>source .venv/bin/activate</code>. Important baat yeh nahi hai ki aap command yaad rakho;
+      important yeh hai ki aap <em>habit</em> banao: naya shell khola, pehle confirm karo kaunsa Python active hai
+      (<code>which python</code> / <code>python -c "import sys; print(sys.prefix)"</code>).
+    </p>
+
+    <figure class="diagram" aria-label="venv isolation diagram">
+      <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="220" fill="#F5F1E6"/>
+        <rect x="24" y="28" width="180" height="164" rx="8" fill="#12172B"/>
+        <text x="114" y="58" text-anchor="middle" fill="#D4AF5F" font-family="Fraunces, serif" font-size="14">System Python</text>
+        <text x="114" y="88" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">site-packages</text>
+        <text x="114" y="112" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11">numpy 1.x?</text>
+        <text x="114" y="132" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11">pydantic ???</text>
+        <text x="114" y="168" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="11">shared / fragile</text>
+
+        <path d="M220 110 H270" stroke="#3F8C87" stroke-width="2" marker-end="url(#arrow)"/>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#3F8C87"/>
+          </marker>
+        </defs>
+
+        <rect x="286" y="28" width="330" height="164" rx="8" fill="#1C2438" stroke="#B8923F" stroke-width="2"/>
+        <text x="451" y="58" text-anchor="middle" fill="#D4AF5F" font-family="Fraunces, serif" font-size="14">Project .venv</text>
+        <rect x="310" y="78" width="130" height="90" rx="6" fill="#12172B"/>
+        <text x="375" y="108" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="11">found-101</text>
+        <text x="375" y="128" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="10">numpy==2.2.6</text>
+        <text x="375" y="146" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="10">pydantic==2.11.7</text>
+        <rect x="460" y="78" width="130" height="90" rx="6" fill="#12172B"/>
+        <text x="525" y="108" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="11">core-201</text>
+        <text x="525" y="128" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="10">tiktoken==0.9.0</text>
+        <text x="525" y="146" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="10">own pins</text>
+      </svg>
+      <figcaption>Figure 1. Ek machine, multiple projects — har project ka venv apni pinned world rakhta hai.</figcaption>
+    </figure>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/" rel="noopener">
+          packaging.python.org — Installing packages using pip and virtual environments
+        </a>
+        — Official guide jo venv create/activate aur pip install workflow clearly document karti hai;
+        “global install se bachke isolated env use karo” yahi canonical recommendation hai.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Kabhi-kabhi log <code>sudo pip install</code> maar dete hain “permission error” dekh ke.
+        Yeh almost hamesha galat direction hai. Permission error usually yeh signal hai ki aap galat
+        Python pe install kar rahe ho — venv activate karo, ya <code>python -m pip install ...</code>
+        use karo taaki wohi interpreter target ho jo aap soch rahe ho.
+      </p>
+    </div>
+
+    <h2>2. NumPy vectors aur cosine similarity</h2>
+    <p>
+      GenAI mein text ko numbers mein badalte hain — embeddings. Ek embedding simply ek vector hai:
+      fixed length ki floating-point list. “Yeh document us query se kitna milta-julta hai?” ka jawab
+      aksar <strong>cosine similarity</strong> se aata hai. Cosine yeh measure karta hai ki do vectors
+      ke beech angle kitna chhota hai, unki length ignore karke. Magai aur chhoti si needle dono “upar”
+      point kar sakti hain — direction same, magnitude alag. Cosine exactly isi intuition ko math mein
+      convert karta hai.
+    </p>
+
+    <p>
+      Formula yaad rakhne layak hai, lekin pehle intuition: cosine similarity = dot product divided by
+      product of L2 norms. Agar dono vectors unit length pe normalize ho chuke hain, toh cosine seedha
+      dot product ban jaata hai. Isliye production retrieval stacks pehle normalize karke inner product
+      search karte hain — mathematically equivalent, computationally friendly.
+    </p>
+
+    <pre><code>import numpy as np
+
+def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    a = np.asarray(a, dtype=float).ravel()
+    b = np.asarray(b, dtype=float).ravel()
+    denom = np.linalg.norm(a) * np.linalg.norm(b)
+    if denom == 0:
+        return 0.0
+    return float(np.dot(a, b) / denom)</code></pre>
+
+    <figure class="diagram" aria-label="cosine similarity geometry">
+      <svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="260" fill="#F5F1E6"/>
+        <line x1="80" y1="200" x2="560" y2="200" stroke="#2A3348" stroke-width="1.5"/>
+        <line x1="120" y1="230" x2="120" y2="40" stroke="#2A3348" stroke-width="1.5"/>
+        <line x1="120" y1="200" x2="420" y2="80" stroke="#3F8C87" stroke-width="3"/>
+        <polygon points="420,80 404,88 412,100" fill="#3F8C87"/>
+        <line x1="120" y1="200" x2="480" y2="150" stroke="#B8923F" stroke-width="3"/>
+        <polygon points="480,150 462,146 466,162" fill="#B8923F"/>
+        <path d="M180 170 A40 40 0 0 1 210 155" fill="none" stroke="#12172B" stroke-width="1.5"/>
+        <text x="200" y="145" fill="#12172B" font-family="Fraunces, serif" font-size="14">θ</text>
+        <text x="430" y="70" fill="#3F8C87" font-family="Inter, sans-serif" font-size="13">query q</text>
+        <text x="490" y="145" fill="#B8923F" font-family="Inter, sans-serif" font-size="13">doc d</text>
+        <text x="250" y="240" fill="#4A5268" font-family="JetBrains Mono, monospace" font-size="12">cos θ = (q·d) / (‖q‖ ‖d‖)</text>
+      </svg>
+      <figcaption>Figure 2. Chhota angle ⇒ high cosine ⇒ retrieval mein zyada similar.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Cosine 1 matlab vectors same direction. Cosine 0 matlab orthogonal — “koi shared direction nahi”.
+        Cosine -1 opposite direction. Text embeddings mein negative values rare-ish hote hain after training
+        geometry, lekin mathematically possible. Zero-vector pe special-case karna zaroori hai, warna
+        divide-by-zero se NaN leak ho ke ranking todd sakta hai.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on</span>
+      <p>
+        Lab file: <a href="../../genai-gurukul-labs/found-101/starter/similarity.py"><code>found-101/starter/similarity.py</code></a>.
+        <code>cosine_similarity</code> aur <code>most_similar</code> implement karo. Tests
+        <code>GURUKUL_LAB=starter</code> (default) pe aapke code ko import karte hain;
+        solution check ke liye <code>GURUKUL_LAB=solution</code>.
+      </p>
+    </div>
+
+    <h2>3. asyncio: gather vs sequential awaits</h2>
+    <p>
+      LLM APIs network-bound hoti hain. Ek call 400ms–2s le sakti hai. Agar aapko 5 independent summaries
+      chahiye aur aap <code>await call()</code> ko loop mein sequentially likhte ho, total time roughly
+      sum of latencies ho jaata hai. Asyncio ka point yeh nahi hai ki CPU parallel ho; point yeh hai ki
+      jab ek request network pe wait kar rahi ho, event loop doosri request bhej sakta hai.
+    </p>
+
+    <p>
+      <code>asyncio.gather</code> multiple awaitables ko concurrently schedule karta hai aur results
+      (ya exceptions) collect karta hai. Contrast mein sequential pattern mein har await pehle khatam
+      hota hai, tab next start. Neeche wala mental model yaad rakhna useful hai: concurrent tabhi
+      help karta hai jab tasks mostly independent I/O wait kar rahe hon. Agar Task B ko Task A ka
+      output chahiye, toh gather se magic nahi hoga — data dependency serialize karti hai.
+    </p>
+
+    <pre><code>import asyncio
+import time
+
+async def fake_llm(delay: float, tag: str) -> str:
+    await asyncio.sleep(delay)
+    return tag
+
+async def sequential():
+    t0 = time.perf_counter()
+    a = await fake_llm(0.3, "A")
+    b = await fake_llm(0.3, "B")
+    return a, b, time.perf_counter() - t0
+
+async def parallel():
+    t0 = time.perf_counter()
+    a, b = await asyncio.gather(fake_llm(0.3, "A"), fake_llm(0.3, "B"))
+    return a, b, time.perf_counter() - t0</code></pre>
+
+    <figure class="diagram" aria-label="sequential vs gather timeline">
+      <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="220" fill="#F5F1E6"/>
+        <text x="24" y="36" fill="#12172B" font-family="Fraunces, serif" font-size="16">Sequential awaits</text>
+        <rect x="24" y="50" width="200" height="28" rx="4" fill="#3F8C87"/>
+        <text x="124" y="69" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">await A</text>
+        <rect x="224" y="50" width="200" height="28" rx="4" fill="#B8923F"/>
+        <text x="324" y="69" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="12">await B</text>
+        <text x="440" y="69" fill="#4A5268" font-family="Inter, sans-serif" font-size="12">~ 2× latency</text>
+
+        <text x="24" y="130" fill="#12172B" font-family="Fraunces, serif" font-size="16">asyncio.gather</text>
+        <rect x="24" y="144" width="200" height="28" rx="4" fill="#3F8C87"/>
+        <text x="124" y="163" text-anchor="middle" fill="#F5F1E6" font-family="JetBrains Mono, monospace" font-size="12">A concurrent</text>
+        <rect x="24" y="178" width="200" height="28" rx="4" fill="#B8923F"/>
+        <text x="124" y="197" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="12">B concurrent</text>
+        <text x="240" y="175" fill="#4A5268" font-family="Inter, sans-serif" font-size="12">~ max(latency)</text>
+      </svg>
+      <figcaption>Figure 3. Independent I/O pe gather wall-clock time ko sum se max ke qareeb laata hai.</figcaption>
+    </figure>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://docs.python.org/3/library/asyncio-task.html#asyncio.gather" rel="noopener">
+          Python docs — asyncio.gather
+        </a>
+        — Official reference: gather concurrently runs awaitables and returns aggregated results;
+        <code>return_exceptions=True</code> se aap failures ko bhi result list mein absorb kar sakte ho.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Gather ke saath rate limits bhoolna common hai. Agar provider 60 RPM allow karta hai aur aap
+        200 coroutines ek saath fire kar do, toh thundering herd milta hai. Production mein semaphore
+        (<code>asyncio.Semaphore</code>) ya explicit concurrency cap lagao.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on</span>
+      <p>
+        Lab: <a href="../../genai-gurukul-labs/found-101/starter/async_calls.py"><code>async_calls.py</code></a> —
+        <code>run_sequential</code> aur <code>run_gather</code> likho jo same fake I/O helpers ko
+        dono styles mein call karein. Tests timing shape verify karte hain, exact milliseconds nahi.
+      </p>
+    </div>
+
+    <h2>4. Pydantic se typed chat turns</h2>
+    <p>
+      GenAI apps message lists pe chalti hain: system, user, assistant, tool… Har message ke fields
+      predictable hone chahiye. Agar aap plain dicts pe depend karte ho, typos late blow up karte hain —
+      kabhi API edge pe, kabhi logs mein. <strong>Pydantic</strong> models runtime validation + clear
+      errors dete hain. FOUND-101 mein hum ek minimal <code>ChatTurn</code> banate hain: role aur content
+      required, optional name, aur role enum-like constraint.
+    </p>
+
+    <pre><code>from typing import Literal
+from pydantic import BaseModel, Field
+
+class ChatTurn(BaseModel):
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str = Field(min_length=1)
+    name: str | None = None</code></pre>
+
+    <p>
+      Jab aap <code>ChatTurn.model_validate(payload)</code> call karte ho, invalid role ya empty content
+      turant <code>ValidationError</code> deta hai. Yeh “fail fast at the boundary” principle hai —
+      model call se pehle garbage ko rokna sasta hai, half-generated answer ke baad debug karna mehnga.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://docs.pydantic.dev/latest/concepts/models/" rel="noopener">
+          Pydantic docs — Models
+        </a>
+        — BaseModel, field constraints, aur validation lifecycle ka canonical explanation;
+        GenAI request/response schemas isi pattern pe design hote hain.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on</span>
+      <p>
+        Lab: <a href="../../genai-gurukul-labs/found-101/starter/schemas.py"><code>schemas.py</code></a> —
+        <code>ChatTurn</code> define karo aur <code>parse_turns</code> likho jo dict list ko validated
+        models mein convert kare. Invalid input pe exception bubble hone do (swallow mat karo).
+      </p>
+    </div>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall</span>
+      <p>
+        Teen muscle memory items: (1) project-local venv + pinned requirements,
+        (2) cosine = normalized direction match for embeddings,
+        (3) gather for independent I/O, Pydantic for boundary schemas.
+      </p>
+    </div>
+
+    <section class="quiz" aria-label="FOUND-101 quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q">1. Cosine similarity primarily measure karti hai…</p>
+        <label><input type="radio" name="q1" /> Vector magnitudes ka ratio</label>
+        <label><input type="radio" name="q1" /> Directional alignment (angle) between vectors</label>
+        <label><input type="radio" name="q1" /> Edit distance between strings</label>
+        <details>
+          <summary>Reveal</summary>
+          <p>Directional alignment. Magnitudes norms se cancel ho jaati hain.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q">2. Do independent 300ms API calls pe <code>asyncio.gather</code> ka expected wall time roughly…</p>
+        <label><input type="radio" name="q2" /> ~600ms (sum)</label>
+        <label><input type="radio" name="q2" /> ~300ms (max), network permitting</label>
+        <label><input type="radio" name="q2" /> Always faster than 50ms</label>
+        <details>
+          <summary>Reveal</summary>
+          <p>~300ms / max latency — concurrent wait overlapping ki wajah se.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q">3. Pydantic ChatTurn ka sabse bada production win kya hai?</p>
+        <label><input type="radio" name="q3" /> Model ko smarter banana</label>
+        <label><input type="radio" name="q3" /> Boundary pe schema validation / fail-fast</label>
+        <label><input type="radio" name="q3" /> GPU utilization badhana</label>
+        <details>
+          <summary>Reveal</summary>
+          <p>Boundary validation — garbage requests ko model call se pehle pakadna.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done</h2>
+      <ul class="dod-checklist">
+        <li>Aap <code>.venv</code> bana ke labs install/run kar sakte ho.</li>
+        <li><code>similarity.py</code>, <code>async_calls.py</code>, <code>schemas.py</code> starter tests pass.</li>
+        <li>Aap ek sentence mein explain kar sakte ho: kab gather, kab sequential.</li>
+        <li>Aap cosine similarity ko geometry + formula dono se justify kar sakte ho.</li>
+      </ul>
+      <table class="rubric">
+        <thead>
+          <tr><th>Signal</th><th>Needs work</th><th>Ship-ready</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Env</td>
+            <td>Global pip, version confusion</td>
+            <td>Project venv + reproducible install</td>
+          </tr>
+          <tr>
+            <td>Vectors</td>
+            <td>Only “similarity library call”</td>
+            <td>NumPy cosine with zero-safe handling</td>
+          </tr>
+          <tr>
+            <td>Async</td>
+            <td>All awaits in a chain by habit</td>
+            <td>Conscious gather + concurrency limits</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="../index.html">
+        <span class="dir">Prev</span>
+        <span class="label">Course catalog</span>
+      </a>
+      <a class="next" href="found-102-math-intuition.html">
+        <span class="dir">Next</span>
+        <span class="label">FOUND-102 · Math Intuition</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · FOUND-101</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

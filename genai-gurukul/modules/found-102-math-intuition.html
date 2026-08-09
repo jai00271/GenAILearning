@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FOUND-102 · Math Intuition for LLMs — GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">FOUNDATIONS</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/found-102/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="found-102"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">FOUND-102 · Foundations</p>
+    <h1>Math Intuition for LLMs</h1>
+    <div class="lesson-meta">
+      <span>Track: FOUND</span>
+      <span>Labs: <code>genai-gurukul-labs/found-102/</code></span>
+      <span>Prereq: FOUND-101</span>
+    </div>
+
+    <p>
+      LLMs ke papers mein jo symbols aate hain — vectors, softmax, log-probs, perplexity, gradients —
+      woh intimidate isliye karte hain kyunki unhe pehle “exam math” ki tarah padhaaya jaata hai.
+      Engineer ke liye zarurat alag hai: aapko proof olympiad nahi jeetna; aapko yeh feel chahiye ki
+      <em>number move hone pe model behaviour kaise move hota hai</em>. Is chapter mein hum IT-shop
+      analogies, worked numbers, aur production pitfalls ke through woh feel banayenge.
+    </p>
+
+    <h2>1. Vectors, dot product, cosine — IT wiki example</h2>
+    <p>
+      Socho aapke company ka internal wiki hai. Query: <em>“VPN reset Windows”</em>.
+      Do candidate chunks hain. Chunk A VPN troubleshooting pe hai; Chunk B cafeteria menu pe.
+      Embedding model dono chunks aur query ko vectors mein map karta hai. Ab ranking ka sawaal
+      geometry ka sawaal ban jaata hai: kaunsa vector query ke direction ke zyada qareeb hai?
+    </p>
+
+    <p>
+      <strong>Dot product</strong> <code>q·d = Σ qᵢ dᵢ</code> un dimensions ko amplify karta hai jahan
+      dono large same-sign values share karte hain. Agar query “VPN/network” dimensions pe strong hai
+      aur cafeteria chunk un pe near-zero hai, dot chhota rahega. <strong>Cosine</strong> usi idea ko
+      length-invariant banata hai — lamba document embedding magnitude se unfair boost na le.
+    </p>
+
+    <pre><code># Tiny 3-D toy (not a real embedding model)
+q = [1.0, 0.8, 0.1]   # vpn, network, food
+a = [0.9, 0.7, 0.0]   # VPN article
+b = [0.1, 0.0, 0.9]   # cafeteria menu
+
+# cosine(q,a) ≫ cosine(q,b)  → retrieve A</code></pre>
+
+    <figure class="diagram" aria-label="wiki retrieval vectors">
+      <svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="260" fill="#F5F1E6"/>
+        <circle cx="200" cy="140" r="70" fill="none" stroke="#2A3348" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="200" y1="140" x2="320" y2="90" stroke="#3F8C87" stroke-width="3"/>
+        <line x1="200" y1="140" x2="300" y2="100" stroke="#12172B" stroke-width="2"/>
+        <line x1="200" y1="140" x2="150" y2="220" stroke="#B8923F" stroke-width="2"/>
+        <text x="330" y="85" fill="#3F8C87" font-family="Inter, sans-serif" font-size="13">q: VPN reset</text>
+        <text x="308" y="120" fill="#12172B" font-family="Inter, sans-serif" font-size="13">A: VPN wiki</text>
+        <text x="110" y="240" fill="#B8923F" font-family="Inter, sans-serif" font-size="13">B: cafeteria</text>
+        <text x="400" y="140" fill="#4A5268" font-family="Fraunces, serif" font-size="15">Near angle ⇒ retrieve</text>
+        <text x="400" y="165" fill="#4A5268" font-family="Inter, sans-serif" font-size="13">Far angle ⇒ demote</text>
+      </svg>
+      <figcaption>Figure 1. Retrieval = geometry pe nearest neighbors, string keyword overlap nahi.</figcaption>
+    </figure>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on</span>
+      <p>
+        Lab <a href="../../genai-gurukul-labs/found-102/starter/geometry.py"><code>geometry.py</code></a>:
+        <code>dot</code>, <code>l2_norm</code>, <code>cosine</code> pure NumPy helpers.
+      </p>
+    </div>
+
+    <h2>2. Softmax aur temperature — worked numbers</h2>
+    <p>
+      Language model next-token ke liye raw scores nikalta hai, jise hum <strong>logits</strong> kehte hain.
+      Softmax un logits ko probability distribution mein badalta hai: har score ko exp mein daalo,
+      phir sum se divide. Exp isliye taaki larger logits disproportionately dominate karein, aur
+      saari probs positive + sum-to-one hon.
+    </p>
+
+    <p>
+      <strong>Temperature</strong> <code>T</code> logits ko divide karke sharpness control karti hai:
+      <code>softmax(z / T)</code>. <code>T → 0</code> pe distribution almost argmax pe collapse;
+      <code>T = 1</code> default; <code>T &gt; 1</code> pe distribution flatter — zyada entropy, zyada surprise.
+      Distillation literature mein temperature ko soft targets banane ke liye deliberately raise kiya jaata hai.
+    </p>
+
+    <p>Worked example — teen tokens, logits <code>z = [2.0, 1.0, 0.1]</code>:</p>
+
+    <table class="plain">
+      <thead>
+        <tr><th>Token</th><th>z</th><th>exp(z) @T=1</th><th>p @T=1</th><th>exp(z/2) @T=2</th><th>p @T=2</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>α</td><td>2.0</td><td>7.389</td><td>0.659</td><td>2.718</td><td>0.506</td></tr>
+        <tr><td>β</td><td>1.0</td><td>2.718</td><td>0.242</td><td>1.649</td><td>0.307</td></tr>
+        <tr><td>γ</td><td>0.1</td><td>1.105</td><td>0.099</td><td>1.051</td><td>0.196</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      Dekho: temperature 2 pe α ab bhi winner hai, lekin lead kam zor daar hai. Yeh exactly wahi knob
+      hai jo chat UIs “creativity” ke naam pe expose karti hain — mathematically entropy knob.
+    </p>
+
+    <figure class="diagram" aria-label="softmax temperature">
+      <svg viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="240" fill="#F5F1E6"/>
+        <text x="40" y="36" fill="#12172B" font-family="Fraunces, serif" font-size="15">T = 1 (sharper)</text>
+        <rect x="40" y="50" width="40" height="140" fill="#3F8C87"/>
+        <rect x="90" y="120" width="40" height="70" fill="#B8923F"/>
+        <rect x="140" y="165" width="40" height="25" fill="#2A3348"/>
+        <text x="60" y="210" text-anchor="middle" fill="#4A5268" font-size="11" font-family="JetBrains Mono, monospace">α</text>
+        <text x="110" y="210" text-anchor="middle" fill="#4A5268" font-size="11" font-family="JetBrains Mono, monospace">β</text>
+        <text x="160" y="210" text-anchor="middle" fill="#4A5268" font-size="11" font-family="JetBrains Mono, monospace">γ</text>
+
+        <text x="280" y="36" fill="#12172B" font-family="Fraunces, serif" font-size="15">T = 2 (flatter)</text>
+        <rect x="280" y="70" width="40" height="120" fill="#3F8C87"/>
+        <rect x="330" y="105" width="40" height="85" fill="#B8923F"/>
+        <rect x="380" y="140" width="40" height="50" fill="#2A3348"/>
+        <text x="300" y="210" text-anchor="middle" fill="#4A5268" font-size="11" font-family="JetBrains Mono, monospace">α</text>
+        <text x="350" y="210" text-anchor="middle" fill="#4A5268" font-size="11" font-family="JetBrains Mono, monospace">β</text>
+        <text x="400" y="210" text-anchor="middle" fill="#4A5268" font-size="11" font-family="JetBrains Mono, monospace">γ</text>
+
+        <text x="480" y="110" fill="#4A5268" font-family="Inter, sans-serif" font-size="13">Higher T</text>
+        <text x="480" y="132" fill="#4A5268" font-family="Inter, sans-serif" font-size="13">⇒ more uniform</text>
+        <text x="480" y="154" fill="#4A5268" font-family="Inter, sans-serif" font-size="13">⇒ higher entropy</text>
+      </svg>
+      <figcaption>Figure 2. Same logits, different temperature — probability mass redistributes.</figcaption>
+    </figure>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://arxiv.org/abs/1503.02531" rel="noopener">Hinton et al., Distilling the Knowledge in a Neural Network (arXiv:1503.02531)</a>
+        — Temperature ko soft probability targets ke liye raise karne ka classic reference;
+        “softmax pe T” ka production intuition yahi paper popular karti hai.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on</span>
+      <p>
+        Lab <a href="../../genai-gurukul-labs/found-102/starter/softmax.py"><code>softmax.py</code></a>:
+        numerically stable softmax (<code>z - max(z)</code>) aur temperature parameter.
+      </p>
+    </div>
+
+    <h2>3. Log-probabilities aur perplexity (full section)</h2>
+    <p>
+      Probabilities chhoti-chhoti numbers hoti hain — jaise <code>0.002</code>. Unhe baar-baar multiply
+      karoge toh floating underflow. Isliye systems <strong>log-probabilities</strong> (logprobs) prefer
+      karti hain. Log domain mein multiply → add ban jaata hai: sequence logprob =
+      sum of token logprobs. Negative log-likelihood (NLL) = <code>-log p(token)</code>; average NLL
+      ek sequence kitni “surprising” thi, uska scalar summary hai.
+    </p>
+
+    <p>
+      <strong>Perplexity (PPL)</strong> us average NLL ko human-friendlier scale pe laati hai:
+    </p>
+
+    <pre><code>PPL = exp( mean_i [ -log p(token_i) ] )
+    = exp( mean NLL )</code></pre>
+
+    <p>
+      Intuition: perplexity roughly “effective branching factor” hai. PPL = 10 ka matlab model,
+      average token pe, aise behave karti hai jaise ~10 equally likely options mein se choose kar rahi ho.
+      Lower PPL on a fixed evaluation corpus usually better next-token modeling indicate karti hai —
+      lekin yeh automatically “better product” nahi hai. Chat helpfulness, safety, aur task metrics alag hote hain.
+    </p>
+
+    <h3>Worked table</h3>
+    <p>
+      Teen-token sequence, model probabilities <code>0.5, 0.25, 0.125</code>
+      (natural log use karte hain labs mein, lekin koi bhi consistent base chalega — exp/log pair match hona chahiye):
+    </p>
+
+    <table class="plain">
+      <thead>
+        <tr><th>i</th><th>p</th><th>log p</th><th>NLL = -log p</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>0.500</td><td>−0.693</td><td>0.693</td></tr>
+        <tr><td>2</td><td>0.250</td><td>−1.386</td><td>1.386</td></tr>
+        <tr><td>3</td><td>0.125</td><td>−2.079</td><td>2.079</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      Mean NLL ≈ (0.693 + 1.386 + 2.079) / 3 ≈ 1.386.
+      PPL = exp(1.386) ≈ 4.0. Nice round number isliye mila kyunki yeh geometric progression thi —
+      debugging ke liye aise fixtures gold hote hain.
+    </p>
+
+    <figure class="diagram" aria-label="perplexity pipeline">
+      <svg viewBox="0 0 640 200" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="200" fill="#F5F1E6"/>
+        <rect x="20" y="60" width="110" height="70" rx="8" fill="#12172B"/>
+        <text x="75" y="100" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="12">tokens</text>
+        <text x="145" y="100" fill="#3F8C87" font-size="20">→</text>
+        <rect x="170" y="60" width="110" height="70" rx="8" fill="#12172B"/>
+        <text x="225" y="100" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="12">logprobs</text>
+        <text x="295" y="100" fill="#3F8C87" font-size="20">→</text>
+        <rect x="320" y="60" width="110" height="70" rx="8" fill="#12172B"/>
+        <text x="375" y="95" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="12">mean</text>
+        <text x="375" y="112" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="12">NLL</text>
+        <text x="445" y="100" fill="#3F8C87" font-size="20">→</text>
+        <rect x="470" y="60" width="140" height="70" rx="8" fill="#3F8C87"/>
+        <text x="540" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Fraunces, serif" font-size="16">PPL = e^{NLL}</text>
+      </svg>
+      <figcaption>Figure 3. Perplexity pipeline: token logprobs → mean NLL → exp.</figcaption>
+    </figure>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://huggingface.co/docs/transformers/perplexity" rel="noopener">Hugging Face — Perplexity of fixed-length models</a>
+        — Practical notes on computing perplexity with sliding windows / stride; reminds you that
+        implementation details (how you chunk long text) PPL numbers ko materially change kar sakte hain.
+      </p>
+    </div>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://web.stanford.edu/~jurafsky/slp3/3.pdf" rel="noopener">Jurafsky &amp; Martin, Speech and Language Processing — Ch. 3 (N-gram Language Models) PDF</a>
+        — Classical definition: perplexity as normalized inverse probability of the test set;
+        modern neural LMs same information-theoretic core share karte hain.
+      </p>
+    </div>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://platform.openai.com/docs/api-reference/chat/create" rel="noopener">OpenAI API — logprobs (docs as of Aug 2026)</a>
+        — Chat Completions request pe <code>logprobs</code> / <code>top_logprobs</code> flags se
+        per-token log probabilities expose hote hain; evaluation harnesses isi pe build hote hain.
+        (API surfaces evolve — integrate se pehle current docs verify karo.)
+      </p>
+    </div>
+
+    <h3>Production pitfalls</h3>
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        <strong>Comparing PPL across tokenizers is cheating.</strong> Alag BPE vocab → alag token
+        boundaries → alag “per token” normalization. Hamesha same tokenizer + same preprocessing
+        pe compare karo. Subword vs word-level reporting mix mat karo.
+      </p>
+    </div>
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        <strong>Teacher-forcing PPL ≠ generated quality.</strong> Teacher forcing gold prefix pe
+        next-token score karti hai. Free-run generation mein errors compound hoti hain. Low PPL model
+        bhi dull/unsafe chat de sakti hai; high-PPL domain shift pe bhi kabhi useful specialized behaviour
+        dikh sakta hai.
+      </p>
+    </div>
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        <strong>Log base aur padding tokens.</strong> Mix of <code>log</code>/<code>log2</code> without
+        matching <code>exp</code>/<code>2**</code> se nonsense PPL milti hai. Pad/special tokens ko
+        average mein include karna bhi metric ko artificially improve/worsen kar sakta hai — mask carefully.
+      </p>
+    </div>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on</span>
+      <p>
+        Lab <a href="../../genai-gurukul-labs/found-102/starter/perplexity.py"><code>perplexity.py</code></a>:
+        <code>sequence_nll</code>, <code>perplexity_from_logprobs</code>, aur probability→PPL helpers.
+      </p>
+    </div>
+
+    <h2>4. Gradient descent — intuition only</h2>
+    <p>
+      Training ka core loop emotional language mein: model prediction galat hai, loss bataata hai
+      “kitni galat”, gradients bataate hain “kaunse weights kis direction mein tweak karne se loss
+      kam hoga”, optimizer chhota step us direction mein leta hai. Yeh mountain pe andhe utarne jaisa
+      hai — aap globally best valley guarantee nahi karte, local improvement chase karte ho.
+    </p>
+
+    <p>
+      GenAI engineer ke liye practical takeaways: learning rate bahut bada → divergence/NaNs;
+      bahut chhota → waste compute; batch composition loss landscape ko change karti hai; aur
+      “loss gir gaya” ka matlab yeh nahi ki product metric jeet gayi. FOUND-103 mein hum ek tiny MLP
+      pe yeh loop literally code karenge.
+    </p>
+
+    <figure class="diagram" aria-label="gradient descent sketch">
+      <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="220" fill="#F5F1E6"/>
+        <path d="M40 40 C 120 40, 140 180, 250 160 S 400 60, 520 120 S 600 180, 620 170"
+              fill="none" stroke="#12172B" stroke-width="2"/>
+        <circle cx="140" cy="120" r="7" fill="#B8923F"/>
+        <circle cx="250" cy="158" r="7" fill="#3F8C87"/>
+        <circle cx="430" cy="78" r="7" fill="#B8923F"/>
+        <text x="150" y="110" fill="#4A5268" font-family="Inter, sans-serif" font-size="12">start</text>
+        <text x="260" y="180" fill="#3F8C87" font-family="Inter, sans-serif" font-size="12">local min</text>
+        <text x="440" y="70" fill="#4A5268" font-family="Inter, sans-serif" font-size="12">too-large step risk</text>
+        <text x="40" y="210" fill="#4A5268" font-family="Fraunces, serif" font-size="13">Loss surface (1D cartoon) — follow negative gradient</text>
+      </svg>
+      <figcaption>Figure 4. Gradient descent: local improvement, not global omniscience.</figcaption>
+    </figure>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall</span>
+      <p>
+        Cosine = direction match for retrieval. Softmax+T = distribution sharpness.
+        Logprobs add; PPL = exp(mean NLL). Gradients = “which way reduces loss.”
+      </p>
+    </div>
+
+    <section class="quiz" aria-label="FOUND-102 quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q">1. Temperature badhao toh softmax distribution…</p>
+        <label><input type="radio" name="q1" /> Zyada peaky (low entropy)</label>
+        <label><input type="radio" name="q1" /> Zyada flat (high entropy)</label>
+        <label><input type="radio" name="q1" /> Probabilities negative ho jaati hain</label>
+        <details><summary>Reveal</summary><p>Flatter / higher entropy.</p></details>
+      </div>
+      <div class="quiz-item">
+        <p class="q">2. PPL = exp(mean NLL). Agar mean NLL = ln 4, PPL hai…</p>
+        <label><input type="radio" name="q2" /> 1</label>
+        <label><input type="radio" name="q2" /> 4</label>
+        <label><input type="radio" name="q2" /> e</label>
+        <details><summary>Reveal</summary><p>4.</p></details>
+      </div>
+      <div class="quiz-item">
+        <p class="q">3. Do models ko alag tokenizers ke PPL se compare karna…</p>
+        <label><input type="radio" name="q3" /> Perfectly fair</label>
+        <label><input type="radio" name="q3" /> Misleading — tokenization changes the unit</label>
+        <label><input type="radio" name="q3" /> Only fair if learning rate match ho</label>
+        <details><summary>Reveal</summary><p>Misleading — token unit badal jaata hai.</p></details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done</h2>
+      <ul class="dod-checklist">
+        <li>Cosine vs dot product ka retrieval impact explain kar sakte ho.</li>
+        <li>Softmax+temperature pe worked numbers reproduce kar sakte ho.</li>
+        <li>PPL formula, worked table, aur kam se kam do production pitfalls yaad hain.</li>
+        <li><code>found-102</code> starter labs tests pass.</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="found-101-python-for-genai.html">
+        <span class="dir">Prev</span>
+        <span class="label">FOUND-101 · Python for GenAI</span>
+      </a>
+      <a class="next" href="found-103-neural-networks.html">
+        <span class="dir">Next</span>
+        <span class="label">FOUND-103 · Neural Networks</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · FOUND-102</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

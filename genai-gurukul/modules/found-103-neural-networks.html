@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FOUND-103 · Neural Networks Primer — GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">FOUNDATIONS</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/found-103/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="found-103"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">FOUND-103 · Foundations</p>
+    <h1>Neural Networks Primer</h1>
+    <div class="lesson-meta">
+      <span>Track: FOUND</span>
+      <span>Labs: <code>genai-gurukul-labs/found-103/</code></span>
+      <span>Prereq: FOUND-102</span>
+    </div>
+
+    <p>
+      Transformers se pehle ek baat clear kar lena useful hai: neural network koi magic black box nahi,
+      balki <strong>stacked linear maps + nonlinearities</strong> ka programmable function approximator hai.
+      LLMs usi idea ko bohot deep, bohot wide, aur attention-aware bana dete hain. Agar aapko neuron,
+      layer, forward pass, aur “loss se weights update” ka engineer-level picture mil gaya, toh baad ke
+      CORE modules mein attention diagrams itne alien nahi lagenge.
+    </p>
+
+    <h2>1. Neuron, ReLU, aur layer</h2>
+    <p>
+      Ek artificial neuron roughly yeh karta hai: inputs ka weighted sum lo, bias add karo, phir
+      nonlinearity se guzaaro. Linear part: <code>z = w·x + b</code>. Nonlinearity ke bina kitni bhi
+      layers stack kar lo, overall function ek hi badi linear map ban ke reh jaati hai — isliye activation
+      zaroori hai. Modern default aksar <strong>ReLU</strong>: <code>relu(z) = max(0, z)</code>. Positive
+      signals pass; negative cut. Simple, fast, aur deep nets mein empirically strong.
+    </p>
+
+    <p>
+      Ek <strong>layer</strong> kai neurons ka parallel set hota hai. Matrix form mein:
+      <code>h = relu(x W + b)</code> jahan <code>W</code> shape <code>[in_dim, out_dim]</code> (hum labs
+      mein is convention ko follow karenge). “Hidden layer” ka matlab intermediate representation;
+      “output layer” task ke hisaab se activation change kar sakti hai (regression mein sometimes linear).
+    </p>
+
+    <figure class="diagram" aria-label="neuron and relu">
+      <svg viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="240" fill="#F5F1E6"/>
+        <circle cx="70" cy="70" r="16" fill="#3F8C87"/>
+        <circle cx="70" cy="120" r="16" fill="#3F8C87"/>
+        <circle cx="70" cy="170" r="16" fill="#3F8C87"/>
+        <text x="70" y="74" text-anchor="middle" fill="#F5F1E6" font-size="10" font-family="JetBrains Mono, monospace">x1</text>
+        <text x="70" y="124" text-anchor="middle" fill="#F5F1E6" font-size="10" font-family="JetBrains Mono, monospace">x2</text>
+        <text x="70" y="174" text-anchor="middle" fill="#F5F1E6" font-size="10" font-family="JetBrains Mono, monospace">x3</text>
+        <line x1="86" y1="70" x2="200" y2="120" stroke="#12172B" stroke-width="1.5"/>
+        <line x1="86" y1="120" x2="200" y2="120" stroke="#12172B" stroke-width="1.5"/>
+        <line x1="86" y1="170" x2="200" y2="120" stroke="#12172B" stroke-width="1.5"/>
+        <circle cx="220" cy="120" r="28" fill="#12172B"/>
+        <text x="220" y="125" text-anchor="middle" fill="#D4AF5F" font-size="12" font-family="Inter, sans-serif">Σ + b</text>
+        <line x1="248" y1="120" x2="310" y2="120" stroke="#B8923F" stroke-width="2"/>
+        <rect x="310" y="90" width="90" height="60" rx="8" fill="#B8923F"/>
+        <text x="355" y="125" text-anchor="middle" fill="#12172B" font-size="14" font-family="Fraunces, serif">ReLU</text>
+        <line x1="400" y1="120" x2="470" y2="120" stroke="#3F8C87" stroke-width="2"/>
+        <text x="500" y="125" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="14">h</text>
+        <path d="M480 180 L520 180 L520 150 L560 150" fill="none" stroke="#3F8C87" stroke-width="2"/>
+        <text x="480" y="210" fill="#4A5268" font-size="12" font-family="Inter, sans-serif">ReLU shape: zero then linear</text>
+      </svg>
+      <figcaption>Figure 1. Neuron = affine transform + activation.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        ReLU ko “switch” socho: kuch features off, kuch on. Deep stacks of switches sophisticated
+        decision regions bana sakti hain — yeh capacity ka source hai, mystery ka nahi.
+      </p>
+    </div>
+
+    <h2>2. Forward pass</h2>
+    <p>
+      Forward pass matlab: input do, layers se left-to-right compute karo, prediction <code>ŷ</code> lo.
+      Lab mein hum ek <strong>TinyMLP</strong> use karenge: input dim 2 → hidden dim 2 (ReLU) → output dim 1
+      (linear). Yeh itna chhota hai ki aap har number table pe trace kar sakte ho — debugging muscle ke liye ideal.
+    </p>
+
+    <pre><code># Conceptual shapes
+x:  (2,)
+W1: (2, 2), b1: (2,)
+h = relu(x @ W1 + b1)      # (2,)
+W2: (2, 1), b2: (1,)
+y_hat = h @ W2 + b2        # (1,) / scalar</code></pre>
+
+    <figure class="diagram" aria-label="tiny mlp forward">
+      <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="220" fill="#F5F1E6"/>
+        <text x="60" y="36" fill="#12172B" font-family="Fraunces, serif" font-size="14">Input</text>
+        <circle cx="80" cy="80" r="18" fill="#3F8C87"/>
+        <circle cx="80" cy="150" r="18" fill="#3F8C87"/>
+        <text x="80" y="85" text-anchor="middle" fill="#FFF" font-size="11" font-family="JetBrains Mono, monospace">x0</text>
+        <text x="80" y="155" text-anchor="middle" fill="#FFF" font-size="11" font-family="JetBrains Mono, monospace">x1</text>
+
+        <text x="230" y="36" fill="#12172B" font-family="Fraunces, serif" font-size="14">Hidden + ReLU</text>
+        <circle cx="250" cy="80" r="18" fill="#12172B"/>
+        <circle cx="250" cy="150" r="18" fill="#12172B"/>
+        <text x="250" y="85" text-anchor="middle" fill="#D4AF5F" font-size="11" font-family="JetBrains Mono, monospace">h0</text>
+        <text x="250" y="155" text-anchor="middle" fill="#D4AF5F" font-size="11" font-family="JetBrains Mono, monospace">h1</text>
+
+        <text x="420" y="36" fill="#12172B" font-family="Fraunces, serif" font-size="14">Output</text>
+        <circle cx="450" cy="115" r="22" fill="#B8923F"/>
+        <text x="450" y="120" text-anchor="middle" fill="#12172B" font-size="12" font-family="JetBrains Mono, monospace">ŷ</text>
+
+        <line x1="98" y1="80" x2="232" y2="80" stroke="#2A3348"/>
+        <line x1="98" y1="80" x2="232" y2="150" stroke="#2A3348"/>
+        <line x1="98" y1="150" x2="232" y2="80" stroke="#2A3348"/>
+        <line x1="98" y1="150" x2="232" y2="150" stroke="#2A3348"/>
+        <line x1="268" y1="80" x2="428" y2="115" stroke="#2A3348"/>
+        <line x1="268" y1="150" x2="428" y2="115" stroke="#2A3348"/>
+        <text x="500" y="120" fill="#4A5268" font-family="Inter, sans-serif" font-size="13">2 → 2 → 1</text>
+      </svg>
+      <figcaption>Figure 2. TinyMLP architecture used in the lab fixture.</figcaption>
+    </figure>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on</span>
+      <p>
+        Lab <a href="../../genai-gurukul-labs/found-103/starter/mlp.py"><code>mlp.py</code></a>:
+        <code>TinyMLP.forward</code> implement karo. Tests ek fixed weight fixture pe
+        <code>ŷ ≈ 0.17</code> expect karte hain — taaki aap speculative “almost right” pe na ruko.
+      </p>
+    </div>
+
+    <h2>3. Backward pass — chain rule intuition (no full derivation)</h2>
+    <p>
+      Loss <code>L</code> usually prediction aur target ke beech ka scalar hota hai. Regression demo ke
+      liye MSE: <code>L = (ŷ - y)²</code> (kabhi 1/2 factor se gradients prettier bante hain; consistency
+      matter karti hai). Backward pass poochta hai: <code>∂L/∂W</code> kya hai? Chain rule ka engineer
+      translation: “loss output pe kaise depend karti hai, output hidden pe, hidden weights pe — locally
+      multiply the sensitivities.”
+    </p>
+
+    <p>
+      Full autograd engine banana is module ka goal nahi. Goal yeh hai ki aap believe karo ki har weight
+      ke liye ek number exist karta hai jo kehta hai “mujhe thoda badhao toh loss up/down”. Lab mein
+      <code>numerical_dL_dW2</code> finite differences se estimate karega, aur <code>train_step</code>
+      analytic gradient se update — dono roughly agree karein, toh aapka mental model sound hai.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        <a href="https://www.deeplearningbook.org/contents/mlp.html" rel="noopener">Goodfellow, Bengio &amp; Courville — Deep Learning Book, Chapter 6 (Deep Feedforward Networks)</a>
+        — MLP, activations, capacity, aur backprop context ka standard reference chapter;
+        FOUND-103 isi chapter ke engineer-facing subset ko operational banata hai.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Gradient ko “AI samajh” mat samajhna. Yeh local sensitivity hai. Saddle points, noisy batches,
+        aur bad scaling aapko confuse kar sakte hain. Production deep learning mein tooling (autograd)
+        pe trust + gradient checks debugging ke liye — vibes pe nahi.
+      </p>
+    </div>
+
+    <h2>4. Training loop</h2>
+    <p>
+      Minimal loop: (1) forward, (2) loss, (3) backward / grads, (4) weights −= lr * grads, (5) repeat.
+      Epochs, shuffling, regularization — yeh sab us skeleton pe layers hain. TinyMLP pe aap literally
+      dekoge ki MSE drop hoti hai jab lr sane ho. Agar loss explode kare, pehle lr aur initialization
+      check karo, architecture philosophy nahi.
+    </p>
+
+    <pre><code>for step in range(num_steps):
+    y_hat = model.forward(x)
+    loss = (y_hat - y) ** 2
+    model.train_step(x, y, lr=0.1)  # uses analytic grads internally</code></pre>
+
+    <figure class="diagram" aria-label="training loop">
+      <svg viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="640" height="180" fill="#F5F1E6"/>
+        <rect x="30" y="60" width="110" height="50" rx="8" fill="#12172B"/>
+        <text x="85" y="90" text-anchor="middle" fill="#D4AF5F" font-size="13" font-family="Inter, sans-serif">Forward</text>
+        <text x="150" y="90" fill="#3F8C87" font-size="18">→</text>
+        <rect x="170" y="60" width="110" height="50" rx="8" fill="#12172B"/>
+        <text x="225" y="90" text-anchor="middle" fill="#D4AF5F" font-size="13" font-family="Inter, sans-serif">Loss</text>
+        <text x="290" y="90" fill="#3F8C87" font-size="18">→</text>
+        <rect x="310" y="60" width="110" height="50" rx="8" fill="#12172B"/>
+        <text x="365" y="90" text-anchor="middle" fill="#D4AF5F" font-size="13" font-family="Inter, sans-serif">Backward</text>
+        <text x="430" y="90" fill="#3F8C87" font-size="18">→</text>
+        <rect x="450" y="60" width="130" height="50" rx="8" fill="#3F8C87"/>
+        <text x="515" y="90" text-anchor="middle" fill="#F5F1E6" font-size="13" font-family="Inter, sans-serif">Update W,b</text>
+        <path d="M515 110 v25 H85 v-25" fill="none" stroke="#B8923F" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="280" y="155" fill="#4A5268" font-size="12" font-family="Fraunces, serif">loop until loss plateaus / budget ends</text>
+      </svg>
+      <figcaption>Figure 3. The training loop you will implement in miniature.</figcaption>
+    </figure>
+
+    <h2>5. Overfitting — engineer’s view</h2>
+    <p>
+      Overfitting tab hota hai jab model training set ke quirks memorize kar leta hai aur unseen data
+      pe generalize nahi karta. Classic signs: train loss neeche, val loss upar; perfect train accuracy,
+      fragile production behaviour. GenAI mein bhi related failure modes hain — prompt overfitting,
+      eval-set contamination, retrieval corpora pe memorized answers.
+    </p>
+
+    <p>
+      Engineer toolkit (intuition level): zyada data / better data, regularization, early stopping,
+      simpler model, augmentation, aur — LLMs ke context mein — held-out evals jo aap train prompts
+      se leak na karein. Capacity khud enemy nahi; unchecked capacity + tiny noisy data enemy hai.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall</span>
+      <p>
+        Layered affine + ReLU → forward ŷ. Loss se gradients. Update weights. Watch generalization,
+        not only train loss. Next track (CORE) tokenization se language models ko discrete symbols
+        pe operate karna sikhayega.
+      </p>
+    </div>
+
+    <div class="gate-banner">
+      <strong>GATE</strong>
+      <p>
+        FOUND track DoD clear hone ke baad CORE-201 (Tokenization) unlock hota hai.
+        Abhi catalog mein CORE modules locked dikh sakte hain — parent release ke baad link live hoga.
+      </p>
+    </div>
+
+    <section class="quiz" aria-label="FOUND-103 quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q">1. Nonlinearity (jaise ReLU) ke bina deep stack…</p>
+        <label><input type="radio" name="q1" /> Still highly nonlinear</label>
+        <label><input type="radio" name="q1" /> Collapses to one big linear map</label>
+        <label><input type="radio" name="q1" /> Automatically overfits</label>
+        <details><summary>Reveal</summary><p>Collapses to one linear map.</p></details>
+      </div>
+      <div class="quiz-item">
+        <p class="q">2. Backward pass ka engineer summary?</p>
+        <label><input type="radio" name="q2" /> Randomly jitter weights</label>
+        <label><input type="radio" name="q2" /> Chain local sensitivities to get ∂L/∂W</label>
+        <label><input type="radio" name="q2" /> Replace ReLU with softmax always</label>
+        <details><summary>Reveal</summary><p>Chain rule / local sensitivities → parameter gradients.</p></details>
+      </div>
+      <div class="quiz-item">
+        <p class="q">3. Train loss↓ val loss↑ typically signals…</p>
+        <label><input type="radio" name="q3" /> Underfitting</label>
+        <label><input type="radio" name="q3" /> Overfitting</label>
+        <label><input type="radio" name="q3" /> Perfect calibration</label>
+        <details><summary>Reveal</summary><p>Overfitting.</p></details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done</h2>
+      <ul class="dod-checklist">
+        <li>TinyMLP forward fixture <code>ŷ ≈ 0.17</code> pass.</li>
+        <li>Analytic W2 gradient numerical check ke qareeb.</li>
+        <li>Short training loop MSE visibly drop kare.</li>
+        <li>Aap overfitting ko train/val gap se explain kar sakte ho.</li>
+      </ul>
+      <table class="rubric">
+        <thead>
+          <tr><th>Area</th><th>Needs work</th><th>Ready for CORE</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Forward</td><td>Shape confusion, wrong activation placement</td>
+            <td>Trace 2→2→1 by hand + code</td>
+          </tr>
+          <tr>
+            <td>Grads</td><td>“Autograd magic” only</td>
+            <td>Finite-diff check makes sense</td>
+          </tr>
+          <tr>
+            <td>Generalization</td><td>Only celebrate train loss</td>
+            <td>Ask about held-out behaviour</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="found-102-math-intuition.html">
+        <span class="dir">Prev</span>
+        <span class="label">FOUND-102 · Math Intuition</span>
+      </a>
+      <a class="next" href="core-201-nlp-tokenization.html">
+        <span class="dir">Next</span>
+        <span class="label">CORE 201 · Tokenization</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · FOUND-103</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>
