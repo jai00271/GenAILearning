@@ -17,7 +17,7 @@ python3 -m http.server 8080
 
 Open [http://localhost:8080](http://localhost:8080). The 24-module transcript strip and catalog both read from `assets/modules.js` — do not hand-copy the strip into every HTML file.
 
-**Available now:** FOUND 101–103, CORE 201. Later modules stay locked until authored.
+**Available now:** FOUND 101–103, CORE 201–202. Later modules stay locked until authored.
 
 ## Run labs
 
@@ -26,13 +26,13 @@ cd genai-gurukul-labs
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pytest found-101/tests found-102/tests found-103/tests core-201/tests -q
+pytest found-101/tests found-102/tests found-103/tests core-201/tests core-202/tests -q
 ```
 
 Reference solutions:
 
 ```bash
-GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core-201/tests -q
+GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core-201/tests core-202/tests -q
 ```
 
 ## Sequencing (non-negotiable)

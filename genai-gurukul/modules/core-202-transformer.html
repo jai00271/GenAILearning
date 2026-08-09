@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORE 202 — The Transformer Architecture · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">CORE · Language &amp; Transformers</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/core-202/">Labs</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="core-202"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">CORE 202 · The Transformer Architecture</p>
+    <h1>Self-attention: har token har dusre token se seedha baat kare — bina RNN queue ke</h1>
+    <div class="lesson-meta">
+      <span>Track: CORE</span>
+      <span>Labs: <code>genai-gurukul-labs/core-202/</code></span>
+      <span>Local NumPy · no paid API</span>
+      <span>Prereq: CORE 201 + FOUND 102 softmax</span>
+    </div>
+
+    <p>
+      CORE 201 ne text ko token ids mein todna sikhaya. Ab sawal yeh hai: un ids ke embedding vectors
+      ko model <em>kaise</em> combine karta hai taaki “auth pod” aur “password reset” ek dusre ko dekh
+      saken, chahe beech mein das tokens hon. 2017 se pehle dominant jawab recurrent networks tha —
+      left-to-right (ya bidirectional) hidden state jo sequence ke saath chalta hai. Vaswani et al.
+      ka Transformer us recurrence ko hata kar <em>self-attention</em> ko backbone banata hai: har
+      position, parallel, sequence ki baaki positions se weighted mix nikalta hai. Yeh chapter us
+      mechanism ko engineer language mein padhata hai — Q/K/V, multi-head, positional encoding,
+      encoder vs decoder, aur woh honest list ki RNNs yahan kyun haar gayi.
+    </p>
+    <p>
+      Hum paper ka reproduction nahi likh rahe, aur backpropagation-through-attention ka full
+      derivation nahi karenge. Jo aap lab mein implement karoge: scaled dot-product attention,
+      causal (autoregressive) mask, aur ek chhota multi-head wrapper — NumPy mein, taaki baad mein
+      jab APP 302 “KV cache” kahe, aapko pata ho cache <em>kya</em> store kar raha hai.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · FOUND 102 / 103</span>
+      <p>
+        Softmax probabilities banata hai; temperature usse pehle logits scale karti hai. Yahan
+        attention scores bhi logits ki tarah behave karte hain — unhe softmax se weights banate hain,
+        phir values ka weighted sum lete hain. FOUND 103 ka forward pass composition yahi hai: linear
+        maps + nonlinearity (yahan softmax) + combine. Sirf shapes ab <code>(seq, d)</code> hain,
+        <code>(2,)</code> nahi.
+      </p>
+    </div>
+
+    <h2>1. Problem RNNs solve nahi kar paayi at scale</h2>
+    <p>
+      Ek recurrent layer sequence ko step-by-step consume karti hai. Step <code>t</code> ka hidden
+      state step <code>t−1</code> par depend karta hai. Yeh dependency training ko inherently
+      sequential banati hai: aap GPU par batch to bada kar sakte ho, lekin ek sequence ke andar ke
+      timesteps ko freely parallelize nahi kar sakte. Lambi dependencies ke liye signal ko kai
+      steps travel karna padta hai — vanishing / exploding gradients ka classic dard, plus wall-clock
+      that grows with sequence length.
+    </p>
+    <p>
+      Self-attention ka contract alag hai: sequence ke <em>saare</em> positions ek dusre ko ek hi
+      layer mein dekh sakte hain (modulo masking). Path length between any two tokens becomes
+      constant rather than linear in sequence length. Cost badal jaata hai — attention matrices
+      <code>O(n²)</code> in sequence length for the naive implementation — lekin modern hardware par
+      yeh trade-off 2017 ke baad jeet-ta gaya, aur decoder-only Transformers (GPT lineage) industry
+      default ban gaye. PROD 405 capacity planning mein yahi <code>n²</code> phir se dikhega jab aap
+      context window double karoge.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Ashish Vaswani et al., “Attention Is All You Need,” NeurIPS 2017 (arXiv:1706.03762),
+        <a href="https://arxiv.org/abs/1706.03762">arxiv.org/abs/1706.03762</a>.
+        Paper introduce karti hai Transformer ko — pehla transduction model jo entirely attention
+        mechanisms par based hai, recurrence aur convolutions ko dispense karke — aur dikhati hai
+        ki yeh architecture zyada parallelizable hai aur significantly kam training time maangta hai
+        compared to recurrent baselines on machine translation.
+      </p>
+    </div>
+
+    <h2>2. Scaled dot-product attention — Q, K, V</h2>
+    <p>
+      Teen matrices socho, same sequence se derived: <strong>Queries</strong> (Q), <strong>Keys</strong> (K),
+      <strong>Values</strong> (V). Intuition — imperfect, lekin useful — ek retrieval system jaisi hai.
+      Query poochta hai “mujhe kis tarah ki information chahiye?” Key har position ka label / index
+      hai. Value woh payload hai jo aap actually mix karke aage bhejoge. Score between query
+      position <code>i</code> aur key position <code>j</code> unke dot product se aata hai. Softmax
+      across <code>j</code> weights banata hai. Output <code>i</code> = values ka weighted sum.
+    </p>
+    <p>
+      Formula, paper ke notation mein:
+      <code>Attention(Q, K, V) = softmax(QKᵀ / √dₖ) V</code>.
+      Yahan <code>dₖ</code> key/query dimension hai. Division by <code>√dₖ</code> scaling hai:
+      bina iske, badi dimensions par dot products ke magnitude badh jaate hain, softmax saturation
+      (FOUND 102 peaky distribution) gradients ko maar deti hai. Yeh “just a constant” nahi —
+      numerically zaroori hai.
+    </p>
+    <p>
+      Self-attention ka matlab: Q, K, V <em>same</em> input sequence se linear projections hain
+      (<code>X W_Q</code>, <code>X W_K</code>, <code>X W_V</code>). Har token doosre tokens ko attend
+      karta hai, including (usually) itself. Cross-attention (encoder–decoder) mein Q ek side se,
+      K/V doosri side se aate hain — translation-style models mein common; pure decoder-only LLMs
+      mein self-attention + causal mask dominant pattern hai.
+    </p>
+
+    <figure class="diagram" aria-label="Scaled dot-product attention">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Scaled dot-product attention (one head)</text>
+        <rect x="40" y="60" width="70" height="50" rx="8" fill="#12172B"/>
+        <text x="75" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="600">Q</text>
+        <rect x="130" y="60" width="70" height="50" rx="8" fill="#1c2438"/>
+        <text x="165" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="600">Kᵀ</text>
+        <text x="220" y="90" fill="#3F8C87" font-size="20">→</text>
+        <rect x="250" y="60" width="120" height="50" rx="8" fill="#3F8C87"/>
+        <text x="310" y="90" text-anchor="middle" fill="#fff" font-family="JetBrains Mono, monospace" font-size="13">scores/√dₖ</text>
+        <text x="385" y="90" fill="#3F8C87" font-size="20">→</text>
+        <rect x="415" y="60" width="100" height="50" rx="8" fill="#2a3348"/>
+        <text x="465" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">softmax</text>
+        <text x="530" y="90" fill="#3F8C87" font-size="20">→</text>
+        <rect x="560" y="60" width="70" height="50" rx="8" fill="#B8923F"/>
+        <text x="595" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">× V</text>
+        <text x="40" y="150" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">Shapes (batch omitted): Q,K are (n, dₖ), V is (n, dᵥ), scores are (n, n), output is (n, dᵥ).</text>
+        <text x="40" y="178" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">C# analog: each row of the score matrix is a soft routing table over the sequence — not a hard</text>
+        <text x="40" y="200" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">service discovery lookup. Weights sum to 1 per query row; values are the payloads being mixed.</text>
+        <text x="40" y="232" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Causal mask (decoder): future columns set to −∞ before softmax so token i cannot see i+1…n.</text>
+      </svg>
+      <figcaption>Figure 1. Attention = score → scale → softmax → mix values. Masking legal edges decide karti hai; softmax un edges par distribution rakhta hai.</figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Datadog mein aap ek trace ke spans ko related ids se join karte ho. Attention soft join hai:
+        har query row poori key table par distribution rakhti hai, phir values aggregate karti hai.
+        Analog toot-ta hai kyunki join keys yahan learned projections hain, schema columns nahi —
+        aur weights continuous hain, foreign-key match nahi.
+      </p>
+    </div>
+
+    <h2>3. Multi-head attention — parallel subspaces</h2>
+    <p>
+      Ek hi attention head saari “reasons to look” ko average kar deta hai. Multi-head attention
+      Q/K/V ko <code>h</code> alag projected subspaces mein bhejta hai, har head apna attention
+      compute karta hai, outputs concatenate hote hain, phir ek output projection <code>W_O</code>
+      se wapas <code>d_model</code> dimension mein aate hain. Paper ke original setup mein
+      <code>h = 8</code> aur <code>dₖ = dᵥ = d_model / h = 64</code> tha — chhote heads ke saath total
+      compute roughly single full-dimensional head jaisa rehta hai.
+    </p>
+    <p>
+      Practitioner reading: heads specialization <em>sometimes</em> interpretable hoti hai (syntax vs
+      rare tokens), lekin aap production mein heads ko manually assign nahi karte. Aap capacity aur
+      latency budget choose karte ho. Zyada heads / zyada <code>d_model</code> = zyada quality ceiling
+      (often) aur mehnga forward pass. APP 302 quantization is matrix multiply wall ko chhupegI;
+      pehle shapes clear rakho.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source</span>
+      <p>
+        Vaswani et al., §3.2.2 Multi-Head Attention (same paper as above). Authors state that they
+        linearly project queries, keys, and values <code>h</code> times into smaller dimensions,
+        run attention in parallel, concatenate, and project again — “Multi-head attention allows
+        the model to jointly attend to information from different representation subspaces at
+        different positions.”
+      </p>
+    </div>
+
+    <h2>4. Positional encoding — order ke bina set hai, sequence nahi</h2>
+    <p>
+      Pure attention permutation-equivariant hai agar aap positions ko explicitly na batao: tokens
+      ka bag-of-vectors treat ho sakta hai. Language order care karti hai (“auth restart karo” ≠
+      “restart auth mat karo”). Isliye Transformer input embeddings mein <em>positional</em>
+      information add karta hai. Original paper fixed sinusoidal encodings use karti hai — sine/cosine
+      of different frequencies — jo model ko relative aur absolute position cues dete hain bina
+      learned position table ke. Baad ke LLMs aksar learned positional embeddings ya relative schemes
+      (RoPE, ALiBi) use karte hain. Simplified for intuition: aapka job yeh samajhna hai ki
+      <strong>position signal mandatory hai</strong>; exact flavor model-family dependent hai aur
+      CORE 203/APP 302 mein naam se wapas aayega, full Fourier analysis yahan out of scope hai.
+    </p>
+
+    <figure class="diagram" aria-label="Encoder vs decoder stack">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Encoder–decoder Transformer vs decoder-only LLM</text>
+        <rect x="40" y="55" width="200" height="200" rx="10" fill="#12172B"/>
+        <text x="140" y="85" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Encoder stack</text>
+        <text x="140" y="120" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Self-attention</text>
+        <text x="140" y="145" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">(bidirectional)</text>
+        <text x="140" y="180" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Feed-forward</text>
+        <text x="140" y="215" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">N layers</text>
+        <rect x="280" y="55" width="200" height="200" rx="10" fill="#1c2438"/>
+        <text x="380" y="85" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="14" font-weight="700">Decoder stack</text>
+        <text x="380" y="120" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Masked self-attn</text>
+        <text x="380" y="145" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Cross-attn to enc</text>
+        <text x="380" y="180" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Feed-forward</text>
+        <text x="380" y="215" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">N layers</text>
+        <rect x="520" y="55" width="200" height="200" rx="10" fill="#3F8C87"/>
+        <text x="620" y="85" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="14" font-weight="700">Decoder-only LLM</text>
+        <text x="620" y="125" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">Masked self-attn</text>
+        <text x="620" y="155" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">Feed-forward</text>
+        <text x="620" y="190" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">× many layers</text>
+        <text x="620" y="225" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">GPT-style</text>
+        <text x="40" y="280" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Original paper = left two columns (MT). Chat LLMs you call daily ≈ right column. Mechanism shared; wiring differs.</text>
+      </svg>
+      <figcaption>Figure 2. “The Transformer” ek family hai. Translation-style encoder–decoder aur GPT-style decoder-only dono self-attention share karte hain; masking aur cross-attn presence alag hai.</figcaption>
+    </figure>
+
+    <h2>5. Encoder vs decoder — masking is the product feature</h2>
+    <p>
+      Encoder self-attention typically bidirectional hoti hai: position <code>i</code> left aur right
+      dono dekh sakti hai. Yeh BERT-style understanding models ke liye natural hai. Decoder mein,
+      agar aap left context se next token predict kar rahe ho (language modeling), to future tokens
+      dekhna cheating hai — training mein bhi, inference mein bhi. Isliye causal mask: softmax se
+      pehle illegal positions par <code>−∞</code> (practically ek bahut bada negative), taaki unka
+      weight ~0 ho. Lab exactly yahi mask implement karega.
+    </p>
+    <p>
+      Original Transformer decoder ke paas teesra block bhi tha: encoder–decoder attention, jahan
+      queries decoder se aate hain aur keys/values encoder output se. GPT-style LLMs mostly us
+      cross-attention ko hata kar sirf stacked causal self-attention + feed-forward use karte hain,
+      aur “prompt” ko bhi same token stream mein rakhte hain. Jab aap architecture diagram dekho,
+      pehle yeh poocho: causal mask hai ya nahi? Cross-attn hai ya nahi? Uske bina boxes confuse
+      karte hain.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Attention weights ko “explanation” maan lena. Weights dikate hain model ne values kahan se
+        mix kiye, lekin yeh faithful user-facing rationale nahi hain — especially multi-layer,
+        multi-head stacks mein. Production debugging ke liye traces + eval (PROD 401/404) pehle;
+        attention heatmaps optional forensics hain, ship gate nahi.
+      </p>
+    </div>
+
+    <h2>6. Why Transformers beat RNNs — aur kahan bill aata hai</h2>
+    <p>
+      Teen practical reasons, bina hype ke. Pehla: <strong>parallel training.</strong> Teacher-forced
+      training mein poori sequence ke attention scores ek saath compute ho sakte hain; RNN timesteps
+      nahi. Doosra: <strong>short path length</strong> for long-range dependencies — incident id aur
+      uska resolution sentence 900 tokens baad bhi ek layer mein interact kar sakte hain. Teesra:
+      <strong>ecosystem.</strong> Once the architecture won, tooling, kernels, and pretrained weights
+      compounded the advantage — same reason Kubernetes won ops mindshare beyond pure technical merit.
+    </p>
+    <p>
+      Bill side: naive attention memory aur compute sequence length ke square se badhte hain. Isliye
+      context window marketing number sirf “kitna text” nahi, “kitna compute per call” bhi hai.
+      APP 303 context/memory engineering isi tension ko product decisions mein badlegi (window vs
+      RAG). Yahan aap mechanism lock kar rahe ho.
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Source · optional deep dive</span>
+      <p>
+        Harvard NLP, “The Annotated Transformer,”
+        <a href="http://nlp.seas.harvard.edu/2018/04/03/attention.html">nlp.seas.harvard.edu/2018/04/03/attention.html</a>
+        — line-by-line PyTorch re-implementation of the paper. Useful if you want to see shapes in
+        code; is course ka lab usse chhota aur NumPy-only hai.
+      </p>
+    </div>
+
+    <h2>7. Hands-on lab</h2>
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · core-202</span>
+      <p>
+        <code>genai-gurukul-labs/core-202/</code> — NumPy only. Implement
+        <code>scaled_dot_product_attention</code>, <code>causal_mask</code>, and a tiny
+        <code>multi_head_attention</code> that splits heads, calls the single-head function, and
+        concatenates. Pytest frozen fixtures se shapes aur numerical values check karega.
+        <code>GURUKUL_LAB=solution pytest core-202/tests -q</code> for the reference.
+      </p>
+    </div>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> <code>QKᵀ / √dₖ</code> mein √dₖ scaling kyun hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Badi <code>dₖ</code> par dot-product magnitudes grow karte hain; bina scaling ke softmax
+            saturate hota hai aur gradients weak ho jaate hain. Scaling scores ko better-behaved
+            region mein rakhta hai (Vaswani et al.).
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Causal mask decoder-only LLM mein kya prevent karti hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Position <code>i</code> ko future positions <code>i+1…n</code> dekhne se — training aur
+            autoregressive generation dono mein — taaki next-token prediction leak na kare.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Transformers RNNs se training mein kyun better parallelize hote hain, aur kaunsa cost trade-off aata hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Attention across a sequence can be computed without timestep-serial dependency, so GPUs
+            chew full sequences in parallel under teacher forcing. Trade-off: naive attention is
+            <code>O(n²)</code> in sequence length for compute/memory — context window is a cost knob,
+            not only a quality knob.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — CORE 202</h2>
+      <ul class="dod-checklist">
+        <li>Book-like Hinglish lesson; design system; transcript strip</li>
+        <li>≥2 SVG diagrams (attention pipeline; encoder/decoder vs decoder-only)</li>
+        <li>Must-cover: Q/K/V self-attention, multi-head, positional encoding, encoder vs decoder, why beat RNNs</li>
+        <li>Lab starter/solution/pytest (NumPy attention + causal mask + multi-head)</li>
+        <li>Citations: Vaswani et al. 2017 (+ Annotated Transformer as optional dive)</li>
+        <li>Formative quiz; modules.json status Available</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="core-201-nlp-tokenization.html">
+        <span class="dir">Prev</span>
+        <span class="label">CORE 201 · Tokenization</span>
+      </a>
+      <div class="locked-next">
+        <span class="dir" style="display:block;font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.2rem;">Next</span>
+        CORE 203 · How LLMs Are Trained (locked until authored)
+      </div>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · CORE 202</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

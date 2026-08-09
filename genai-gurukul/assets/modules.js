@@ -3,7 +3,7 @@ window.GURUKUL_MODULES = [
   { "id": "found-102", "code": "FOUND 102", "slug": "found-102-math-intuition", "title": "Math Intuition for LLMs", "status": "available", "href": "modules/found-102-math-intuition.html", "track": "FOUND" },
   { "id": "found-103", "code": "FOUND 103", "slug": "found-103-neural-networks", "title": "How Neural Networks Learn", "status": "available", "href": "modules/found-103-neural-networks.html", "track": "FOUND" },
   { "id": "core-201", "code": "CORE 201", "slug": "core-201-nlp-tokenization", "title": "NLP Fundamentals & Tokenization", "status": "available", "href": "modules/core-201-nlp-tokenization.html", "track": "CORE" },
-  { "id": "core-202", "code": "CORE 202", "slug": "core-202-transformer", "title": "The Transformer Architecture", "status": "locked", "href": "modules/core-202-transformer.html", "track": "CORE" },
+  { "id": "core-202", "code": "CORE 202", "slug": "core-202-transformer", "title": "The Transformer Architecture", "status": "available", "href": "modules/core-202-transformer.html", "track": "CORE" },
   { "id": "core-203", "code": "CORE 203", "slug": "core-203-llm-training", "title": "How LLMs Are Trained", "status": "locked", "href": "modules/core-203-llm-training.html", "track": "CORE" },
   { "id": "core-204", "code": "CORE 204", "slug": "core-204-embeddings", "title": "Embeddings & Vector Semantics", "status": "locked", "href": "modules/core-204-embeddings.html", "track": "CORE" },
   { "id": "app-301", "code": "APP 301", "slug": "app-301-prompt-engineering", "title": "Prompt Engineering Mastery", "status": "locked", "href": "modules/app-301-prompt-engineering.html", "track": "APP" },

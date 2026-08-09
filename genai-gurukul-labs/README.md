@@ -21,8 +21,8 @@ Ollama is **not** required for FOUND 101–103 or CORE 201. Default local models
 | Debug / decision / track challenge | later tracks | rubric on the lesson page |
 
 ```bash
-pytest found-101/tests found-102/tests found-103/tests core-201/tests -q
-GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core-201/tests -q
+pytest found-101/tests found-102/tests found-103/tests core-201/tests core-202/tests -q
+GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core-201/tests core-202/tests -q
 ```
 
 ## Module map (available)
@@ -31,6 +31,7 @@ GURUKUL_LAB=solution pytest found-101/tests found-102/tests found-103/tests core
 - **FOUND 102** — Geometry, softmax + temperature, log-probs / perplexity
 - **FOUND 103** — TinyMLP forward / backward intuition / train loop
 - **CORE 201** — tiktoken counting, encoding compare, chat budget trim, toy BPE
+- **CORE 202** — scaled dot-product attention, causal mask, multi-head (NumPy)
 
 ## Layout
 
