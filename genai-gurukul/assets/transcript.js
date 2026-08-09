@@ -31,6 +31,8 @@
         a.href = resolveHref(mod, base);
         a.textContent = mod.code;
         a.title = mod.title;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
         if (isCurrent) a.setAttribute("data-current", "true");
         frag.appendChild(a);
       } else {
