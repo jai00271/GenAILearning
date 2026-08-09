@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORE Challenge — Embedding Model Decision · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">CORE · Track Challenge</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../../genai-gurukul-labs/challenges/core/">Challenge brief</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="core-challenge"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">CORE Challenge · after CORE 204</p>
+    <h1>Embedding model choose karna — vibe se nahi, domain corpus pe measure karke</h1>
+    <div class="lesson-meta">
+      <span>Track gate: CORE → APP</span>
+      <span>Brief: <code>genai-gurukul-labs/challenges/core/</code></span>
+      <span>No starter · no solution · rubric-graded</span>
+      <span>Prereq: CORE 201–204</span>
+    </div>
+
+    <p>
+      CORE track ne aapko tokens, attention, training story, aur embedding geometry tak laaya.
+      Ab last page pe koi new chapter nahi hai — ek <em>open-ended decision</em> hai. Production mein
+      “kaunsa embedding model?” aksar Slack pe opinion se decide hota hai. Yahan aap woh habit todoge:
+      chhota domain corpus, kam se kam do models, metrics table, aur ek one-page decision memo.
+      Starter folder nahi milega. Solution folder bhi nahi. Jo pass karega woh artifact + judgment hai,
+      green pytest nahi.
+    </p>
+    <p>
+      Corpus IT ops / runbook style rakho — wahi background jisse aap lessons mein baar-baar milte
+      ho: pod restarts, cert expiry, Kafka lag, password-reset runbooks. Optional fixtures
+      <code>challenges/core/corpus/</code> mein hain; aap unhe extend kar sakte ho, bas domain coherent
+      rakhna. Goal research paper nahi hai. Goal yeh hai ke aap hiring manager ko dikha sako: maine
+      measure kiya, trade-off likha, aur ship recommendation diya.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · CORE 204</span>
+      <p>
+        Embeddings dense vectors hain jo semantic neighborhood encode karte hain. Cosine / dot-product
+        retrieval us neighborhood pe chalti hai. Model change karna matlab geometry change karna —
+        same corpus pe do models alag neighbors, alag failure modes, alag cost/latency denge. Challenge
+        us difference ko number + prose mein pakadna hai.
+      </p>
+    </div>
+
+    <h2>1. Challenge kya hai — aur kya nahi</h2>
+    <p>
+      Aap kam se kam <strong>do</strong> embedding models (ya compatible embedding endpoints) choose
+      karoge — local Ollama models, sentence-transformers, ya labeled cloud APIs with a free/local
+      fallback. Unhe ek chhote domain corpus pe chalayoge. Retrieval-style evaluation design karoge:
+      queries vs relevant docs, ranking metrics (jaise Recall@k, MRR, ya nDCG@k — jo aap defend kar
+      sako), plus practical knobs: embedding dimension, throughput, and roughly what it would cost
+      at your expected document volume. Phir English mein ek one-page memo likhoge: recommendation,
+      evidence, aur jab aap doosra model pick karte.
+    </p>
+    <p>
+      Yeh RAG pipeline build nahi hai — woh APP 305 ka kaam hai. Yeh fine-tune bhi nahi hai. Yeh
+      “Hugging Face leaderboard screenshot paste” bhi nahi hai. Agar aapne domain queries ke bina
+      sirf MTEB numbers copy kiye, Evaluation evidence dimension pe aap fail karoge. Agar metrics
+      table hai lekin memo missing hai, Correctness/artifact pe fail. Rubric chaar axes pe 1–4
+      score karti hai; pass rule neeche English block mein hai.
+    </p>
+
+    <figure class="diagram" aria-label="CORE challenge flow">
+      <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="250" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · CORE track gate — measure, then decide</text>
+        <rect x="28" y="58" width="140" height="70" rx="8" fill="#12172B"/>
+        <text x="98" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Domain corpus</text>
+        <text x="98" y="110" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">IT ops / runbooks</text>
+        <text x="180" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="205" y="50" width="120" height="40" rx="6" fill="#3F8C87"/>
+        <text x="265" y="75" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12" font-weight="600">Model A</text>
+        <rect x="205" y="100" width="120" height="40" rx="6" fill="#2a3348"/>
+        <text x="265" y="125" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">Model B</text>
+        <text x="340" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="365" y="58" width="150" height="70" rx="8" fill="#1c2438"/>
+        <text x="440" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Metrics table</text>
+        <text x="440" y="110" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">Recall@k · latency · $</text>
+        <text x="528" y="98" fill="#3F8C87" font-size="22">→</text>
+        <rect x="555" y="58" width="175" height="70" rx="8" fill="#B8923F"/>
+        <text x="642" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">Decision memo</text>
+        <text x="642" y="110" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">1 page · English</text>
+        <text x="28" y="175" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">No starter code. No hidden solution. Pass = rubric: no dimension below 2, average ≥ 3.</text>
+        <text x="28" y="200" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">APP track shuru karne se pehle is page ki full rubric pe khud score karo — gate yahi hai.</text>
+        <text x="28" y="225" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Fixtures: genai-gurukul-labs/challenges/core/corpus/ — extend karo, replace mat bhoolna queries.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Track gate flow: same corpus, two (or more) embedders, comparable metrics, then an
+        English decision memo. Opinion without evidence does not pass.
+      </figcaption>
+    </figure>
+
+    <h2>2. Kaise approach karo — engineer ka loop</h2>
+    <p>
+      Pehle corpus freeze karo aur queries likho jo <em>real</em> operator language use karti hon —
+      “auth pod CrashLoopBackOff ke baad kya check karun” jaisi, keyword dump nahi. Har query ke
+      liye relevant document ids annotate karo (even a tiny qrels set of 8–15 queries enough hai
+      is scale pe). Phir Model A embed → retrieve → score; Model B same queries pe. Fairness ke
+      liye same chunking, same top-k, same preprocessing. Agar ek model 768-d hai aur doosra 384-d,
+      dimension ko metrics table mein likho — hide mat karo.
+    </p>
+    <p>
+      Pitfall: leaderboard pe jo model #1 hai woh aapke runbooks pe #1 nahi ho sakta. Domain jargon
+      (“PDB”, “HPA”, “runbook”) pe general web models soft pad sakte hain. Doosra pitfall: sirf
+      cosine heatmap dekh ke “achha lag raha hai” bolna — woh Evaluation evidence nahi hai. Teesra:
+      memo mein sirf winner declare karna without saying when you would reverse the call (cost
+      spike, air-gapped deploy, multilingual ops docs).
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · brief location</span>
+      <p>
+        English deliverable list, suggested corpus theme, and the same rubric copy live in
+        <a href="../../genai-gurukul-labs/challenges/core/README.md"><code>genai-gurukul-labs/challenges/core/README.md</code></a>.
+        Optional text fixtures: <code>challenges/core/corpus/*.txt</code>. Apna notebook / script
+        kahin bhi rakh sakte ho — repo mein starter scaffold intentionally absent hai.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Cloud embedding API use karo to cost aur data-residency ek line mein memo mein aani chahiye.
+        Agar aapne paid API chalaya aur local fallback measure nahi kiya, Production awareness weak
+        padegi — course ka default bias local-first hai jab tak lesson explicitly paid na kahe.
+      </p>
+    </div>
+
+    <h2>3. Portfolio-facing English — deliverables</h2>
+    <p>
+      Neeche ke boxes deliberately English mein hain. Challenge memo aur rubric criteria portfolio
+      artifacts hain; Hinglish lesson framing unki jagah nahi leti. Hiring manager ko yeh sections
+      aise milne chahiye jaise aapne job pe likha ho.
+    </p>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision memo requirements</span>
+      <p>
+        Write a one-page decision memo (approximately 400–600 words) in clear English. State which
+        embedding model you recommend for an IT-ops / runbook retrieval prototype and why. Include
+        a compact metrics table comparing at least two models on the same corpus and query set
+        (retrieval quality at a stated <code>k</code>, plus at least one systems metric such as
+        latency, throughput, dimension, or estimated cost at a stated document volume). Name your
+        evaluation protocol so a reviewer could reproduce the ranking. Call out failure cases you
+        observed (queries where the winner still missed). End with an explicit reverse condition:
+        when you would pick the other model instead. Do not submit starter scaffolding — there is
+        none — and do not expect a reference solution folder.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Suggested corpus &amp; models</span>
+      <p>
+        Domain: short IT operations documents — incident runbooks, on-call notes, and service
+        health snippets. Optional fixtures ship under
+        <code>genai-gurukul-labs/challenges/core/corpus/</code>. Model pairs that work well locally
+        include two different sentence-transformer checkpoints, or a local Ollama embedding model
+        versus another local embedder. Cloud APIs are allowed if labeled and compared fairly against
+        a local option. Keep the corpus small enough to embed repeatedly while you debug the
+        evaluation loop.
+      </p>
+    </div>
+
+    <h2>4. Rubric — score yourself before APP</h2>
+    <p>
+      Yeh CORE track ka gate hai. Neeche full rubric table hai — har cell full sentences mein,
+      taaki aap self-grade kar sako bina mentor ke. Pass rule English block mein locked hai.
+    </p>
+
+    <div class="callout intuition" lang="en">
+      <span class="callout-label">Portfolio-facing English · Pass rule</span>
+      <p>
+        Each dimension is scored from 1 to 4. You pass the CORE track challenge only when
+        <strong>no dimension is below 2</strong> and the <strong>average across the four dimensions
+        is at least 3.0</strong>. Anything less means revise the artifact before treating APP 301 as
+        unlocked for yourself.
+      </p>
+    </div>
+
+    <table class="rubric" lang="en">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>1 — Inadequate</th>
+          <th>2 — Developing</th>
+          <th>3 — Solid</th>
+          <th>4 — Exemplary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Correctness / artifact</td>
+          <td>Deliverables are missing, not in English, or do not compare two real embedding setups on a stated corpus.</td>
+          <td>A memo and some numbers exist, but the comparison is incomplete, hard to parse, or mixes incompatible setups without disclosure.</td>
+          <td>A one-page English memo plus a readable metrics table compare ≥2 embedding models on the same domain corpus with clear recommendation.</td>
+          <td>Artifacts are crisp, reproducible, and would be credible in a design review; tables and memo align without hand-waving.</td>
+        </tr>
+        <tr>
+          <td>Evaluation evidence</td>
+          <td>Claims rely on vibes, marketing pages, or unrelated leaderboard screenshots with no domain queries.</td>
+          <td>Some retrieval or similarity numbers appear, but the protocol (queries, relevance, <code>k</code>, metric definition) is vague or unreproducible.</td>
+          <td>A small labeled query set and stated metrics (for example Recall@k or MRR) support the recommendation on this corpus.</td>
+          <td>Evidence includes honest misses, sensitivity to <code>k</code> or preprocessing, and enough detail that a peer could re-run the comparison.</td>
+        </tr>
+        <tr>
+          <td>Engineering judgment</td>
+          <td>Picks a winner without trade-offs, or optimizes a vanity metric that does not match the retrieval job.</td>
+          <td>Notes a trade-off superficially but does not connect model choice to the IT-ops retrieval use case.</td>
+          <td>Weighs quality against practical constraints (dimension, speed, operational fit) and states when the other model wins.</td>
+          <td>Judgment reads like production triage: clear default, explicit reverse conditions, and scoped next experiments.</td>
+        </tr>
+        <tr>
+          <td>Production awareness</td>
+          <td>Ignores cost, latency, data residency, dependency risk, or local-vs-cloud implications entirely.</td>
+          <td>Mentions one production concern in passing without tying it to the recommendation.</td>
+          <td>Addresses cost and/or latency and at least one operational concern (vendor lock-in, offline/air-gapped needs, or PII in ops text).</td>
+          <td>Treats embedding choice as a deployable decision: capacity, failure modes, and monitoring or re-evaluation triggers are named.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="dod">
+      <h2>Definition of Done — CORE challenge</h2>
+      <ul class="dod-checklist">
+        <li>≥2 embedding models compared on one domain corpus (IT ops / runbooks OK)</li>
+        <li>Metrics table with retrieval quality + at least one systems metric</li>
+        <li>One-page decision memo in English (portfolio-facing)</li>
+        <li>Self-score on all four rubric dimensions; pass rule met (no dim &lt; 2, avg ≥ 3)</li>
+        <li>No reliance on a starter/ or solution/ folder — none ship for this gate</li>
+      </ul>
+    </section>
+
+    <div class="gate-banner">
+      <strong>GATE</strong>
+      <p>
+        Score yourself against the rubric before starting the next track.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Next track warning</span>
+      <p>
+        APP 301 (Prompt Engineering) CORE gate clear hone ke baad sense banata hai. Agar aap rubric
+        pe average &lt; 3 ke saath aage badhte ho, prompt work pe “model magic” wapas aa jayega —
+        kyunki aapne pehle measure-then-decide muscle skip kar di. Banner upar intentionally last
+        thing hai before nav: self-score first, phir APP.
+      </p>
+    </div>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="core-204-embeddings.html">
+        <span class="dir">Prev</span>
+        <span class="label">CORE 204 · Embeddings &amp; Vector Semantics</span>
+      </a>
+      <div class="locked-next">
+        <span class="dir" style="display:block;font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.2rem;">Next</span>
+        APP 301 · Prompt Engineering (locked — clear this challenge rubric first)
+      </div>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · CORE Challenge</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+</body>
+</html>

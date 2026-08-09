@@ -1,0 +1,8 @@
+Title: On-call note — Datadog monitor storm after deploy
+Date: recorded for training corpus
+
+After release 2026.08.04, monitors for auth-api p95 latency and error rate flapped for 20 minutes.
+Root cause: canary and stable shared a single monitor without version tag.
+Fix: split monitors by deployment.version and silence only the canary scope during bake.
+
+Lesson for retrieval: “monitor flapping after deploy” should rank this note above generic latency runbooks.

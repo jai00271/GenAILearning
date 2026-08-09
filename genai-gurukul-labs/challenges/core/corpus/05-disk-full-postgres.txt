@@ -1,0 +1,10 @@
+Title: Disk full on stateful Postgres node
+Alert: filesystem /var/lib/postgresql > 90%
+
+Immediate:
+1. Confirm which tablespace is growing (pg_database_size / pg_relation_size)
+2. Check WAL accumulation — failed archive to S3 is a common root cause
+3. Temporary relief: expand volume via the terraform module db_volume_expand
+4. Do not delete WAL segments manually
+
+Follow-up within 24h: vacuum/analyze heavy tables, review autovacuum settings, file capacity ticket.

@@ -1,0 +1,10 @@
+Title: Horizontal Pod Autoscaler not scaling auth-api
+Context: CPU average stuck at 85% but replica count unchanged
+
+Debug order:
+1. Confirm HPA object targets the correct Deployment name and apiVersion
+2. Metrics-server freshness — kubectl top pods should return data
+3. Check minReplicas/maxReplicas clamps and any ScaledObject conflict (KEDA)
+4. Verify resource requests are set; HPA on CPU requires requests
+
+If custom metrics are used (RPS), ensure Prometheus adapter rules match the ServiceMonitor labels.

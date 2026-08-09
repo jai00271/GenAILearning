@@ -49,7 +49,7 @@
     "code": "CORE 203",
     "slug": "core-203-llm-training",
     "title": "How LLMs Are Trained",
-    "status": "locked",
+    "status": "available",
     "href": "modules/core-203-llm-training.html",
     "track": "CORE"
   },
@@ -58,7 +58,7 @@
     "code": "CORE 204",
     "slug": "core-204-embeddings",
     "title": "Embeddings & Vector Semantics",
-    "status": "locked",
+    "status": "available",
     "href": "modules/core-204-embeddings.html",
     "track": "CORE"
   },

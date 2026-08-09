@@ -1,0 +1,12 @@
+Title: Redis session store failover
+Service dependency: auth-api, admin-console
+
+Symptoms: intermittent 401s, elevated SET latency, replica lag alerts.
+
+Steps:
+1. Check Redis mode (cluster vs sentinel) in the identity terraform state
+2. Promote replica only via the approved runbook-redis-failover playbook
+3. Flush is forbidden — sessions must expire naturally or re-auth
+4. Validate auth-api connection pool size after failover
+
+If failover coincides with password-reset volume spikes, expect token store pressure; scale Redis memory before retry storms.

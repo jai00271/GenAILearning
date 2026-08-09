@@ -1,0 +1,12 @@
+Title: TLS certificate expiry — edge and internal mTLS
+Owner: platform-security
+
+Alert: certificate expires_in_days <= 14
+
+Actions:
+1. Identify cert inventory tag (edge vs service-mesh vs database)
+2. For edge certs, renew via ACM or the internal vault PKI path documented in runbook-edge-tls
+3. For mesh mTLS, rotate the intermediate and bounce sidecars in batches of 10%
+4. Update the cert calendar and close the PagerDuty alert only after probe success
+
+False positive note: staging wildcards often share SANs with prod; filter by environment label.

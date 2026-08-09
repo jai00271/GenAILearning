@@ -1,0 +1,13 @@
+Title: PodDisruptionBudget blocking cluster upgrade
+Incident: node drain stuck for 45+ minutes during patch Tuesday
+
+Notes:
+- PDB auth-api requires minAvailable: 2 but only 2 pods exist in region
+- Drain cannot evict without violating PDB
+
+Mitigation:
+1. Temporarily raise replicas to 3 before drain, or
+2. Use a maintenance window annotation agreed with identity owners
+3. Never delete PDB in production without change ticket
+
+After upgrade: restore desired replica count and confirm readiness gates.
