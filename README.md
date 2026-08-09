@@ -9,11 +9,17 @@ Job-ready practitioner course in Generative AI — production RAG, agents, evalu
 
 ## Serve
 
+Serve from the **repo root** (parent of both `genai-gurukul/` and `genai-gurukul-labs/`). If you start the server only inside `genai-gurukul/`, browser links to `genai-gurukul-labs/...` return **404**.
+
 ```bash
-cd genai-gurukul && python3 -m http.server 8080
+# From this folder (GEN AI / repo root)
+python3 -m http.server 8080
 ```
 
-Open http://localhost:8080 — catalog/transcript from `assets/modules.js`.
+- Course site: http://localhost:8080/genai-gurukul/
+- Example lab folder: http://localhost:8080/genai-gurukul-labs/found-101/
+
+Catalog/transcript come from `genai-gurukul/assets/modules.js`. Module cards, transcript codes, Labs links, and external docs open in a **new tab**.
 
 **All 24 modules are available**, plus CORE/APP/PROD track-challenge pages.
 
