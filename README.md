@@ -20,9 +20,9 @@ pip install cursor-sdk
 python serve.py
 ```
 
-- Course site: http://localhost:8080/genai-gurukul/  (or http://127.0.0.1:8080/genai-gurukul/)
-- Example lab folder: http://localhost:8080/genai-gurukul-labs/found-101/
-- Chat health: http://localhost:8080/api/tutor/health
+- Course site: http://127.0.0.1:8080/genai-gurukul/  *(Windows: `localhost` mat use karo — `::1` empty response de sakta hai)*
+- Example lab folder: http://127.0.0.1:8080/genai-gurukul-labs/found-101/
+- Chat health: http://127.0.0.1:8080/api/tutor/health
 
 Catalog/transcript come from `genai-gurukul/assets/modules.js`. Module cards, transcript codes, Labs links, and external docs open in a **new tab**.
 

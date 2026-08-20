@@ -399,10 +399,11 @@
     <p>
       Autoregressive decode: har naye token pe model past tokens pe attention karta hai. Agar aap
       pehle ke Key/Value projections discard kar do, har step pe poora prompt dubara process
-      karna padega. <strong>KV cache</strong> un past K/V tensors ko RAM/VRAM mein rakhta hai
-      taaki naya token sirf incremental work kare. Cost: cache sequence length × layers × heads ×
-      dim × dtype bytes — context lambi → memory up. Isliye “128K context” marketing ke peeche
-      serving memory pressure hai, sirf training brag nahi.
+      karna padega.       <strong>KV cache</strong> un past K/V tensors ko RAM/VRAM mein rakhta hai
+      taaki naya token sirf incremental work kare. Cost: <strong>2</strong> (K aur V dono store
+      karne hain) × sequence length × layers × heads × dim × dtype bytes — context lambi →
+      memory up. Isliye “128K context” marketing ke peeche serving memory pressure hai, sirf
+      training brag nahi.
     </p>
 
     <h3>7.3 vLLM-class server vs laptop Ollama</h3>

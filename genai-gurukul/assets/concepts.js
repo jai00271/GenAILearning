@@ -139,7 +139,7 @@ window.GURUKUL_CONCEPTS = {
       "<text x='290' y='112' fill='#4A5268' font-size='11' font-family='Inter, sans-serif'>next token sample</text>" +
       "</svg>" +
       "<figcaption>Figure. Softmax ek distribution deta hai; decoding usme se next token pick karti hai.</figcaption></figure>" +
-      "<div class='callout intuition'><span class='callout-label'>Intuition</span><p>Log-probs = <code>log(softmax(z))</code>. Perplexity inhi log-probs ka geometric average hai — FOUND 102.</p></div>",
+      "<div class='callout intuition'><span class='callout-label'>Intuition</span><p>Log-probs = <code>log(softmax(z))</code>. Perplexity inhi log-probs (NLL) ke mean ka exponent hai — ya equivalently, per-token probabilities ke geometric mean ka reciprocal — FOUND 102.</p></div>",
   },
 
   perplexity: {
@@ -169,7 +169,7 @@ window.GURUKUL_CONCEPTS = {
     blurb: "Loss se peeche gradients bhejke weights update karna.",
     related: ["softmax", "lora", "transformer"],
     body:
-      "<p>Training loop teen steps: forward (prediction), loss (kitna galat), <strong>backprop</strong> (har weight pe ∂loss/∂w), phir optimizer step (SGD/Adam). Neural net “seekhti” nahi jaadu se — woh locally loss downhill walk karti hai.</p>" +
+      "<p>Training loop chaar steps: forward (prediction), loss (kitna galat), <strong>backprop</strong> (har weight pe ∂loss/∂w), phir optimizer step (SGD/Adam). Neural net “seekhti” nahi jaadu se — woh locally loss downhill walk karti hai.</p>" +
       "<figure class='diagram' aria-label='forward and backward pass'>" +
       "<svg viewBox='0 0 420 170' xmlns='http://www.w3.org/2000/svg' role='img'>" +
       "<rect width='420' height='170' fill='#F5F1E6'/>" +
@@ -252,7 +252,7 @@ window.GURUKUL_CONCEPTS = {
     blurb: "Har token doosre tokens ko weighted combination se “dekh” sakta hai.",
     related: ["transformer", "context-window", "embedding"],
     body:
-      "<p><strong>Self-attention</strong> har position pe query (Q), key (K), value (V) vectors banata hai. Score = Q·K, softmax weights, phir V ka weighted sum. Matlab: “is token ko context ke kis hisse par dhyan dena chahiye?”</p>" +
+      "<p><strong>Self-attention</strong> har position pe query (Q), key (K), value (V) vectors banata hai. Score = Q·Kᵀ / √dₖ (scaling zaroori hai, warna softmax saturate ho jaata hai), softmax weights, phir V ka weighted sum. Matlab: “is token ko context ke kis hisse par dhyan dena chahiye?”</p>" +
       "<p>Multi-head = yeh process parallel several subspaces mein. Ek head syntax, doosra long-range reference — empirically alag patterns seekhte hain.</p>" +
       "<figure class='diagram' aria-label='attention weight heatmap sketch'>" +
       "<svg viewBox='0 0 420 210' xmlns='http://www.w3.org/2000/svg' role='img'>" +

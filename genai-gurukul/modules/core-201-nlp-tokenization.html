@@ -153,9 +153,10 @@
     </p>
     <p>
       Worked miniature. Maan lo aapka poora “corpus” yeh teen strings hain (spaces explicit):
-      <code>low</code>, <code>lowest</code>, <code>newer</code>. Characters se start karo. Sabse
-      frequent adjacent pair shayad <code>l o</code> ya <code>e r</code> hoga depending on counts.
-      Har merge ek naya vocab entry banata hai — <code>lo</code>, phir <code>low</code>, phir
+      <code>low</code>, <code>lowest</code>, <code>newer</code>. Characters se start karo. Yahan
+      sabse frequent adjacent pairs <code>l o</code>, <code>o w</code>, aur <code>w e</code> hain
+      — teeno count 2 pe tied (jabki <code>e r</code> sirf ek baar aata hai, sabse rare pairs mein
+      se ek) — tie tokenizer ki rule se break hoti hai. Har merge ek naya vocab entry banata hai — <code>lo</code>, phir <code>low</code>, phir
       <code>est</code>, aur aage. Jab aap merge list freeze kar dete ho, encoding algorithm left-to-right
       (ya tokenizer-specific rule se) greedy merges apply karta hai. Result: “lowest” shayad
       <code>low</code> + <code>est</code> ban jaaye, “lowing” jaise unseen word bhi pieces se cover

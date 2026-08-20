@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PORT = int(os.environ.get("GURUKUL_PORT", "8080"))
-MODEL = os.environ.get("GURUKUL_TUTOR_MODEL", "composer-2.5")
+MODEL = os.environ.get("GURUKUL_TUTOR_MODEL", "auto")
 
 
 def load_dotenv(path: Path) -> None:
@@ -164,25 +164,12 @@ def run_cursor(question: str, context: dict, agent_id: str | None):
             r"(C:\Users\JAI\Documents\LEARN\GEN AI\.env)."
         )
 
+    # Ask-only: empty toolset (no shell/edit). Safer than a long disallowed_tools list.
     opts = AgentOptions(
         model=MODEL,
         api_key=key,
         local=LocalAgentOptions(cwd=str(ROOT)),
-        disallowed_tools=[
-            "shell",
-            "piBash",
-            "piWrite",
-            "piEdit",
-            "delete",
-            "edit",
-            "applyAgentDiff",
-            "computerUse",
-            "writeShellStdin",
-            "replaceEnv",
-            "setActiveBranch",
-            "connectScm",
-            "prManagement",
-        ],
+        tools=[],
     )
     first_turn = not agent_id
     prompt = page_prompt(question, context, first_turn=first_turn)
@@ -203,17 +190,33 @@ def run_cursor(question: str, context: dict, agent_id: str | None):
             _AGENTS[getattr(agent, "agent_id", "") or ""] = agent
 
             run = agent.send(prompt)
-            text = run.text()
             result = run.wait()
+            text = (run.text() or "").strip() or (getattr(result, "result", None) or "").strip()
             status = getattr(result, "status", None) or "finished"
-            return {
-                "ok": str(status) == "finished" or status is None,
-                "text": text or "",
+            status_s = str(status)
+            ok = status_s == "finished" or status is None
+            payload: dict = {
+                "ok": ok,
+                "text": text,
                 "agentId": getattr(agent, "agent_id", None) or agent_id,
-                "status": str(status),
+                "status": status_s,
+                "runId": getattr(result, "id", None) or getattr(run, "id", None),
             }
+            if not ok:
+                payload["error"] = (
+                    text
+                    or f"Cursor run failed (status={status_s}, model={MODEL}). "
+                    "serve.py restart karo; GURUKUL_TUTOR_MODEL=auto try karo; "
+                    "Cursor account pe agent/API access check karo."
+                )
+            return payload
         except CursorAgentError as err:
             raise RuntimeError(f"Cursor agent failed to start: {err}") from err
+
+
+class GurukulServer(ThreadingHTTPServer):
+    # Windows SO_REUSEADDR lets two processes share :8080 → ERR_EMPTY_RESPONSE.
+    allow_reuse_address = False
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -240,18 +243,25 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
-        if self.path.split("?", 1)[0] == "/api/tutor/health":
-            status, ctype, body = json_bytes(
-                {
-                    "ok": True,
-                    "hasKey": bool(api_key()),
-                    "model": MODEL,
-                    "bridgeReady": _CLIENT is not None,
-                }
-            )
-            self._send(status, ctype, body)
-            return
-        super().do_GET()
+        try:
+            if self.path.split("?", 1)[0] == "/api/tutor/health":
+                status, ctype, body = json_bytes(
+                    {
+                        "ok": True,
+                        "hasKey": bool(api_key()),
+                        "model": MODEL,
+                        "bridgeReady": _CLIENT is not None,
+                    }
+                )
+                self._send(status, ctype, body)
+                return
+            super().do_GET()
+        except Exception:
+            traceback.print_exc()
+            try:
+                self.send_error(500, "Internal error")
+            except Exception:
+                pass
 
     def do_POST(self) -> None:
         if self.path.split("?", 1)[0] != "/api/tutor":
@@ -309,20 +319,21 @@ def main() -> None:
         print(f"WARNING: Cursor bridge failed to start: {err}", file=sys.stderr, flush=True)
         traceback.print_exc()
 
+    # IPv4 only. Windows `localhost` often hits ::1 and DualStack can return ERR_EMPTY_RESPONSE.
     try:
-        class DualStackServer(ThreadingHTTPServer):
-            address_family = socket.AF_INET6
-
-            def server_bind(self):
-                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-                super().server_bind()
-
-        server = DualStackServer(("::", PORT), Handler)
-    except OSError:
-        server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+        server = GurukulServer(("127.0.0.1", PORT), Handler)
+    except OSError as err:
+        print(
+            f"ERROR: port {PORT} already in use ({err}).\n"
+            "Purane python/http.server ko Ctrl+C ya yeh chalao:\n"
+            f"  Get-NetTCPConnection -LocalPort {PORT} | "
+            "%{ Stop-Process -Id $_.OwningProcess -Force }",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     print(f"GenAI Gurukul  http://127.0.0.1:{PORT}/genai-gurukul/")
-    print(f"               http://localhost:{PORT}/genai-gurukul/")
+    print("Windows: 127.0.0.1 use karo, localhost (::1) nahi.")
     print("Ask Gurukul chat uses Cursor SDK (local agent, no file edits requested).")
     try:
         server.serve_forever()

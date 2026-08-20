@@ -17,4 +17,4 @@ class ChatTurn(BaseModel):
 
 def parse_turns(payloads: list[dict[str, Any]]) -> list[ChatTurn]:
     """Validate a list of dicts into ChatTurn models (fail fast on bad rows)."""
-    raise NotImplementedError("Implement parse_turns")
+    return [ChatTurn.model_validate(payload) for payload in payloads]

@@ -57,15 +57,180 @@
       .replace(/"/g, "&quot;");
   }
 
-  function formatText(s) {
-    var html = escapeHtml(s);
-    html = html.replace(/```([\s\S]*?)```/g, function (_, code) {
-      return "<pre><code>" + code.trim() + "</code></pre>";
+  function formatInline(s) {
+    s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^\*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+    s = s.replace(
+      /\[([^\]]+)\]\((https?:[^)\s]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+    return s;
+  }
+
+  function isTableSep(line) {
+    return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+  }
+
+  function splitRow(line) {
+    var s = String(line || "").trim();
+    if (s.charAt(0) === "|") s = s.slice(1);
+    if (s.charAt(s.length - 1) === "|") s = s.slice(0, -1);
+    return s.split("|").map(function (c) {
+      return c.trim();
     });
-    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
-    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/\n/g, "<br>");
+  }
+
+  function renderTable(headers, rows) {
+    var html = '<div class="tutor-table-wrap"><table><thead><tr>';
+    headers.forEach(function (h) {
+      html += "<th>" + formatInline(h) + "</th>";
+    });
+    html += "</tr></thead><tbody>";
+    rows.forEach(function (row) {
+      html += "<tr>";
+      for (var c = 0; c < headers.length; c++) {
+        html += "<td>" + formatInline(row[c] || "") + "</td>";
+      }
+      html += "</tr>";
+    });
+    html += "</tbody></table></div>";
     return html;
+  }
+
+  function formatText(raw) {
+    var html = escapeHtml(String(raw || ""));
+    var fences = [];
+    html = html.replace(/```(?:[a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g, function (_, code) {
+      fences.push("<pre><code>" + code.trim() + "</code></pre>");
+      return "\n%%FENCE" + (fences.length - 1) + "%%\n";
+    });
+
+    var lines = html.split(/\r?\n/);
+    var out = [];
+    var para = [];
+    var i = 0;
+
+    function flushPara() {
+      if (!para.length) return;
+      out.push("<p>" + formatInline(para.join("<br>")) + "</p>");
+      para = [];
+    }
+
+    while (i < lines.length) {
+      var line = lines[i];
+      var fence = /^%%FENCE(\d+)%%$/.exec(line.trim());
+      if (fence) {
+        flushPara();
+        out.push(fences[Number(fence[1])]);
+        i += 1;
+        continue;
+      }
+      if (/^\s*---+\s*$/.test(line) || /^\s*\*\*\*+\s*$/.test(line)) {
+        flushPara();
+        out.push("<hr>");
+        i += 1;
+        continue;
+      }
+      var heading = /^\s*(#{1,4})\s+(.+)$/.exec(line);
+      if (heading) {
+        flushPara();
+        var tag = "h" + Math.min(Math.max(heading[1].length, 2), 4);
+        out.push("<" + tag + ">" + formatInline(heading[2]) + "</" + tag + ">");
+        i += 1;
+        continue;
+      }
+      if (i + 1 < lines.length && /\|/.test(line) && isTableSep(lines[i + 1])) {
+        flushPara();
+        var headers = splitRow(line);
+        i += 2;
+        var rows = [];
+        while (
+          i < lines.length &&
+          /\|/.test(lines[i]) &&
+          !isTableSep(lines[i]) &&
+          !/^%%FENCE/.test(lines[i].trim())
+        ) {
+          rows.push(splitRow(lines[i]));
+          i += 1;
+        }
+        out.push(renderTable(headers, rows));
+        continue;
+      }
+      var ul = /^\s*[-*]\s+(.+)$/.exec(line);
+      if (ul) {
+        flushPara();
+        out.push("<ul>");
+        while (i < lines.length) {
+          var um = /^\s*[-*]\s+(.+)$/.exec(lines[i]);
+          if (!um) break;
+          out.push("<li>" + formatInline(um[1]) + "</li>");
+          i += 1;
+        }
+        out.push("</ul>");
+        continue;
+      }
+      var ol = /^\s*\d+\.\s+(.+)$/.exec(line);
+      if (ol) {
+        flushPara();
+        out.push("<ol>");
+        while (i < lines.length) {
+          var om = /^\s*\d+\.\s+(.+)$/.exec(lines[i]);
+          if (!om) break;
+          out.push("<li>" + formatInline(om[1]) + "</li>");
+          i += 1;
+        }
+        out.push("</ol>");
+        continue;
+      }
+      if (!line.trim()) {
+        flushPara();
+        i += 1;
+        continue;
+      }
+      para.push(line);
+      i += 1;
+    }
+    flushPara();
+    return out.join("");
+  }
+
+  function copyText(text, btn) {
+    var value = String(text || "");
+    function done(ok) {
+      if (!btn) return;
+      var prev = btn.getAttribute("data-label") || btn.textContent;
+      btn.setAttribute("data-label", prev);
+      btn.textContent = ok ? "Copied" : "Failed";
+      setTimeout(function () {
+        btn.textContent = prev;
+      }, 1400);
+    }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        done(document.execCommand("copy"));
+      } catch (err) {
+        done(false);
+      }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).then(
+        function () {
+          done(true);
+        },
+        fallback
+      );
+    } else {
+      fallback();
+    }
   }
 
   function apiCandidates() {
@@ -167,10 +332,26 @@
       return;
     }
     messages.forEach(function (m) {
+      var wrap = document.createElement("div");
+      wrap.className = "tutor-msg tutor-" + m.role;
+
       var div = document.createElement("div");
       div.className = "tutor-bubble tutor-" + m.role;
-      div.innerHTML = m.role === "assistant" ? formatText(m.text) : escapeHtml(m.text);
-      logEl.appendChild(div);
+      if (m.role === "assistant") div.innerHTML = formatText(m.text);
+      else div.textContent = m.text || "";
+
+      var copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "tutor-copy";
+      copyBtn.textContent = "Copy";
+      copyBtn.setAttribute("aria-label", "Copy message");
+      copyBtn.addEventListener("click", function () {
+        copyText(m.text || "", copyBtn);
+      });
+
+      wrap.appendChild(div);
+      wrap.appendChild(copyBtn);
+      logEl.appendChild(wrap);
     });
     logEl.scrollTop = logEl.scrollHeight;
   }
@@ -264,7 +445,7 @@
         renderLog(logEl, [
           {
             role: "assistant",
-            text: "Yeh page file:// se khula hai. http://localhost:8080/genai-gurukul/ use karo — `python serve.py`.",
+            text: "Yeh page file:// se khula hai. http://127.0.0.1:8080/genai-gurukul/ use karo — `python serve.py`.",
           },
         ]);
         return;
@@ -289,7 +470,10 @@
           if (!out.res.ok || data.ok === false) {
             session.messages.push({
               role: "assistant",
-              text: data.error || "Tutor unavailable. `python serve.py` + .env mein CURSOR_API_KEY check karo.",
+              text:
+                data.error ||
+                data.text ||
+                "Tutor unavailable. `python serve.py` restart + .env mein CURSOR_API_KEY check karo.",
             });
           } else {
             if (data.agentId) session.agentId = data.agentId;
@@ -302,7 +486,7 @@
           session.messages.push({
             role: "assistant",
             text:
-              "Tutor API nahi mili. Repo root se `python serve.py` chalao, phir http://localhost:8080/genai-gurukul/ kholo. " +
+              "Tutor API nahi mili. Repo root se `python serve.py` chalao, phir http://127.0.0.1:8080/genai-gurukul/ kholo. " +
               (err && err.message ? "(" + err.message + ")" : ""),
           });
           saveSession(ctx, session);
