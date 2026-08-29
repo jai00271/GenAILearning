@@ -4,10 +4,15 @@
     CORE: { title: "Language & Transformers", blurb: "Tokenization, the Transformer, how LLMs are trained, embeddings. Track challenge after CORE 204." },
     APP: { title: "Building GenAI Applications", blurb: "Prompts, APIs, context/memory, evaluation fundamentals — then RAG, agents, multi-agent. Eval before RAG." },
     PROD: { title: "Customization & Production", blurb: "Advanced eval, PEFT, guardrails, observability/cost, deploy, prompt/model CI/CD. Eval before fine-tune." },
-    CAP: { title: "Capstone & Career", blurb: "Portfolio RAG+agent under written acceptance criteria, then interview prep. English artifacts only." }
+    CAP: { title: "Capstone & Career", blurb: "Portfolio RAG+agent under written acceptance criteria, then interview prep. English artifacts only." },
+    EM: {
+      title: "Phase 2 · Engineering Manager",
+      blurb:
+        "For Technical Managers moving to EM at large orgs: people systems, hiring bar, performance, delivery ownership, GenAI team design, culture, incidents, and leadership narrative. Builds on Phase 1 GenAI depth — does not replace it.",
+    },
   };
 
-  var TRACK_ORDER = ["FOUND", "CORE", "APP", "PROD", "CAP"];
+  var TRACK_ORDER = ["FOUND", "CORE", "APP", "PROD", "CAP", "EM"];
 
   function resolveHref(mod, base) {
     if (!mod.href) return null;
@@ -34,8 +39,19 @@
     intro.className = "catalog-intro";
     intro.innerHTML =
       "<h2>Course catalog</h2>" +
-      "<p>Twenty-four modules across five tracks. Foundations unlock first; later tracks open as you clear Definition of Done gates.</p>";
+      "<p><strong>Phase 1</strong> — GenAI practitioner path (FOUND → CAP), twenty-four modules. " +
+      "<strong>Phase 2</strong> — Engineering Manager track (EM 601–612) for leaders who already ship systems and want the people + org muscle of an EM at scale. " +
+      "Phase 1 stays intact; Phase 2 builds on top.</p>";
     frag.appendChild(intro);
+
+    var phase2 = document.createElement("div");
+    phase2.className = "catalog-intro";
+    phase2.id = "em";
+    phase2.innerHTML =
+      "<h2>Phase 2 · Engineering Manager</h2>" +
+      "<p>Director lens: hiring managers at Apple/Walmart-class orgs hire EMs who raise the bar on people, delivery, and judgment — not just the strongest coder on the team. " +
+      "Start at <a href=\"modules/em-601-role-shift.html\">EM 601</a> after (or alongside) your GenAI portfolio work.</p>";
+    frag.appendChild(phase2);
 
     TRACK_ORDER.forEach(function (trackKey) {
       var list = byTrack[trackKey];

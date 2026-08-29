@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 601 — From Technical Manager to Engineering Manager · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../index.html#em">Phase 2</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-601"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 601 · Role Shift · Phase 2 Leadership</p>
+    <h1>Title pe “Manager” pehle se hai — EM bar alag hai: org outcomes, hiring ownership, performance authority</h1>
+    <div class="lesson-meta">
+      <span>Track: EM</span>
+      <span>Audience: Technical Manager → Engineering Manager</span>
+      <span>Prereq: Phase 1 FOUND→CAP (in progress / complete)</span>
+      <span>Next: EM 602 · EM Operating System</span>
+    </div>
+
+    <p>
+      Jai — aap already Technical Manager ho Koch Global Services pe: ~5 engineers,
+      ASP.NET Core / microservices / RabbitMQ / identity (SAML/OAuth) background,
+      delivery + mentoring, MBM principles ke saath. Yeh chapter “team kya hoti hai”
+      nahi sikhata. Yeh <em>delta</em> sikhata hai: Technical Manager se
+      <strong>Engineering Manager</strong> tak — especially Apple / Walmart-class
+      orgs jahan EM ka job description sirf sprint velocity nahi, balki
+      <em>people system + hiring bar + multi-stakeholder outcomes</em> hota hai.
+    </p>
+    <p>
+      Phase 1 (FOUND→CAP) ne aapko GenAI product judgment diya. Phase 2 EM track
+      us judgment ko <em>org leverage</em> mein badalta hai: aap khud model call
+      nahi karte — aap wo system banate ho jisme log reliably ship karte hain,
+      grow karte hain, aur bar raise karte hain.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · aapka starting point</span>
+      <p>
+        Aap pehle se lead karte ho: 1:1s, mentoring, delivery ownership, MBM framing.
+        EM 601 assume karta hai yeh muscles maujood hain. Naya kaam: scope expand —
+        hiring loop ownership, performance decisions with real authority, product/process
+        tradeoffs across stakeholders, aur “main last PR review karun” se nikalna.
+      </p>
+    </div>
+
+    <h2>1. Ladder clear karo: IC · Tech Lead · Technical Manager · EM</h2>
+    <p>
+      Industry titles messy hain. Same word alag companies mein alag mean karta hai.
+      Interview / promotion conversation mein aapko <em>scope</em> describe karna
+      chahiye, title nahi. Yeh frame use karo:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Primary output</th>
+          <th>People scope</th>
+          <th>Decision authority (typical)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Senior / Staff IC</td>
+          <td>Design + code + technical direction on problems</td>
+          <td>Influence peers; no direct reports</td>
+          <td>Technical tradeoffs in owned area</td>
+        </tr>
+        <tr>
+          <td>Tech Lead</td>
+          <td>Delivery quality + architecture coherence for a squad</td>
+          <td>Leads without formal HR authority (often)</td>
+          <td>Tech path, sequencing; hiring input only</td>
+        </tr>
+        <tr>
+          <td>Technical Manager</td>
+          <td>Team delivery + mentoring + local process</td>
+          <td>Direct reports (small); still deep in tech</td>
+          <td>Local people guidance; limited hiring / perf formal power</td>
+        </tr>
+        <tr>
+          <td>Engineering Manager</td>
+          <td>Org outcomes via people system</td>
+          <td>Owns hiring, growth, performance, capacity</td>
+          <td>Hire / no-hire weight, perf ratings, roadmap capacity calls</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      Aapka aaj ka role TM ke paas baithta hai: aap already people lead karte ho,
+      lekin enterprise EM bar yeh puchhta hai — <em>kya aap org ke liye bar raise
+      kar sakte ho jab aap coding hero nahi rahoge?</em>
+    </p>
+
+    <figure class="diagram" aria-label="IC to EM scope ladder">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Scope ladder — output shifts from code to systems of people</text>
+        <rect x="28" y="60" width="160" height="100" rx="8" fill="#12172B"/>
+        <text x="108" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="600">IC</text>
+        <text x="108" y="124" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">artifacts</text>
+        <text x="200" y="110" fill="#3F8C87" font-size="22">→</text>
+        <rect x="228" y="60" width="160" height="100" rx="8" fill="#1c2438"/>
+        <text x="308" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="600">Tech Lead</text>
+        <text x="308" y="124" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">direction</text>
+        <text x="400" y="110" fill="#3F8C87" font-size="22">→</text>
+        <rect x="428" y="60" width="160" height="100" rx="8" fill="#2a3348"/>
+        <text x="508" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="600">Tech Mgr</text>
+        <text x="508" y="124" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">delivery+</text>
+        <text x="600" y="110" fill="#3F8C87" font-size="22">→</text>
+        <rect x="628" y="60" width="108" height="100" rx="8" fill="#B8923F"/>
+        <text x="682" y="100" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">EM</text>
+        <text x="682" y="124" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="10">org OS</text>
+        <rect x="28" y="190" width="708" height="70" rx="8" fill="#3F8C87"/>
+        <text x="382" y="222" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14">
+          EM success metric: team outcomes without you being the critical path coder
+        </text>
+        <text x="382" y="244" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">
+          hiring bar · growth · capacity · stakeholder trust
+        </text>
+      </svg>
+      <figcaption>
+        Figure 1. Har step pe primary artifact badalta hai. EM ka artifact = healthy system,
+        not your PR count.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens · Apple / Walmart-class</span>
+      <p>
+        Hiring director yeh nahi puchhta “kitne microservices aapne likhe?”.
+        Woh puchhta hai: (1) aapne kab kisi ko promote / PIP / exit ke liye clear
+        call liya? (2) hiring mein aapka bar raise example kya hai? (3) jab product,
+        security, aur platform clash hue, aapne capacity kaise defend ki?
+        Agar answers sirf “team happy + sprints green” hain — EM bar incomplete.
+      </p>
+    </div>
+
+    <h2>2. Teen buckets: People · Process · Product</h2>
+    <p>
+      EM ka week in teen buckets mein split hota hai. TM aksar Product+Process pe
+      overweight rehta hai, People pe mentoring style — lekin formal people system
+      (scorecards, calibration, career ladders) thin rehta hai.
+    </p>
+    <ul>
+      <li><strong>People:</strong> hiring, 1:1s, feedback, growth plans, performance,
+        psychological safety, succession.</li>
+      <li><strong>Process:</strong> rituals, incident learning, estimation honesty,
+        dependency management, quality gates (yahan GenAI eval mindset bhi aata hai).</li>
+      <li><strong>Product / tech outcomes:</strong> roadmap capacity, risk calls,
+        “build vs buy”, when to say no to a shiny GenAI feature without eval.</li>
+    </ul>
+    <p>
+      Rule of thumb for early EM (5–8 reports): calendar pe intentionally
+      <strong>~40–50% people</strong>, ~25–30% process/stakeholder, ~20–30%
+      product/tech judgment — aur coding time intentionally shrink. Agar aap ab bhi
+      60% coding hero ho, aap TM mode mein stuck ho.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · hero manager</span>
+      <p>
+        “Main weekend pe RabbitMQ consumer fix kar deta hoon” short-term delivery
+        bachaata hai, long-term team ko signal deta hai: tough work manager ke paas
+        jaati hai. Enterprise EM interviews mein yeh anti-pattern openly flag hota hai.
+        Fix: pair / coach, ownership transfer, phir aap observability pe review —
+        implementation pe nahi.
+      </p>
+    </div>
+
+    <h2>3. Authority vs influence — dono chahiye, mix alag hai</h2>
+    <p>
+      Tech Lead mostly <em>influence</em> se chalta hai. EM ke paas formal
+      <em>authority</em> aati hai: hiring vote weight, performance rating, headcount
+      asks, vendor / tooling budget influence. Magar authority se culture nahi banti —
+      influence se banti hai. Best EMs authority ko quietly use karte hain, roz-roz
+      influence se lead karte hain.
+    </p>
+    <p>
+      Practical test: agar aapki title hata di jaye, kya log ab bhi aapki judgment
+      follow karein? Agar haan — influence strong hai. Agar sirf title se kaam
+      hota hai — aap compliance manager ho, EM nahi.
+    </p>
+
+    <h2>4. Koch MBM → enterprise EM translation</h2>
+    <p>
+      Market-Based Management (MBM) aapke current context ka strength hai: decision
+      rights, value creation, challenge culture. Enterprise EM interviews mein MBM
+      jargon dump mat karo — <em>behaviors</em> translate karo:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>MBM-flavored habit</th>
+          <th>Enterprise EM language</th>
+          <th>Story prompt for interviews</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Decision rights clarity</td>
+          <td>RACI / DRI ownership on tech + people decisions</td>
+          <td>“Kab maine explicitly decide kiya vs facilitate kiya?”</td>
+        </tr>
+        <tr>
+          <td>Challenge / constructive debate</td>
+          <td>Psychological safety + disagree-and-commit</td>
+          <td>“Kab junior ne mujhe wrong prove kiya aur main celebrate kiya?”</td>
+        </tr>
+        <tr>
+          <td>Value creation focus</td>
+          <td>Outcome metrics over activity metrics</td>
+          <td>“Kab maine a feature kill kiya kyunki customer value thin thi?”</td>
+        </tr>
+        <tr>
+          <td>Knowledge sharing</td>
+          <td>Written RFCs, runbooks, hiring scorecards</td>
+          <td>“Kaise maine tacit knowledge ko team asset banaya?”</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · MBM → EM one-pager</span>
+      <p>
+        Ek page likho (private): 4 columns — MBM principle · concrete Koch example ·
+        enterprise EM phrasing · evidence metric. Interview prep ke liye yeh aapka
+        translation sheet banega. Jargon-free English draft bhi rakho.
+      </p>
+    </div>
+
+    <h2>5. Time split: maker schedule chhodo, manager schedule design karo</h2>
+    <p>
+      Paul Graham wala maker-vs-manager tension aapke liye real hai — 14 years IC
+      muscle strong hai. EM week intentionally fragmented hota hai: 1:1s, hiring,
+      incident bridges, stakeholder syncs. Guilt mat feel karo fragmented calendar
+      pe — guilt feel karo agar aapne reports ke deep-work blocks protect nahi kiye.
+    </p>
+    <ul>
+      <li>Apna deep tech time: 1–2 protected blocks / week (architecture review, spike),
+        daily hero coding nahi.</li>
+      <li>Reports ke liye: meeting-free mornings ya “no-meeting Wednesdays” negotiate karo.</li>
+      <li>Hiring weeks pe coding almost zero — yeh normal hai, apologize mat karo.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="TM vs EM time and authority">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · TM vs EM — time &amp; authority shift</text>
+        <text x="120" y="70" text-anchor="middle" fill="#4a5268" font-family="Inter, sans-serif" font-size="12" font-weight="700">Technical Manager (typical)</text>
+        <rect x="40" y="85" width="160" height="36" rx="4" fill="#12172B"/>
+        <text x="120" y="108" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11">coding / review 45%</text>
+        <rect x="40" y="126" width="120" height="36" rx="4" fill="#1c2438"/>
+        <text x="100" y="149" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11">delivery 30%</text>
+        <rect x="40" y="167" width="80" height="36" rx="4" fill="#3F8C87"/>
+        <text x="80" y="190" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="11">people 20%</text>
+        <rect x="40" y="208" width="40" height="36" rx="4" fill="#B8923F"/>
+        <text x="60" y="231" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="10">hire 5%</text>
+        <text x="480" y="70" text-anchor="middle" fill="#4a5268" font-family="Inter, sans-serif" font-size="12" font-weight="700">Engineering Manager (target)</text>
+        <rect x="360" y="85" width="80" height="36" rx="4" fill="#12172B"/>
+        <text x="400" y="108" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11">tech 15%</text>
+        <rect x="360" y="126" width="100" height="36" rx="4" fill="#1c2438"/>
+        <text x="410" y="149" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11">outcomes 25%</text>
+        <rect x="360" y="167" width="160" height="36" rx="4" fill="#3F8C87"/>
+        <text x="440" y="190" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="11">people system 40%</text>
+        <rect x="360" y="208" width="80" height="36" rx="4" fill="#B8923F"/>
+        <text x="400" y="231" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="11">hiring 20%</text>
+        <text x="40" y="265" fill="#4a5268" font-family="Inter, sans-serif" font-size="12">Percentages illustrative — calibrate to headcount &amp; hiring load.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Numbers approximate hain; direction matter karti hai: people + hiring
+        weight up, hero-coding down.
+      </figcaption>
+    </figure>
+
+    <h2>6. Multi-stakeholder EM — aap ab sirf “dev team ka manager” nahi</h2>
+    <p>
+      Large-org EM regularly negotiate karta hai:
+    </p>
+    <ul>
+      <li><strong>Product:</strong> scope cuts, sequencing, “GenAI demo” vs production bar.</li>
+      <li><strong>Security / Identity:</strong> aapka SAML/OAuth background yahan trust
+        capital hai — EM role mein aap translator bante ho, implementer nahi.</li>
+      <li><strong>Platform / SRE:</strong> SLOs, on-call load, rabbitMQ / queue debt.</li>
+      <li><strong>HR / Recruiting:</strong> headcount, leveling, offer calibration.</li>
+      <li><strong>Peer EMs:</strong> shared services, dependency contracts, hiring bar consistency.</li>
+    </ul>
+    <p>
+      Script (stakeholder pushback): “Hum yeh feature quarter mein le sakte hain agar
+      X cut ho, ya Y risk accept ho. Meri recommendation: ship thinner slice with eval
+      gate, full vision next quarter. Main capacity number ke saath aaunga Thursday.”
+      — emotion nahi, options + recommendation + date.
+    </p>
+
+    <h2>7. Common failure modes: TM → EM transition</h2>
+    <ol>
+      <li><strong>Shadow IC:</strong> har design decision personally ratify; team atrophy.</li>
+      <li><strong>Friendship trap:</strong> hard feedback delay; performance debt accumulate.</li>
+      <li><strong>Meeting sponge:</strong> calendar open; no strategy blocks; reactive forever.</li>
+      <li><strong>Hiring as favor:</strong> “known good person” without scorecard → bar drift.</li>
+      <li><strong>MBM / values lecture without systems:</strong> posters yes, rituals no.</li>
+      <li><strong>GenAI FOMO leadership:</strong> pilots without eval — CAP track ke lessons
+        ignore karke team ko demo theater mein dhakelna.</li>
+    </ol>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · “main technical rahunga”</span>
+      <p>
+        Identity threat real hai: 14 saal engineering pride. EM banne ka matlab
+        technical judgment chorna nahi — <em>implementation monopoly</em> chorna hai.
+        Aap ab architecture reviews, hiring tech screens, and risk calls se technical
+        rehte ho. Pride shift: “maine fix kiya” → “team ne bina meri night ke ship kiya.”
+      </p>
+    </div>
+
+    <h2>8. 90-day self-contract (Koch pe practice, interview pe story)</h2>
+    <p>
+      Aapko naya job milne se pehle bhi EM muscles practice kar sakte ho:
+    </p>
+    <ul>
+      <li><strong>Days 1–30:</strong> Written role charter for yourself — people / process /
+        product % targets; stop-doing list (which PR types you will not own).</li>
+      <li><strong>Days 31–60:</strong> Hiring scorecard draft for next open role (even if
+        informal); one structured debrief after an interview.</li>
+      <li><strong>Days 61–90:</strong> One growth plan co-written with a report; one
+        difficult feedback delivered with SBI (EM 603); calendar audit published to
+        yourself weekly.</li>
+    </ul>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens · story quality</span>
+      <p>
+        Strong EM candidates concrete numbers + decisions laate hain: “5 engineers,
+        reduced P1 escape rate from X→Y by changing on-call + review ritual,”
+        “hired 2 / rejected 7 against scorecard,” “said no to a GenAI chatbot without
+        golden-set eval.” Vague “I mentored the team” stories die in panel.
+      </p>
+    </div>
+
+    <h2>Reading list</h2>
+    <ul>
+      <li>
+        <a href="https://rework.withgoogle.com/guides/managers-identify-what-makes-a-great-manager/steps/learn-about-googles-manager-research/">Google re:Work — What makes a great manager</a>
+        — Project Oxygen signals; map against your weekly behaviors.
+      </li>
+      <li>
+        <a href="https://www.manager-tools.com/map-of-the-universe">Manager Tools — Map of the Universe</a>
+        — 1:1s, feedback, coaching primitives (EM 602–603 deepen these).
+      </li>
+      <li>
+        <a href="https://review.firstround.com/the-engineers-guide-to-career-growth/">First Round Review — Engineer’s guide to career growth</a>
+        — How strong orgs talk about ladders; useful for growth conversations.
+      </li>
+      <li>
+        <a href="https://lattice.com/library/the-managers-guide-to-performance-management">Lattice — Manager’s guide to performance management</a>
+        — Formal people system vocabulary for enterprise EM interviews.
+      </li>
+      <li>
+        <a href="https://www.joelonsoftware.com/2007/01/24/the-command-and-control-management-method/">Joel Spolsky — Command and Control (contrast read)</a>
+        — Anti-pattern awareness; discuss what you refuse to become.
+      </li>
+      <li>
+        <a href="https://paulgraham.com/makersschedule.html">Paul Graham — Maker’s Schedule, Manager’s Schedule</a>
+        — Protect reports’ maker time; redesign your own guilt.
+      </li>
+    </ul>
+
+    <section class="quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Tech Lead aur EM mein sabse bada structural farq kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Formal people-system authority: hiring weight, performance decisions,
+            capacity ownership — sirf technical direction nahi.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> MBM ko enterprise EM interview mein kaise translate karein?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Jargon dump nahi — behaviors: decision rights → DRI/RACI; challenge →
+            safety + disagree-and-commit; value creation → outcomes over activity.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> “Hero manager” failure mode kya signal karta hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Manager critical-path coder bana rehta hai; team ownership atrophies;
+            EM bar (org leverage) miss.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Director lens pe teen must-have story types?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Hard people call (promote/PIP/exit clarity), bar-raising hire/no-hire,
+            multi-stakeholder capacity/risk decision with numbers.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done</h2>
+      <ul class="dod-checklist">
+        <li>IC / TL / TM / EM scope table apne words mein explain kar sakte ho</li>
+        <li>MBM → enterprise EM one-pager (4 rows) draft ho chuka hai</li>
+        <li>Personal stop-doing list: kam se kam 3 coding/review habits</li>
+        <li>90-day self-contract likha; calendar pe people % target set</li>
+        <li>Ek director-lens story outline (numbers + decision) ready</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="cap-502-portfolio-interview.html">
+        <span class="dir">Prev</span>
+        <span class="label">CAP 502 · Portfolio &amp; GenAI Interview Prep</span>
+      </a>
+      <a class="next" href="em-602-operating-system.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 602 · The EM Operating System</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 601</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

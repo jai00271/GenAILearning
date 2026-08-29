@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 606 — Roadmaps, OKRs &amp; Delivery Ownership · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="em-607-stakeholders-influence.html">Next lesson</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-606"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 606 · Roadmaps, OKRs &amp; Delivery Ownership</p>
+    <h1>Roadmap feature laundry nahi — bets + capacity + honest no</h1>
+    <div class="lesson-meta">
+      <span>Track: EM · Phase 2</span>
+      <span>Audience: Technical Manager → EM</span>
+      <span>Prereq: EM 605 Performance · Phase 1 GenAI</span>
+      <span>Next: EM 607 Stakeholders &amp; Influence</span>
+    </div>
+
+    <p>
+      Delivery ownership ka matlab “jo bhi Jira pe likha hai, green bana do” nahi.
+      Matlab: <strong>kya jeetna hai</strong>, <strong>kitna bandwidth hai</strong>, aur
+      <strong>kis cheez ko consciously defer</strong> kar rahe ho — stakeholders ko dikhate
+      hue. ~5-engineer team pe yeh aur sharp hota hai: har “chhoti request” ek sprint
+      kha jaati hai.
+    </p>
+    <p>
+      Aapke paas microservices / identity delivery muscle already hai. EM bar pe shift
+      yeh hai: aap personally hero ship nahi karte — aap system design karte ho jisme
+      team predictably ship kare, dependencies visible rahein, aur GenAI experiments
+      production tax ke saath balance hon.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 605 · PROD 404–406</span>
+      <p>
+        EM 605 ne outcomes language diya. PROD track ne cost, deploy, CI/CD reality
+        dikhai. EM 606 unhein roadmap math se jodta hai: OKRs bina capacity ke Wish.com
+        ban jaate hain; WIP bina limit ke “busy” dikhta hai, done nahi.
+      </p>
+    </div>
+
+    <h2>1. Roadmap as bets, not a feature laundry list</h2>
+    <p>
+      Laundry list: 40 items, sab “P1”, koi kill criteria nahi. Bet: hypothesis +
+      customer/ business outcome + time box + kill/scale rule. Ek quarter mein ek small
+      team ke liye usually <strong>2–4 real bets</strong> + keep-the-lights-on bucket.
+    </p>
+    <pre><code>## Bet card — [Name]
+Hypothesis: If we ___, then ___ will improve as measured by ___.
+Customer / risk: ...
+Time box: [e.g. 6 weeks]
+Capacity reserved: [eng-weeks]
+Dependencies: [teams / vendors]
+Kill criteria: If by week N we don't see ___, we stop or pivot to ___.
+Scale criteria: If ___, we invest next quarter in ___.
+Not doing because of this bet: [...]</code></pre>
+
+    <figure class="diagram" aria-label="Roadmap bets versus laundry list">
+      <svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="270" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Laundry vs bets</text>
+        <rect x="40" y="60" width="300" height="160" rx="8" fill="#12172B"/>
+        <text x="190" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Laundry list</text>
+        <text x="190" y="125" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">F1 F2 F3 … F40</text>
+        <text x="190" y="150" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">all P1 · no kill rule</text>
+        <text x="190" y="180" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12">status: forever busy</text>
+        <rect x="420" y="60" width="300" height="160" rx="8" fill="#3F8C87"/>
+        <text x="570" y="95" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">Bet portfolio</text>
+        <text x="570" y="125" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">Bet A · Bet B · KTLO</text>
+        <text x="570" y="150" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">hypothesis · time box</text>
+        <text x="570" y="180" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">status: learn or ship</text>
+        <text x="40" y="250" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">If you cannot name what you are not doing, you do not have a roadmap.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Roadmaps create focus by exclusion, not by font size on a slide.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Directors roadmap pe “coverage” nahi maangte pehle — <em>coherence</em> maangte
+        hain. Teen unrelated hero features se better: ek theme (e.g. identity resilience)
+        ke under sequenced bets. Unka follow-up hamesha: “agar yeh fail hua toh kya?”
+        Kill criteria wala EM unke dimaag mein promote-ready lagta hai.
+      </p>
+    </div>
+
+    <h2>2. OKR pitfalls — theater vs steering</h2>
+    <p>
+      OKRs tab useful hain jab Objective direction de, Key Results <em>outcomes</em>
+      measure karein. Theater mode:
+    </p>
+    <ul>
+      <li>KR = “ship feature X” (output disguised as KR).</li>
+      <li>10+ KRs per team — none remembered mid-quarter.</li>
+      <li>100% KR completion celebrated as excellence (sandbagging signal).</li>
+      <li>Shared KR without named owner → nobody owns.</li>
+      <li>GenAI KR = “explore LLMs” with no eval metric (Phase 1 ne yeh already reject kiya).</li>
+    </ul>
+    <p>
+      Steering mode example (illustrative): Objective — reduce auth-related Sev2 noise.
+      KR — Sev2 auth incidents / month ↓ 40%; mean time to mitigate ↓ 25%; zero new
+      undocumented service principals in owned fleet. Feature list KR ke <em>neeche</em>
+      aati hai, jagah swap nahi.
+    </p>
+
+    <h2>3. Capacity math — pehle arithmetic, phir ambition</h2>
+    <p>
+      Rough eng-week model (5 engineers, 1 quarter ~12 weeks):
+    </p>
+    <pre><code>Gross = 5 × 12 = 60 eng-weeks
+− PTO / holidays (historical %) 
+− Meetings / hiring / interrupts (be honest: often 15–25%)
+− KTLO / on-call / debt minimum (protect this)
+= Investable weeks for bets
+
+Per bet: estimate range (p50 / p90), not a single fake number.
+WIP load: if 3 bets × 3 people parallel &gt; investable, you are lying on slides.</code></pre>
+    <p>
+      Identity / platform teams pe interrupt load under-count karna classic failure hai.
+      Agar aapke pager pe weekly tax hai, roadmap se pehle usko line item banao — shame
+      mat feel karo; hide mat karo.
+    </p>
+
+    <figure class="diagram" aria-label="Capacity funnel into investable weeks">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Capacity funnel</text>
+        <rect x="80" y="55" width="600" height="36" rx="6" fill="#12172B"/>
+        <text x="380" y="78" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Gross eng-weeks</text>
+        <rect x="130" y="105" width="500" height="36" rx="6" fill="#1c2438"/>
+        <text x="380" y="128" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">− PTO · meetings · interrupts</text>
+        <rect x="180" y="155" width="400" height="36" rx="6" fill="#8f6f2c"/>
+        <text x="380" y="178" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">− KTLO / on-call floor</text>
+        <rect x="230" y="205" width="300" height="36" rx="6" fill="#3F8C87"/>
+        <text x="380" y="228" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">Investable for bets</text>
+      </svg>
+      <figcaption>
+        Figure 2. Ambition sits only in the bottom bar — everything above is physics.
+      </figcaption>
+    </figure>
+
+    <h2>4. WIP limits — busy ≠ delivery</h2>
+    <p>
+      Work-in-progress limit force karta hai finish &gt; start. Team of 5 ke liye practical
+      start: max 2 active bet streams + 1 interrupt swimlane. Review board weekly:
+      blocked &gt; 3 days? escalate or shed. Cycle time dashboard (even spreadsheet) ego
+      slides se zyada honest hota hai.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “Sab parallel chalao, smart log hain.” Context switch tax invisible lagta hai
+        jab tak incident season nahi aata. Doosra pitfall: roadmap freeze zero —
+        change control ke bina har stakeholder veto; freeze absolute — market/risk
+        ignore. Healthy: change budget (e.g. one bet swap per month with explicit trade).
+      </p>
+    </div>
+
+    <h2>5. Saying no — with alternatives</h2>
+    <p>
+      Pure no rare hota hai large orgs mein. EM-grade no:
+    </p>
+    <ol>
+      <li><strong>Acknowledge</strong> the outcome they want.</li>
+      <li><strong>Show capacity</strong> — what’s already funded.</li>
+      <li><strong>Offer alternatives</strong> — later date, thinner slice, different owner, kill another bet.</li>
+      <li><strong>Confirm decision owner</strong> — if they escalate, you already framed tradeoffs.</li>
+    </ol>
+    <pre><code>Script seed:
+We want [outcome] too. This quarter investable weeks are on [Bet A/B] + KTLO.
+Options: (1) thin slice by [date], (2) swap out [Bet B] — impact [X],
+(3) park until next OKR cycle. Which tradeoff do you want to sponsor?</code></pre>
+
+    <div class="callout handson">
+      <span class="callout-label">Playbook · Monday delivery review (30 min)</span>
+      <p>
+        Board: Bet health (green/yellow/red) · blockers · dependency ETA · interrupt
+        load last week · decision log (what we said no to). No status novels. Red
+        without ask = incomplete. End with: “what we will stop or slip this week.”
+        Capture in shared note Directors can skim in 90 seconds.
+      </p>
+    </div>
+
+    <h2>6. Dependency management</h2>
+    <p>
+      Dependencies fail quietly: “platform team will provide” without date, contract, or
+      fallback. Ritual:
+    </p>
+    <ul>
+      <li>Name the human owner on the other side, not only the team name.</li>
+      <li>Interface contract: API/schema/SLA/date — written.</li>
+      <li>Fallback: mock, feature flag off, manual path — decide early.</li>
+      <li>Escalation clock: if slip &gt; N days, who gets pinged with what ask.</li>
+    </ul>
+    <p>
+      Cross-team GenAI work pe specially: model/provider access, data classification,
+      eval owners — yeh “engineering only” dependencies nahi; security/legal lanes
+      early map karo (EM 607 deepen karega).
+    </p>
+
+    <h2>7. Delivery reviews — narrative for upward</h2>
+    <p>
+      Upward update template:
+    </p>
+    <pre><code>## Delivery pulse — [Team] — [Week of]
+Outcomes moved: ...
+Risks (with owners): ...
+Asks (one sentence each): ...
+Tradeoffs taken: we deferred ___ to protect ___
+Next demo / checkpoint: [date]</code></pre>
+    <p>
+      Directors hate surprise slips with no early yellow. Yellow early + ask = trust.
+      Green until Friday red = career-limiting pattern.
+    </p>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Main aapse “sab on track” nahi sun’na chahta — main aapse
+        <em>predictability + judgment</em> sun’na chahta hoon. Jo EM bet kill karta hai
+        jab data aata hai, woh mature hai. Jo EM har slip ko “dependency” pe daal deta
+        hai bina apni WIP/scope control dikhaye, woh unreliable hai.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        I run roadmaps as time-boxed bets with kill criteria, size OKRs to investable
+        capacity after KTLO, limit WIP, refuse work only with explicit tradeoffs, and
+        surface dependency contracts before the slip becomes a surprise.
+      </p>
+    </div>
+
+    <h2>8. Further reading (external)</h2>
+    <ol>
+      <li>
+        What Matters — OKR resources (Doerr / OKR community) —
+        <a href="https://www.whatmatters.com/resources">whatmatters.com/resources</a>
+      </li>
+      <li>
+        First Round Review — prioritization &amp; execution essays —
+        <a href="https://review.firstround.com/">review.firstround.com</a>
+      </li>
+      <li>
+        Atlassian — agile roadmaps guide —
+        <a href="https://www.atlassian.com/agile/product-management/roadmaps">atlassian.com/agile/…/roadmaps</a>
+      </li>
+      <li>
+        Google re:Work — OKRs guide —
+        <a href="https://rework.withgoogle.com/guides/set-goals-with-okrs/steps/introduction/">rework.withgoogle.com/…/okrs</a>
+      </li>
+      <li>
+        LeanKit / Lean literature on WIP — start from Kanban WIP concepts —
+        <a href="https://kanban.university/kanban-guide/">kanban.university/kanban-guide</a>
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Bet card mein kill criteria kyun zaroori?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Bina kill rule ke failing work zombie ban jaati hai; learning stop, capacity
+            lock.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Investable weeks kaise nikalte ho?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Gross eng-weeks − PTO − meeting/interrupt load − KTLO/on-call floor.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> EM-grade “no” mein kya hona chahiye?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Acknowledge outcome, show capacity, offer alternatives/trades, name decision owner.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Dependency hygiene ka minimum?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Named human owner, written interface/date, fallback, escalation clock.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — EM 606</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; transcript <code>data-current="em-606"</code></li>
+        <li>Bets · OKR pitfalls · capacity math · WIP · saying no · dependencies · delivery reviews</li>
+        <li>≥2 SVG; Director-lens; reading list URLs; playbooks/templates</li>
+        <li>Quiz; DoD; lesson-nav Prev 605 / Next 607</li>
+        <li>Brand EM · Phase 2 Leadership; script chain complete</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-605-performance-levels.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 605 · Performance, Levels &amp; Comp</span>
+      </a>
+      <a class="next" href="em-607-stakeholders-influence.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 607 · Stakeholders &amp; Influence</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 606</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

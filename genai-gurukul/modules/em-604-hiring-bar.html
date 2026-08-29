@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 604 — Hiring Bar &amp; Interview Loops · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../index.html#em">Phase 2</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-604"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 604 · Hiring Bar · Phase 2 Leadership</p>
+    <h1>Hiring EM ka highest-leverage product hai — scorecard, structured loop, debrief discipline, bar raise</h1>
+    <div class="lesson-meta">
+      <span>Track: EM</span>
+      <span>Prereq: EM 601–603</span>
+      <span>Focus: scorecards · loops · debriefs · calibration · pipeline</span>
+      <span>Next: EM 605 · Performance &amp; Levels</span>
+    </div>
+
+    <p>
+      Jai — Technical Manager hone ke naate aap interviews mein baith chuke hoge.
+      EM delta yeh hai: <em>aap hiring system ke owner</em> bante ho. “Nice candidate,
+      ship kar do” vibe se nikal ke scorecard, structured probes, written debrief,
+      aur offer calibration — yahi Apple/Walmart-class rigor hai.
+    </p>
+    <p>
+      Ek galat hire (false positive) 12–18 months tax lagata hai: coaching load,
+      team morale, re-hire cost. Ek miss on a strong diverse candidate (false negative)
+      bhi expensive hai — lekin silent. EM dono costs consciously manage karta hai.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 601–603</span>
+      <p>
+        Role shift ne hiring ownership highlight kiya; OS ne interview weeks pe calendar
+        truth dikhaya; coaching ne growth language di. Hiring un languages ko
+        <em>entry gate</em> pe apply karta hai — baad mein fix karne se pehle filter.
+      </p>
+    </div>
+
+    <h2>1. Bar-raising hiring — definition</h2>
+    <p>
+      Bar raise ≠ “sirf FAANG alumni.” Bar raise = har hire ke baad team ki median
+      skill / judgment / collaboration thodi upar. Practical tests:
+    </p>
+    <ul>
+      <li>Kya yeh person existing mid performers se clearly stronger on scorecard axes?</li>
+      <li>Kya yeh person kisi area mein team ko teach kar sakta hai?</li>
+      <li>Kya “urgency” ne bar soft kiya? Agar haan — pause.</li>
+    </ul>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Directors EM candidates se poochte hain: “Ek baar jab headcount pressure tha
+        aur aapne no-hire bola — story?” Agar aapke paas sirf yes-hire stories hain,
+        bar ownership weak dikhta hai.
+      </p>
+    </div>
+
+    <h2>2. Scorecards pehle, resumes baad mein</h2>
+    <p>
+      Role open hote hi — pehle candidate dekhne se pehle — scorecard likho.
+      Example: Mid/Senior backend engineer for services + messaging + identity-aware APIs
+      (aapke world se close):
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>What “strong” looks like</th>
+          <th>Probe ideas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Service design</td>
+          <td>Boundaries, failure modes, idempotency</td>
+          <td>Design order→payment with retries</td>
+        </tr>
+        <tr>
+          <td>Async / messaging</td>
+          <td>At-least-once realities, poison queues</td>
+          <td>RabbitMQ consumer failure story</td>
+        </tr>
+        <tr>
+          <td>Identity / security awareness</td>
+          <td>OAuth/SAML threat basics, least privilege</td>
+          <td>Token theft / assertion forge scenarios</td>
+        </tr>
+        <tr>
+          <td>Code quality signal</td>
+          <td>Tests, readability, debugging narrative</td>
+          <td>Live or take-home + review discussion</td>
+        </tr>
+        <tr>
+          <td>Collaboration</td>
+          <td>Conflict, docs, cross-team</td>
+          <td>Behavioral: disagree with partner team</td>
+        </tr>
+        <tr>
+          <td>Ownership / learning</td>
+          <td>Incident leadership, skill acquisition</td>
+          <td>“Tell me a production miss you owned”</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Har dimension pe scale agree karo (e.g., 1–4) <em>before</em> loop. “Gut feel”
+      secondary — gut ko scorecard pe map karke likho.
+    </p>
+
+    <figure class="diagram" aria-label="Hiring funnel with scorecard gate">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Scorecard-first funnel</text>
+        <rect x="40" y="70" width="110" height="70" rx="8" fill="#12172B"/>
+        <text x="95" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">role</text>
+        <text x="95" y="120" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="10">needs</text>
+        <text x="160" y="105" fill="#3F8C87" font-size="20">→</text>
+        <rect x="180" y="70" width="110" height="70" rx="8" fill="#B8923F"/>
+        <text x="235" y="100" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12" font-weight="700">scorecard</text>
+        <text x="235" y="120" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="10">axes+bar</text>
+        <text x="300" y="105" fill="#3F8C87" font-size="20">→</text>
+        <rect x="320" y="70" width="110" height="70" rx="8" fill="#1c2438"/>
+        <text x="375" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">sourced</text>
+        <text x="375" y="120" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">pipeline</text>
+        <text x="440" y="105" fill="#3F8C87" font-size="20">→</text>
+        <rect x="460" y="70" width="110" height="70" rx="8" fill="#2a3348"/>
+        <text x="515" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">structured</text>
+        <text x="515" y="120" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">loop</text>
+        <text x="580" y="105" fill="#3F8C87" font-size="20">→</text>
+        <rect x="600" y="70" width="120" height="70" rx="8" fill="#3F8C87"/>
+        <text x="660" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">debrief</text>
+        <text x="660" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="10">hire?</text>
+        <rect x="40" y="170" width="680" height="70" rx="8" fill="#12172B"/>
+        <text x="380" y="200" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">
+          Skip scorecard → interviews become personality contests and urgency theater
+        </text>
+        <text x="380" y="222" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12">
+          EM owns the card; recruiters partner on sourcing against it
+        </text>
+      </svg>
+      <figcaption>
+        Figure 1. Scorecard is the product spec for a hire. Everything else executes it.
+      </figcaption>
+    </figure>
+
+    <h2>3. Structured interviews — same questions, comparable signal</h2>
+    <p>
+      Unstructured “tell me about yourself + random hard question” bias maximize
+      karta hai. Structured approach:
+    </p>
+    <ul>
+      <li>Har loop stage pe fixed primary questions + allowed follow-ups.</li>
+      <li>Rubric: what a 2 vs 4 answer contains (examples written).</li>
+      <li>Interviewers trained on what <em>not</em> to ask (illegal / irrelevant).</li>
+      <li>Notes factual: what candidate said, not “seemed nervous.”</li>
+    </ul>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · mirror hire</span>
+      <p>
+        “Mujh jaisa ASP.NET + RabbitMQ background” comfort signal hai, bar signal
+        nahi. Scorecard pe adjacent strengths allow karo (e.g., Kafka + Java identity)
+        — warna pipeline narrow + clone team.
+      </p>
+    </div>
+
+    <h2>4. Loop design (sample for senior IC)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Duration</th>
+          <th>Owner signal</th>
+          <th>Goal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Recruiter screen</td>
+          <td>30 min</td>
+          <td>Recruiter</td>
+          <td>Basics, motivation, level sniff, logistics</td>
+        </tr>
+        <tr>
+          <td>Hiring manager screen</td>
+          <td>45 min</td>
+          <td>You (EM)</td>
+          <td>Scorecard fit, role honesty, mutual sell</td>
+        </tr>
+        <tr>
+          <td>Tech deep-dive</td>
+          <td>60–75</td>
+          <td>Senior IC</td>
+          <td>Design / debugging on scorecard axes</td>
+        </tr>
+        <tr>
+          <td>Coding / practical</td>
+          <td>60–90</td>
+          <td>IC</td>
+          <td>Code quality, communication under problem</td>
+        </tr>
+        <tr>
+          <td>Behavioral / collab</td>
+          <td>45</td>
+          <td>EM or peer</td>
+          <td>Conflict, ownership, inclusion behaviors</td>
+        </tr>
+        <tr>
+          <td>Bar raiser / shadow (if org has)</td>
+          <td>45–60</td>
+          <td>Trained outsider</td>
+          <td>Cross-team bar consistency</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Overlap deliberately: do interviewers same dimension double-score karein —
+      redundancy thodi OK, chaos nahi. Written packet pe roles clear.
+    </p>
+
+    <h2>5. Debriefs — decide like adults</h2>
+    <ol>
+      <li>Everyone submits written scores <em>before</em> group discussion (anchoring kam).</li>
+      <li>Start with lowest scores / strongest concerns first (or round-robin evidence).</li>
+      <li>Argue evidence against scorecard — not “I liked them.”</li>
+      <li>Outcomes: Hire / No-hire / Hold for specific missing signal (rare).</li>
+      <li>Document decision + dissent. Shadow calibration later.</li>
+    </ol>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · debrief script</span>
+      <p>
+        Facilitator (often you): “Scores locked? Good. Dimension: messaging. Ali, tumhara
+        evidence? … Priya, contradict? … Bar for senior pe yeh 3 tha — raise/keep/lower?
+        … Next dimension.” Time-box 30–40 min. Chat afterward ≠ decision forum.
+      </p>
+    </div>
+
+    <figure class="diagram" aria-label="False positive vs false negative costs">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Error costs — both directions hurt</text>
+        <rect x="40" y="60" width="320" height="180" rx="8" fill="#12172B"/>
+        <text x="200" y="100" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="14" font-weight="700">False positive (bad hire)</text>
+        <text x="200" y="130" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">coaching tax · re-hire</text>
+        <text x="200" y="155" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">team slowdown · trust hit</td>
+        <text x="200" y="180" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">visible in 3–9 months</text>
+        <text x="200" y="210" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12">Mitigate: hard bar, probation clarity</text>
+        <rect x="400" y="60" width="320" height="180" rx="8" fill="#1c2438"/>
+        <text x="560" y="100" text-anchor="middle" fill="#3F8C87" font-family="Inter, sans-serif" font-size="14" font-weight="700">False negative (miss talent)</text>
+        <text x="560" y="130" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">narrow pipeline · bias</text>
+        <text x="560" y="155" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">slow headcount fill</text>
+        <text x="560" y="180" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">often invisible / silent</text>
+        <text x="560" y="210" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12">Mitigate: structure + diverse slate</text>
+      </svg>
+      <figcaption>
+        Figure 2. Urgency often increases false positives; unstructured bias increases
+        false negatives. Scorecards fight both.
+      </figcaption>
+    </figure>
+
+    <h2>6. Offer calibration &amp; leveling</h2>
+    <p>
+      EM peer network + HR: level aur comp band compare. Anti-patterns:
+    </p>
+    <ul>
+      <li>Inflating level to close a candidate (calibration poison for years).</li>
+      <li>Lowballing because “they seem hungry” — retention bomb + ethics issue.</li>
+      <li>Ignoring internal equity vs external market — both matter; document tradeoffs.</li>
+    </ul>
+    <p>
+      Script to recruiter: “Scorecard pe strong senior IC, staff nahi — offer senior
+      band top; staff only if X evidence in loop (architecture leadership across orgs).
+      Main level inflate nahi karunga for close.”
+    </p>
+
+    <h2>7. Pipeline diversity — process, not posters</h2>
+    <p>
+      Diversity of pipeline = sourcing + structured eval + inclusive loop experience.
+      Concrete EM moves:
+    </p>
+    <ul>
+      <li>Require a diverse slate before onsite when volume allows — or document exception.</li>
+      <li>Same scorecard for all; no “culture fit” black box (say “collaboration behaviors”).</li>
+      <li>Panel mix: not all clones of you; include someone trained on bias interrupt.</li>
+      <li>Candidate experience: clear timeline, respectful scheduling, accessible materials.</li>
+      <li>Review pass-through rates by stage quarterly — where does funnel drop unfairly?</li>
+    </ul>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · “culture fit”</span>
+      <p>
+        Undefined culture fit aksar “people like us” ban jaata hai. Replace with
+        observable behaviors from scorecard: written communication, conflict under
+        pressure, respect in disagreement. Fit to values, not hobbies.
+      </p>
+    </div>
+
+    <h2>8. GenAI roles note (Phase 1 leverage)</h2>
+    <p>
+      Jab aap GenAI-capable engineers hire karoge, scorecard mein
+      <em>eval / failure modes / cost awareness</em> axes add karo — CAP 502 wale
+      signals. “Used LangChain” checkbox bar nahi hai; “designed an eval gate” bar hai.
+    </p>
+
+    <h2>9. 30-day hiring OS install</h2>
+    <ol>
+      <li>Write one scorecard for your next likely role (even hypothetical).</li>
+      <li>Align with a peer EM or senior IC on rubrics.</li>
+      <li>Run one mock debrief on a past candidate (retroactively).</li>
+      <li>List three sourcing channels beyond employee referrals.</li>
+      <li>Create a no-hire story with evidence for your interview bank.</li>
+    </ol>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens · interview answer shape</span>
+      <p>
+        Strong: “Scorecard had six axes; messaging probe showed weak poison-queue
+        story; two interviewers independently scored 2; we no-hired despite empty
+        seat for 6 weeks; backfill via contractor while restarting pipeline.”
+        Weak: “We go with our gut and culture.”
+      </p>
+    </div>
+
+    <h2>Reading list</h2>
+    <ul>
+      <li>
+        <a href="https://rework.withgoogle.com/guides/hiring-find-the-right-job-candidates/steps/introduction/">Google re:Work — Hiring</a>
+        — Structured interviewing principles at scale.
+      </li>
+      <li>
+        <a href="https://review.firstround.com/the-best-interview-questions-weve-ever-published/">First Round — Best interview questions</a>
+        — Question design that yields signal across roles.
+      </li>
+      <li>
+        <a href="https://lattice.com/library/how-to-hire-the-right-person-for-the-job">Lattice — Hire the right person</a>
+        — Scorecard and process vocabulary.
+      </li>
+      <li>
+        <a href="https://www.manager-tools.com/2007/05/how-to-interview-part-1-of-4">Manager Tools — How to Interview series</a>
+        — Practical interviewer craft.
+      </li>
+      <li>
+        <a href="https://review.firstround.com/develop-your-hiring-system-like-a-product-to-eliminate-bias-and-boost-retention/">First Round — Hiring system like a product</a>
+        — Rubrics, bias reduction, hiring manager ownership of the funnel.
+      </li>
+      <li>
+        <a href="https://www.eeoc.gov/prohibited-employment-policiespractices">EEOC — Prohibited practices</a>
+        — What you must not ask; enterprise compliance baseline.
+      </li>
+      <li>
+        <a href="https://review.firstround.com/my-lessons-from-interviewing-400-engineers-over-three-startups/">First Round — Lessons from 400 engineer interviews</a>
+        — Debrief huddles and interviewer system thinking.
+      </li>
+    </ul>
+
+    <section class="quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Scorecard candidate se pehle kyun likhein?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Taaki evaluation criteria resume charm / urgency se pehle freeze ho;
+            comparable, less biased decisions.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Debrief mein scores discussion se pehle lock kyun?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Anchoring aur groupthink kam karne ke liye — independent evidence pehle,
+            synthesis baad mein.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> False positive vs false negative — EM dono kaise balance kare?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Hard bar + structured probes (FP↓); diverse slate + same rubric + inclusive
+            loop (FN↓). Urgency alone se bar soft mat karo.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> “Culture fit” ko kaise replace karein?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Observable collaboration / values behaviors on the scorecard — not vibes,
+            hobbies, or similarity to the hiring manager.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done</h2>
+      <ul class="dod-checklist">
+        <li>Ek full scorecard (6+ dimensions + rubrics) drafted for a real/likely role</li>
+        <li>Sample loop agenda written with interviewer owners</li>
+        <li>Debrief facilitation checklist saved in team hiring doc</li>
+        <li>One no-hire story + one bar-raise hire story outlined with evidence</li>
+        <li>Pipeline diversity actions: ≥3 sourcing channels listed; “culture fit” banned in docs</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-603-coaching-feedback.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 603 · Coaching, Feedback &amp; Growth</span>
+      </a>
+      <a class="next" href="em-605-performance-levels.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 605 · Performance &amp; Levels</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 604</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

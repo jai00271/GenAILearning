@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM Challenge — EM Track Challenge · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Track Challenge</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="em-612-em-interview-narrative.html">EM 612</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-challenge"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM Challenge · after EM 612</p>
+    <h1>5 → 12 org redesign — leadership artifact, coding challenge nahi</h1>
+    <div class="lesson-meta">
+      <span>Track gate: EM Phase 2 close</span>
+      <span>No starter · no solution · rubric-graded</span>
+      <span>Prereq: EM 601–612 (esp. 609 staffing, 610 culture, 611 ops, 612 narrative)</span>
+      <span>Leadership write-up · not a coding kata</span>
+    </div>
+
+    <div class="gate-banner">
+      <strong>GATE · EM Track Challenge</strong>
+      <p>
+        Score yourself against the rubric before treating the EM track as complete.
+        Pass rule: no dimension below 2, and average across the four dimensions at least 3.0.
+      </p>
+    </div>
+
+    <p>
+      Aap Technical Manager ho (~5 engineers) — strong .NET / microservices / identity,
+      ServiceNow automation experience, Phase 1 GenAI complete. Leadership ne bola:
+      <em>GenAI platform + app capacity chahiye</em>; headcount 5 se ~12 tak stretch ho
+      sakta hai. Yeh challenge coding lab nahi hai. Aap likhoge: org redesign, hiring
+      plan, 90-day plan, risk register, aur eval/cost ownership map. Fake metrics
+      (invented ROI, fake MTTR) band — apne CV claims ko verify-able treat karo.
+    </p>
+    <p>
+      Kyun leadership gate? EM interviews org design + judgment pe hire karti hain.
+      Jo sirf “we’ll hire 2 ML PhDs” likhe bina eval owner ke, Engineering judgment pe
+      fail. Jo culture/safety ignore kare (EM 610), People system pe weak.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 609 · 610 · 611 · 612</span>
+      <p>
+        609: platform vs app, eval before RAG/FT, vendor/build, cost/risk owners.
+        610: psychological safety + Mutual Benefit norms. 611: severity, IC, SLOs.
+        612: narrative without fake metrics. Challenge in threads ko ek packet mein
+        bandhta hai.
+      </p>
+    </div>
+
+    <h2>1. Challenge kya hai — aur kya nahi</h2>
+    <p>
+      Deliver a written leadership packet (English OK for portfolio sections; Hinglish
+      planning notes allowed in your draft). Required pieces:
+    </p>
+    <ol>
+      <li><strong>Org redesign (5→12):</strong> platform enablement vs app squad(s),
+          reporting lines, named ownership for eval harness, model/prompt gateway,
+          cost meters, and at least one domain app surface.</li>
+      <li><strong>Hiring plan:</strong> roles, sequencing (fundamentals vs GenAI glitter),
+          what you hire vs upskill, pairing backend-strong leads with ML specialists.</li>
+      <li><strong>90-day plan:</strong> days 0–30 / 31–60 / 61–90 outcomes (staffing,
+          standards, first eval beat, incident/Sev card, culture norms).</li>
+      <li><strong>Risk register:</strong> ≥6 risks (vendor lock-in, cost runaway, safety
+          climate, on-call burnout, identity-adjacent harm, delivery pressure) with
+          owner + mitigation.</li>
+      <li><strong>Eval &amp; cost ownership:</strong> RACI-style clarity — who can ship
+          prompt/model changes, who pays the bill, who stops the line.</li>
+    </ol>
+    <p>
+      Yeh CAP coding capstone nahi. Yeh multi-agent demo nahi. Agar aapne architecture
+      diagram paste kiya bina owners ke, fail. Agar metrics invent kiye, fail.
+    </p>
+
+    <figure class="diagram" aria-label="EM challenge org split">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · EM challenge — 5→12 with platform + app ownership</text>
+        <rect x="40" y="55" width="200" height="90" rx="8" fill="#12172B"/>
+        <text x="140" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">Today · ~5</text>
+        <text x="140" y="115" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">TM span · mixed work</text>
+        <text x="255" y="105" fill="#3F8C87" font-size="22">→</text>
+        <rect x="285" y="55" width="200" height="90" rx="8" fill="#3F8C87"/>
+        <text x="385" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">Platform slice</text>
+        <text x="385" y="115" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">eval · gateway · $</text>
+        <rect x="520" y="55" width="200" height="90" rx="8" fill="#B8923F"/>
+        <text x="620" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">App squad(s)</text>
+        <text x="620" y="115" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">domain outcomes</text>
+        <text x="40" y="185" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">Packet: org + hiring + 90-day + risks + eval/cost RACI. Leadership, not code.</text>
+        <text x="40" y="215" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Pass = rubric (no dim &lt; 2, avg ≥ 3.0). No starter. No solution folder.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Grow from a 5-person TM span into explicit platform vs app ownership by
+        ~12 — with named eval and cost owners.
+      </figcaption>
+    </figure>
+
+    <h2>2. Kaise approach karo</h2>
+    <p>
+      Pehle constraints freeze: budget honesty (unknowns OK), hiring lead times, what
+      stays with you as EM vs what delegates. Phir ownership map (609). Culture norms
+      one-pager (610). Sev/on-call sketch (611). Narrative paragraph linking to your
+      real TM proof points (612) — still no fabricated numbers. MBM Mutual Benefit:
+      show how customers, engineers, and company each gain from the redesign.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · packet checklist</span>
+      <p>
+        Create one folder or doc: <code>org.md</code>, <code>hiring.md</code>,
+        <code>90day.md</code>, <code>risks.md</code>, <code>ownership.md</code>, plus
+        self-score table. Optional lab path under
+        <code>genai-gurukul-labs/challenges/em/</code> if present — otherwise this page
+        is the brief.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “Hire 7 ML engineers” without sequencing or eval ownership. Or paste a fancy
+        org chart with no risk register. Or claim industry-leading latency/cost wins
+        you never measured. Challenge leadership judgment test karta hai.
+      </p>
+    </div>
+
+    <h2>3. Portfolio-facing English — deliverables</h2>
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Leadership memo</span>
+      <p>
+        Write a 1–2 page English memo summarizing the 5→12 redesign: org shape,
+        hiring sequence, 90-day outcomes, top risks, and eval/cost ownership. State
+        which quantitative claims are yours to verify (for example an on-time delivery
+        operating claim) and which outcomes are qualitative (toil reduction themes,
+        identity-scale reliability themes). End with reverse conditions: when you would
+        delay hiring, keep a thinner platform, or refuse a vendor path.
+      </p>
+    </div>
+
+    <div class="callout intuition" lang="en">
+      <span class="callout-label">Portfolio-facing English · Pass rule</span>
+      <p>
+        Each dimension is scored from 1 to 4. You pass the EM track challenge only when
+        <strong>no dimension is below 2</strong> and the <strong>average across the four
+        dimensions is at least 3.0</strong>. Anything less means revise the packet.
+      </p>
+    </div>
+
+    <h2>4. Rubric — score yourself</h2>
+    <table class="rubric" lang="en">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>1 — Inadequate</th>
+          <th>2 — Developing</th>
+          <th>3 — Solid</th>
+          <th>4 — Exemplary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Org &amp; ownership design</td>
+          <td>No clear platform/app split; eval/cost owners missing; chart without accountability.</td>
+          <td>Split mentioned but ownership fuzzy; 5→12 growth not sequenced.</td>
+          <td>Explicit platform vs app shape, named eval/cost/prompt-change owners, believable 5→12 path.</td>
+          <td>Design would survive a director review: interfaces, escalation, and revisit triggers included.</td>
+        </tr>
+        <tr>
+          <td>People system (hire / culture / load)</td>
+          <td>Headcount fantasy; ignores fundamentals vs GenAI glitter; no safety/on-call health.</td>
+          <td>Hiring list exists but weak sequencing or culture/on-call afterthought.</td>
+          <td>Hiring plan + upskill path + norms/on-call health addressed; Mutual Benefit visible.</td>
+          <td>People plan matches delivery risk; pairing ML specialists with backend-strong leads is concrete.</td>
+        </tr>
+        <tr>
+          <td>Operating plan &amp; risk</td>
+          <td>No 90-day plan or empty risk list; ignores incidents/SLO reality.</td>
+          <td>90-day and risks present but generic or unowned.</td>
+          <td>Phased 90-day outcomes and ≥6 owned risks with mitigations tied to GenAI ops.</td>
+          <td>Plan reads executable; risks include identity-adjacent harm and cost runaway with stops.</td>
+        </tr>
+        <tr>
+          <td>Narrative integrity</td>
+          <td>Invented metrics or buzzword-only story; ignores TM experience constraints.</td>
+          <td>Some real themes, but claims overreach or skip verify framing.</td>
+          <td>Grounded in TM themes; quantitative claims marked to verify; clear English memo.</td>
+          <td>Coherent leadership narrative a Walmart/Apple-class panel could probe without collapse.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="dod">
+      <h2>Definition of Done — EM challenge</h2>
+      <ul class="dod-checklist">
+        <li>Org redesign 5→12 with platform + app ownership named</li>
+        <li>Hiring plan + 90-day plan + risk register (≥6) + eval/cost RACI</li>
+        <li>English leadership memo; no fabricated metrics</li>
+        <li>Self-score on all four rubric dimensions; pass rule met (no dim &lt; 2, avg ≥ 3.0)</li>
+        <li>Gate banner honored — leadership packet, not a coding solution folder</li>
+      </ul>
+    </section>
+
+    <div class="gate-banner">
+      <strong>GATE</strong>
+      <p>
+        Score yourself against the rubric before calling the EM track complete. Next stop: Catalog.
+      </p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Next step</span>
+      <p>
+        Catalog pe wapas jao, packet archive karo, aur EM 612 narrative ko challenge
+        evidence se update karo. Coding tracks (APP/PROD/CAP) alag gates use karte hain —
+        yahan pass = leadership rubric.
+      </p>
+    </div>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-612-em-interview-narrative.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 612 · EM Interview &amp; Leadership Narrative</span>
+      </a>
+      <a class="next" href="../index.html">
+        <span class="dir">Next</span>
+        <span class="label">Catalog</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM Challenge</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

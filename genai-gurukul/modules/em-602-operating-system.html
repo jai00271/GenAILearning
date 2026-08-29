@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 602 — The EM Operating System · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../index.html#em">Phase 2</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-602"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 602 · Operating System · Phase 2 Leadership</p>
+    <h1>EM ka “framework” slides nahi — weekly rhythm, 1:1 OS, aur calendar jo reports ka deep work bachaye</h1>
+    <div class="lesson-meta">
+      <span>Track: EM</span>
+      <span>Prereq: EM 601 role shift</span>
+      <span>Focus: 1:1s · rituals · triage · maker vs manager</span>
+      <span>Next: EM 603 · Coaching &amp; Feedback</span>
+    </div>
+
+    <p>
+      EM 601 ne role delta clear kiya. Ab systems. Jai, aap pehle se team lead karte
+      ho — isliye yahan “meeting kya hoti hai” nahi. Yahan <em>operating system</em>
+      hai: predictable rituals jo 5 engineers ke saath bhi scale karte hain, aur
+      Apple/Walmart-class orgs mein 8–12 reports + hiring load pe toot’te nahi.
+    </p>
+    <p>
+      Operating system ka test simple hai: agar aap do hafta leave pe ho, kya team
+      ke decisions, escalations, aur growth conversations ruki rahengi? Agar haan —
+      aap process nahi, bottleneck ho.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 601</span>
+      <p>
+        People bucket ~40–50% intentionally. Hero-coding shrink. Yeh module us time
+        ko <em>structures</em> mein lock karta hai — warna calendar chaos people time
+        ko kha jaata hai.
+      </p>
+    </div>
+
+    <h2>1. Weekly rhythm (5-engineer squad ke liye baseline)</h2>
+    <p>
+      Rhythm copy-paste mat karna — principles same, slots local. Baseline jo large-org
+      EMs recognize karte hain:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Cadence</th>
+          <th>Ritual</th>
+          <th>Purpose</th>
+          <th>Anti-pattern</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Weekly</td>
+          <td>1:1 with each report (30–45 min)</td>
+          <td>Trust, unblock, career, feedback</td>
+          <td>Status update dump (standup duplicate)</td>
+        </tr>
+        <tr>
+          <td>Weekly</td>
+          <td>Staff / team meeting (45–60 min)</td>
+          <td>Shared context, decisions, risks</td>
+          <td>Slide theater; no decisions</td>
+        </tr>
+        <tr>
+          <td>2–3× / week</td>
+          <td>Triage / intake (15–25 min)</td>
+          <td>Incoming work, incidents, interrupts</td>
+          <td>Every ping becomes a meeting</td>
+        </tr>
+        <tr>
+          <td>Biweekly</td>
+          <td>Planning / refinement ownership check</td>
+          <td>Capacity honesty vs roadmap</td>
+          <td>EM alone estimates everything</td>
+        </tr>
+        <tr>
+          <td>Monthly</td>
+          <td>Skip-level (if you have leads) / career deep-dive</td>
+          <td>Signal below your direct layer</td>
+          <td>Surprise inspections; trust break</td>
+        </tr>
+        <tr>
+          <td>Quarterly</td>
+          <td>Growth plan refresh + calibration prep</td>
+          <td>Levels, evidence, promo readiness</td>
+          <td>Annual-only surprise reviews</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <figure class="diagram" aria-label="Weekly EM rhythm">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Sample week — protect maker mornings, batch manager afternoons</text>
+        <rect x="40" y="55" width="680" height="40" rx="6" fill="#3F8C87"/>
+        <text x="380" y="80" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13">Mon–Thu mornings · team deep work (EM meetings minimized)</text>
+        <rect x="40" y="110" width="130" height="70" rx="6" fill="#12172B"/>
+        <text x="105" y="140" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Mon PM</text>
+        <text x="105" y="160" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="10">1:1s ×2</text>
+        <rect x="180" y="110" width="130" height="70" rx="6" fill="#1c2438"/>
+        <text x="245" y="140" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Tue PM</text>
+        <text x="245" y="160" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">staff + triage</text>
+        <rect x="320" y="110" width="130" height="70" rx="6" fill="#12172B"/>
+        <text x="385" y="140" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Wed PM</text>
+        <text x="385" y="160" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="10">1:1s ×2</text>
+        <rect x="460" y="110" width="130" height="70" rx="6" fill="#2a3348"/>
+        <text x="525" y="140" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">Thu PM</text>
+        <text x="525" y="160" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">stakeholders</text>
+        <rect x="600" y="110" width="120" height="70" rx="6" fill="#B8923F"/>
+        <text x="660" y="140" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12">Fri</text>
+        <text x="660" y="160" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="10">hire / think</text>
+        <rect x="40" y="205" width="680" height="60" rx="6" fill="#1c2438"/>
+        <text x="380" y="240" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">
+          Overflow: incidents break the plan — recover the ritual next week, don’t abandon OS
+        </text>
+      </svg>
+      <figcaption>
+        Figure 1. Batch 1:1s and stakeholder time; defend mornings for makers (including
+        yourself when you need architecture judgment blocks).
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Strong EM candidates apna operating cadence 60 seconds mein describe karte
+        hain — “weekly 1:1s never slip, staff for decisions, triage for interrupts,
+        quarterly growth docs.” Weak candidates sirf “open door policy” bolte hain.
+        Open door ≠ operating system.
+      </p>
+    </div>
+
+    <h2>2. 1:1 agenda template (status meeting nahi)</h2>
+    <p>
+      Manager Tools style principle: 1:1 report ki meeting hai. Aap listen + coach +
+      unblock. Standup already status le chuka hai — duplicate mat karo.
+    </p>
+    <p><strong>Shared doc (running notes) — suggested sections:</strong></p>
+    <ol>
+      <li><strong>Their agenda first</strong> (10–15 min) — jo unhe lean karna hai.</li>
+      <li><strong>Unblocks / decisions needed from you</strong> (5–10).</li>
+      <li><strong>Feedback both ways</strong> (5–10) — chhota, frequent (EM 603 deepen).</li>
+      <li><strong>Career / growth crumb</strong> (5) — har week thoda; quarterly deep.</li>
+      <li><strong>Admin</strong> — PTO, training, hiring help — end mein.</li>
+    </ol>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · script openers</span>
+      <p>
+        Start lines (Hinglish ok in private 1:1s; enterprise orgs mein English default):
+        “Aaj tumhari list pe kya hai?” · “Last week se koi cheez jo ab bhi heavy feel
+        ho rahi?” · “Mujhse ek decision chahiye kya?” · “Ek chhoti feedback — maine
+        notice kiya…” Cancel tab hi jab PTO; “busy sprint” se 1:1 cancel = trust debt.
+      </p>
+    </div>
+
+    <h2>3. Skip-levels — signal without undermining</h2>
+    <p>
+      Agar aapke under ek tech lead / senior EM path pe log hain, skip-levels useful
+      hain. Agar flat 5 ICs hain, aap already direct ho — skip-level ki jagah
+      <em>cross-team listening</em> (peer teams, product partners) zyada valuable.
+    </p>
+    <ul>
+      <li>Announce purpose: “Main system health samajhna chahta hoon, tumhare manager
+        ko bypass karke secret police nahi.”</li>
+      <li>Themes pucho, gossip nahi: clarity of goals, psychological safety, load.</li>
+      <li>Patterns ko aggregate karke manager ke saath privately discuss — individuals
+        name-drop mat karo jab tak safety issue na ho.</li>
+    </ul>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · skip-level as court of appeals</span>
+      <p>
+        Har disagreement pe skip-level = middle manager kill. Direct report ko pehle
+        coach karo escalate kaise kare; aap exception path ho, default path nahi.
+      </p>
+    </div>
+
+    <h2>4. Staff meeting jo kaam aaye</h2>
+    <p>
+      Staff / team sync ka job: shared reality + decisions. Agenda board pe rakho:
+    </p>
+    <ul>
+      <li><strong>Decisions needed</strong> (DRI named)</li>
+      <li><strong>Risks / incidents learning</strong> (blameless, action-owned)</li>
+      <li><strong>Cross-person dependencies</strong> (identity service ↔ orders queue, etc.)</li>
+      <li><strong>Hiring / capacity headlines</strong> (2 minutes)</li>
+      <li><strong>Wins</strong> (30–60 sec — morale without fluff)</li>
+    </ul>
+    <p>
+      GenAI / platform work ke liye explicitly: “eval gate status” ek standing line
+      ban sakti hai — CAP/PROD track se aapka edge: demos ko ritual mein measure karo.
+    </p>
+
+    <h2>5. Triage: interrupts ka valve</h2>
+    <p>
+      Microservices + RabbitMQ + identity world mein interrupts aate rehte hain —
+      prod auth failures, poison messages, partner SAML changes. Bina triage ke har
+      Slack ping context switch ban jaata hai.
+    </p>
+    <ol>
+      <li>Single intake (channel or board column): Severity + owner + next update time.</li>
+      <li>EM / rotating lead 15-min triage: accept, defer, or schedule spike.</li>
+      <li>Anything &gt;2 days → visible backlog item with capacity tradeoff called out.</li>
+    </ol>
+
+    <figure class="diagram" aria-label="Interrupt triage flow">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Interrupt valve — Slack noise → triage → owned work</text>
+        <rect x="40" y="70" width="140" height="80" rx="8" fill="#12172B"/>
+        <text x="110" y="105" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">inbound</text>
+        <text x="110" y="125" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">ping · Pager</text>
+        <text x="195" y="110" fill="#3F8C87" font-size="22">→</text>
+        <rect x="220" y="70" width="140" height="80" rx="8" fill="#B8923F"/>
+        <text x="290" y="105" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">triage</text>
+        <text x="290" y="125" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="10">15 min</text>
+        <text x="375" y="110" fill="#3F8C87" font-size="22">→</text>
+        <rect x="400" y="55" width="140" height="50" rx="6" fill="#3F8C87"/>
+        <text x="470" y="85" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">do now</text>
+        <rect x="400" y="115" width="140" height="50" rx="6" fill="#1c2438"/>
+        <text x="470" y="145" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">schedule</text>
+        <rect x="560" y="85" width="160" height="50" rx="6" fill="#2a3348"/>
+        <text x="640" y="115" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">defer / decline</text>
+        <text x="40" y="210" fill="#4a5268" font-family="Inter, sans-serif" font-size="13">
+          EM job: make tradeoffs visible — silent yes to every interrupt = invisible roadmap theft
+        </text>
+      </svg>
+      <figcaption>
+        Figure 2. Triage turns political pressure into visible capacity choices.
+      </figcaption>
+    </figure>
+
+    <h2>6. Maker vs manager schedule — reports protect karo pehle</h2>
+    <p>
+      Aapka calendar fragmented hoga — accept. Reports ka nahi hona chahiye by default.
+      Practical moves:
+    </p>
+    <ul>
+      <li>Cluster 1:1s same afternoons; don’t spray across mornings.</li>
+      <li>Stakeholder meetings pe aap attend; poori team ko CC-meeting mein mat ghaseeto.</li>
+      <li>“Focus hours” team agreement — Slack norms: async first, @here rare.</li>
+      <li>Hiring loops pe interviewers ko prep blocks do; back-to-back 5 interviews = quality crash.</li>
+    </ul>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · calendar as status symbol</span>
+      <p>
+        Full calendar ≠ important EM. Full calendar with zero think-blocks = reactive
+        coordinator. Friday AM empty for “strategy / writing / hiring debrief” intentionally
+        block karo — pehle se, nahi toh it fills with noise.
+      </p>
+    </div>
+
+    <h2>7. Written OS &gt; tribal memory</h2>
+    <p>
+      Large orgs documentation expect karte hain. Minimum wiki / Notion page:
+    </p>
+    <ul>
+      <li>How we run 1:1s and staff</li>
+      <li>How interrupts are triaged</li>
+      <li>Definition of ready / done (include eval for GenAI work)</li>
+      <li>On-call expectations</li>
+      <li>How to escalate (security, legal, exec)</li>
+    </ul>
+    <p>
+      Yeh “bureaucracy” nahi — onboarding accelerator aur interview artifact (“I built
+      a lightweight team OS”) ban’ta hai.
+    </p>
+
+    <h2>8. Personal weekly review (30 minutes, non-negotiable)</h2>
+    <ol>
+      <li>Kaunse 1:1s slipped? Why?</li>
+      <li>Kis report ko feedback due hai?</li>
+      <li>Hiring pipeline health?</li>
+      <li>Roadmap vs capacity lie detect hua kya?</li>
+      <li>Ek relationship (peer/stakeholder) jo cold pad raha hai?</li>
+    </ol>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · OS install this week</span>
+      <p>
+        (1) Shared 1:1 doc template 5 reports ke liye. (2) Staff agenda pinned.
+        (3) Triage slot calendar pe. (4) Ek maker-morning block team-wide announce.
+        Agle retrospect mein poocho: “OS se kya better / worse hua?”
+      </p>
+    </div>
+
+    <h2>Reading list</h2>
+    <ul>
+      <li>
+        <a href="https://www.manager-tools.com/2005/07/the-single-most-effective-management-tool-available-the-one-on-one">Manager Tools — The One-on-One</a>
+        — Canonical 1:1 practice; frequency and ownership clarity.
+      </li>
+      <li>
+        <a href="https://rework.withgoogle.com/guides/managers-coach-managers-to-coach/steps/introduction/">Google re:Work — Coaching</a>
+        — How rituals support coaching managers (pairs with EM 603).
+      </li>
+      <li>
+        <a href="https://paulgraham.com/makersschedule.html">Paul Graham — Maker’s Schedule, Manager’s Schedule</a>
+        — Justify meeting batching to stakeholders.
+      </li>
+      <li>
+        <a href="https://review.firstround.com/this-is-what-impactful-engineering-leadership-looks-like/">First Round — Impactful engineering leadership</a>
+        — Cadence and leverage stories from practitioners.
+      </li>
+      <li>
+        <a href="https://lattice.com/library/how-to-run-an-effective-one-on-one-meeting">Lattice — Effective 1:1 meetings</a>
+        — Agenda patterns enterprise HR stacks recognize.
+      </li>
+      <li>
+        <a href="https://www.atlassian.com/team-playbook/plays/health-monitor">Atlassian Team Playbook — Health Monitor</a>
+        — Lightweight quarterly team health check ritual.
+      </li>
+    </ul>
+
+    <section class="quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> 1:1 ko standup se kaise alag rakhein?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Report-owned agenda, career/feedback/unblocks — status theater nahi;
+            standup already covers board status.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Triage ka EM-level purpose kya hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Interrupts ko visible capacity tradeoffs banana — silent yes se roadmap
+            chori rokna.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Maker schedule protect karne ka concrete move?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            1:1s/stakeholder meetings batch karke afternoons; mornings deep work;
+            poori team ko har sync mein na ghaseetna.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> “Open door” kyun OS substitute nahi?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Open door reactive + uneven access deta hai; OS proactive cadence +
+            fairness + continuity jab manager absent ho.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done</h2>
+      <ul class="dod-checklist">
+        <li>Weekly rhythm table apni team ke liye customize karke calendar pe blocks hain</li>
+        <li>Har report ke liye shared 1:1 doc + template sections live</li>
+        <li>Staff agenda + triage slot running for ≥2 weeks</li>
+        <li>Team wiki: “How we work” page with escalation + interrupt rules</li>
+        <li>Personal Friday review checklist used at least twice</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-601-role-shift.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 601 · From Technical Manager to EM</span>
+      </a>
+      <a class="next" href="em-603-coaching-feedback.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 603 · Coaching, Feedback &amp; Growth</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 602</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

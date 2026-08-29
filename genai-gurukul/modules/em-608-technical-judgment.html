@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 608 — Technical Judgment for Engineering Managers · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="em-609-genai-eng-teams.html">Next lesson</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-608"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 608 · Technical Judgment for Engineering Managers</p>
+    <h1>Best coder hone ki zaroorat nahi — blind spots miss mat karo</h1>
+    <div class="lesson-meta">
+      <span>Track: EM · Phase 2</span>
+      <span>Audience: Technical Manager → EM</span>
+      <span>Prereq: EM 607 Stakeholders · Phase 1 GenAI (FOUND→CAP)</span>
+      <span>Next: EM 609 Building GenAI Engineering Teams</span>
+    </div>
+
+    <p>
+      14 years .NET / microservices / identity — aapka technical credibility pehle se
+      solid hai. EM track pe naya darr alag hai: <em>kya main outdated ho jaunga?</em>
+      Galat cure: har PR mein deepest review. Sahi cure:
+      <strong>judgment about when to dive, when to delegate, and how to keep the bar</strong>
+      without being the team's bottleneck genius.
+    </p>
+    <p>
+      Yeh chapter architecture review facilitation, tech debt budgeting, RFC culture,
+      credibility habits, aur GenAI stack judgment (Phase 1 bridge) cover karta hai —
+      taaki EM 609 team-building pe jaate waqt aap “AI theater vs production GenAI”
+      alag kar sako.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · Phase 1 · EM 606–607</span>
+      <p>
+        Phase 1 ne eval, RAG, agents, cost, guardrails sikhaye. EM 606–607 ne bets aur
+        stakeholders. EM 608 unhein technical decision quality se wire karta hai: kaunsi
+        bet architecturally sound hai, kaunsa debt intentional hai, kaunsa GenAI path
+        eval ke bina hype hai.
+      </p>
+    </div>
+
+    <h2>1. Dive deep vs delegate — decision tree</h2>
+    <p>
+      Dive deep jab:
+    </p>
+    <ul>
+      <li>Blast radius high ho (security, data loss, multi-tenant isolation, money).</li>
+      <li>Team novel domain mein ho aur false confidence dikhe.</li>
+      <li>Cross-team contract shape ho raha ho — EM often translator hota hai.</li>
+      <li>You smell irreversible lock-in (vendor, schema, public API).</li>
+    </ul>
+    <p>
+      Delegate (with check-ins) jab:
+    </p>
+    <ul>
+      <li>Local refactor, well-understood service, strong owner present.</li>
+      <li>Learning opportunity intentionally given to rising engineer.</li>
+      <li>Your dive would steal oxygen from staffing/stakeholder work that only you can do.</li>
+    </ul>
+    <pre><code>## Dive / delegate card
+Decision: 
+Blast radius (L/M/H): 
+Irreversibility (L/M/H): 
+Owner strength: 
+EM action: dive | pair | review-only | out of loop
+Check-in date / artifact I’ll read:</code></pre>
+
+    <figure class="diagram" aria-label="Dive versus delegate based on blast radius and irreversibility">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="28" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Where EMs spend technical attention</text>
+        <line x1="120" y1="240" x2="700" y2="240" stroke="#12172B" stroke-width="2"/>
+        <line x1="120" y1="240" x2="120" y2="40" stroke="#12172B" stroke-width="2"/>
+        <text x="400" y="270" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Irreversibility →</text>
+        <text x="40" y="150" transform="rotate(-90 40,150)" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Blast radius →</text>
+        <rect x="150" y="60" width="230" height="70" rx="6" fill="#3F8C87"/>
+        <text x="265" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">Dive / pair</text>
+        <rect x="420" y="60" width="230" height="70" rx="6" fill="#8f6f2c"/>
+        <text x="535" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="700">Dive + RFC</text>
+        <rect x="150" y="150" width="230" height="70" rx="6" fill="#e8e4d9"/>
+        <text x="265" y="190" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13">Delegate</text>
+        <rect x="420" y="150" width="230" height="70" rx="6" fill="#12172B"/>
+        <text x="535" y="190" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Review gates</text>
+      </svg>
+      <figcaption>
+        Figure 1. Attention is a budget. Spend it where mistakes compound.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Mujhe EM chahiye jo still can read a sequence diagram — lekin jo har sprint
+        hero-codes, uska team scale nahi hota. Red flag: “without me nothing ships.”
+        Green flag: “I jumped into the auth threat model; TL owns the service cutover.”
+      </p>
+    </div>
+
+    <h2>2. Architecture review — facilitate, don’t peacock</h2>
+    <p>
+      EM as facilitator checklist:
+    </p>
+    <ol>
+      <li>Problem / non-goals pehle — solution slides baad mein.</li>
+      <li>Force alternatives (at least one seriously considered).</li>
+      <li>Ask: failure modes, operability, cost, security, migration.</li>
+      <li>Time-box debate; park ratholes to offline with owner.</li>
+      <li>End with decision, ADRs/RFC link, open questions.</li>
+    </ol>
+    <p>
+      Peacock mode: aap sabse smart line bolte ho, room shut down. Facilitate mode:
+      quiet senior speaks, junior’s risk heard, you summarize tradeoffs in plain language
+      for Product/Security guests.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Playbook · 45-min arch review agenda</span>
+      <p>
+        0–5 context · 5–15 proposal · 15–25 alternatives &amp; risks · 25–35 deep dive
+        on top risk · 35–40 decision / conditions · 40–45 owners + follow-ups. Pre-read
+        mandatory; no-pre-read → reschedule (protects culture).
+      </p>
+    </div>
+
+    <h2>3. Tech debt budgeting — intentional, not shame</h2>
+    <p>
+      Debt zero fantasy hai. Budgeted debt healthy hai. Practical model:
+    </p>
+    <ul>
+      <li>Reserve a fixed % of investable weeks (e.g. 15–20%) for debt/risk paydown — EM 606 capacity math se cut.</li>
+      <li>Classify: safety debt (fix now) vs drag debt (schedule) vs leftover experiments (delete).</li>
+      <li>Each debt item: user/ops impact, cost to fix, cost of delay.</li>
+      <li>Never only “cleanup sprint” as guilt trip after feature binge — continuous line item.</li>
+    </ul>
+    <pre><code>## Debt ticket fields
+Class: safety | drag | delete-candidate
+Impact if delayed: 
+Fix estimate (eng-weeks p50/p90): 
+Proposed quarter slot: 
+Owner: 
+Stops being acceptable when:</code></pre>
+
+    <h2>4. RFC culture — writing scales judgment</h2>
+    <p>
+      RFCs (or ADRs) team ko EM-brain distribute karte hain. Lightweight template:
+    </p>
+    <pre><code># RFC: [title]
+Status: draft | review | accepted | superseded
+Context
+Problem
+Options (incl. do-nothing)
+Proposal
+Risks &amp; mitigations
+Rollout / rollback
+Open questions
+Decision</code></pre>
+    <p>
+      Culture rules: comments on ideas not people; silence ≠ consent — ask explicit LGTM
+      from named reviewers; time-box review window; EM models brevity.
+    </p>
+
+    <figure class="diagram" aria-label="RFC flow from draft to accepted decision">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="240" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · RFC path</text>
+        <rect x="40" y="80" width="120" height="60" rx="8" fill="#12172B"/>
+        <text x="100" y="115" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">draft</text>
+        <text x="170" y="115" fill="#3F8C87" font-size="18">→</text>
+        <rect x="195" y="80" width="120" height="60" rx="8" fill="#1c2438"/>
+        <text x="255" y="115" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">review</text>
+        <text x="325" y="115" fill="#3F8C87" font-size="18">→</text>
+        <rect x="350" y="80" width="140" height="60" rx="8" fill="#8f6f2c"/>
+        <text x="420" y="115" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">decision</text>
+        <text x="500" y="115" fill="#3F8C87" font-size="18">→</text>
+        <rect x="525" y="80" width="190" height="60" rx="8" fill="#3F8C87"/>
+        <text x="620" y="115" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">execute + log</text>
+        <text x="40" y="190" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Accepted RFC without rollback plan is a half-decision.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Writing forces alternatives; decision logs (EM 607) close the loop.
+      </figcaption>
+    </figure>
+
+    <h2>5. Staying credible without being the best coder</h2>
+    <ul>
+      <li><strong>Read artifacts weekly:</strong> one design, one incident note, one customer/partner complaint.</li>
+      <li><strong>Ask better questions</strong> than write more code: “what’s the rollback?”, “who pages?”</li>
+      <li><strong>Keep a thin hands-on slice</strong> (bug, spike, threat model) so instincts don’t rot — but time-box it.</li>
+      <li><strong>Credit experts publicly</strong>; never steal design authorship in steering.</li>
+      <li><strong>Update your learning:</strong> Phase 1 GenAI vocabulary is now table stakes for EM interviews at large orgs.</li>
+    </ul>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “I used to be Staff, so my taste is law.” Taste without current context =
+        fossil judgment. Doosra pitfall: full retreat from tech — become pure
+        people/process manager; engineers stop inviting you to real decisions, then
+        surprise outages land on your desk.
+      </p>
+    </div>
+
+    <h2>6. GenAI stack judgment — Phase 1 bridge</h2>
+    <p>
+      Jab team “let’s add an agent” bole, EM questions (production bar):
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Claim</th>
+          <th>EM judgment check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>RAG over our docs</td>
+          <td>Golden set? Recall@k? Tenant isolation? Citation/refusal behavior?</td>
+        </tr>
+        <tr>
+          <td>Fine-tune</td>
+          <td>Why not prompt/RAG first? Data rights? Eval regression plan?</td>
+        </tr>
+        <tr>
+          <td>Multi-agent</td>
+          <td>Single-agent failed how? Tool allowlist? Cost per trajectory?</td>
+        </tr>
+        <tr>
+          <td>New model vendor</td>
+          <td>Security review? Data retention? Failover? Unit economics?</td>
+        </tr>
+        <tr>
+          <td>“Demo worked”</td>
+          <td>Offline eval + failure modes (injection, cost blowup) documented?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Aapka identity/security muscle yahan superpower hai: treat LLM features like
+      new trust boundaries — prompts, retrieved docs, tool outputs sab untrusted input
+      ho sakte hain (PROD 403 / OWASP LLM themes). EM 609 team design mein yahi bar
+      hiring aur rituals tak extend hoga.
+    </p>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        GenAI proposals pe main buzzwords nahi, <em>eval + risk + cost</em> sun’na
+        chahta hoon. Jo EM Phase 1 language bol sakta hai bina pretend kiye ki woh
+        research scientist hai — woh Apple/Walmart-class interviews mein bhi survive
+        karta hai. Jo EM har AI idea ko fear se block karta hai, team shadow-IT pe
+        chali jaati hai.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        I dive when blast radius or irreversibility is high, facilitate architecture
+        reviews around alternatives and failure modes, budget tech debt explicitly,
+        scale judgment through RFCs, and gate GenAI work on eval, security, and cost —
+        without needing to be the strongest coder in the room.
+      </p>
+    </div>
+
+    <h2>7. Further reading (external)</h2>
+    <ol>
+      <li>
+        Architecture Decision Records (ADR) — Quinn documentation pattern —
+        <a href="https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions">cognitect.com/blog/…/documenting-architecture-decisions</a>
+      </li>
+      <li>
+        First Round Review — technical leadership essays —
+        <a href="https://review.firstround.com/">review.firstround.com</a>
+      </li>
+      <li>
+        Martin Fowler — TechnicalDebt —
+        <a href="https://martinfowler.com/bliki/TechnicalDebt.html">martinfowler.com/bliki/TechnicalDebt.html</a>
+      </li>
+      <li>
+        OWASP Top 10 for LLM Applications —
+        <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/">owasp.org/…/large-language-model-applications</a>
+      </li>
+      <li>
+        Google re:Work — managers —
+        <a href="https://rework.withgoogle.com/guides/managers-identify-what-makes-a-great-manager/steps/introduction/">rework.withgoogle.com/…/managers</a>
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Kab EM ko dive deep karna chahiye?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            High blast radius, high irreversibility, novel false confidence, ya
+            cross-team contracts — attention budget ke hisaab se.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Architecture review facilitate karte waqt pehla focus?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Problem/non-goals + alternatives + failure modes — peacock solutions nahi.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Tech debt budget ka healthy pattern?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Fixed % investable weeks; classify safety vs drag; continuous line item,
+            guilt cleanup sprint only nahi.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> GenAI proposal pe EM ke minimum gates?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Eval evidence, security/trust boundary, cost/failover — demo alone insufficient.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — EM 608</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; transcript <code>data-current="em-608"</code></li>
+        <li>Dive/delegate · arch facilitation · debt budget · RFC · credibility · GenAI judgment bridge</li>
+        <li>≥2 SVG; Director-lens; reading URLs; playbooks/templates</li>
+        <li>Quiz; DoD; lesson-nav Prev 607 / Next 609</li>
+        <li>Brand EM · Phase 2 Leadership; scripts modules→tutor</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-607-stakeholders-influence.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 607 · Stakeholders &amp; Influence</span>
+      </a>
+      <a class="next" href="em-609-genai-eng-teams.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 609 · Building GenAI Engineering Teams</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 608</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

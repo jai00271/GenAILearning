@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 607 — Stakeholders, Influence &amp; Org Reality · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="em-608-technical-judgment.html">Next lesson</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-607"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 607 · Stakeholders, Influence &amp; Org Reality</p>
+    <h1>Politics cynicism nahi — maps, RACI, aur decision logs</h1>
+    <div class="lesson-meta">
+      <span>Track: EM · Phase 2</span>
+      <span>Audience: Technical Manager → EM</span>
+      <span>Prereq: EM 606 Roadmaps · Phase 1 GenAI</span>
+      <span>Next: EM 608 Technical Judgment</span>
+    </div>
+
+    <p>
+      Large-org EM job ka bada hissa code review se bahar hai: Product deadlines,
+      Design tradeoffs, Security gates, Finance questions, peer EMs competing for the
+      same platform slot. Is chapter ka thesis simple hai — <strong>influence = clarity
+      + reliability + relationships</strong>, manipulative theater nahi.
+    </p>
+    <p>
+      Aap MBM-style principles / delivery culture se aate ho toh “politics” word pe
+      allergy normal hai. Reframe: org reality = multiple legitimate incentives. EM ka
+      kaam unhein surface karna, align karna, aur jab align na ho toh decision owner
+      ko honest options dena.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 606 · EM 604</span>
+      <p>
+        Roadmaps ne tradeoff language di. Hiring bar ne “who we let in” set kiya.
+        Stakeholders chapter woh language org ke across chalata hai — especially jab
+        aapke bets doosri teams ki calendars pe depend karti hain.
+      </p>
+    </div>
+
+    <h2>1. Stakeholder map — pehle names, phir feelings</h2>
+    <p>
+      Ek page map (quarterly refresh):
+    </p>
+    <pre><code>## Stakeholder map — [Initiative]
+Person | Org role | Care-about | Influence (H/M/L) | Stance | Cadence | Notes
+---|---|---|---|---|---|---
+… | Product | adoption date | H | Supportive | weekly | …
+… | Security | data class / SSO | H | Cautious | biweekly | …
+… | Peer EM | shared API | M | Neutral | as-needed | …</code></pre>
+    <p>
+      Stance guess mat chhupao — “unknown” likho aur 1:1 book karo. Influence ≠ title
+      hamesha; kabhi kabhi staff engineer ya ops lead silent veto rakhta hai.
+    </p>
+
+    <figure class="diagram" aria-label="Stakeholder map axes interest versus influence">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="28" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Influence × interest (manage deliberately)</text>
+        <line x1="120" y1="260" x2="700" y2="260" stroke="#12172B" stroke-width="2"/>
+        <line x1="120" y1="260" x2="120" y2="50" stroke="#12172B" stroke-width="2"/>
+        <text x="400" y="290" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Interest in your outcome →</text>
+        <text x="40" y="160" transform="rotate(-90 40,160)" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Influence →</text>
+        <rect x="140" y="70" width="240" height="80" rx="6" fill="#12172B"/>
+        <text x="260" y="115" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Keep satisfied</text>
+        <rect x="420" y="70" width="240" height="80" rx="6" fill="#3F8C87"/>
+        <text x="540" y="115" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">Manage closely</text>
+        <rect x="140" y="165" width="240" height="80" rx="6" fill="#e8e4d9"/>
+        <text x="260" y="210" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13">Monitor</text>
+        <rect x="420" y="165" width="240" height="80" rx="6" fill="#8f6f2c"/>
+        <text x="540" y="210" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Keep informed</text>
+      </svg>
+      <figcaption>
+        Figure 1. Classic power/interest grid — use it as a calendar planner, not a gossip chart.
+      </figcaption>
+    </figure>
+
+    <h2>2. RACI — ambiguity ka antidote</h2>
+    <p>
+      RACI (Responsible / Accountable / Consulted / Informed) tab fail hota hai jab
+      Accountable do log hoon, ya Consulted ko veto samajh liya jaye. Rules of thumb:
+    </p>
+    <ul>
+      <li>Exactly one <strong>A</strong> per decision type.</li>
+      <li><strong>R</strong> can be multiple; still need a lead R.</li>
+      <li><strong>C</strong> = input rights, not pocket veto — unless policy says otherwise (Security sign-off).</li>
+      <li><strong>I</strong> = no surprise; async okay.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>A</th>
+          <th>R</th>
+          <th>C</th>
+          <th>I</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Quarter bet mix</td>
+          <td>EM (+ Director confirm)</td>
+          <td>EM + Tech Lead</td>
+          <td>Product, peer EMs</td>
+          <td>Team</td>
+        </tr>
+        <tr>
+          <td>Ship to prod (auth change)</td>
+          <td>EM or owning TL per policy</td>
+          <td>Engineers</td>
+          <td>Security, SRE</td>
+          <td>Support / adjacent teams</td>
+        </tr>
+        <tr>
+          <td>Vendor LLM for internal tool</td>
+          <td>Director / designated AI owner</td>
+          <td>EM + engineer</td>
+          <td>Security, Legal, Privacy</td>
+          <td>Team, Finance</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Jab do EMs “shared accountability” claim karte hain aur slip hota hai, Director
+        dono ko weak maanta hai. Mujhe clear A chahiye — even if matrixed. Agar aap A
+        ho, bad news pehle mujhe do; agar aap C ho, veto drama mat banao — principled
+        objection + alternative do.
+      </p>
+    </div>
+
+    <h2>3. Upward management — boss ko usable banao</h2>
+    <p>
+      Aapka manager aapka megaphone + air-cover hai. Unhe train karo:
+    </p>
+    <ul>
+      <li>Updates: outcome → risk → ask (EM 606 pulse). Novels nahi.</li>
+      <li>Pre-wire big rooms: meeting se pehle 5-line brief.</li>
+      <li>Tell them how you like feedback and when you need cover.</li>
+      <li>Never let them be blindsided by your stakeholder.</li>
+    </ul>
+    <pre><code>## Pre-wire note (example)
+Decision sought Friday: approve Bet B thin-slice vs slip Bet A.
+Recommendation: thin-slice Bet B; protect auth Sev2 KR.
+Risk if we do nothing: Security review blocks launch window.
+Ask from you: endorse tradeoff in steering; I’ll handle Product 1:1.</code></pre>
+
+    <h2>4. Partner guilds — Product, Design, Security</h2>
+    <p>
+      <strong>Product:</strong> outcome owner; aap feasibility + sequencing owner. Conflict
+      often date vs quality. Resolve with options, not veto-by-silence.
+    </p>
+    <p>
+      <strong>Design:</strong> user clarity; engineering constraints early share karo
+      (latency, accessibility, empty states for AI failure).
+    </p>
+    <p>
+      <strong>Security / Identity:</strong> aapke background ka home field. Treat them as
+      design partners for threat model, not gatekeepers to “get past.” Early threat
+      sketch &gt; late exception request.
+    </p>
+
+    <figure class="diagram" aria-label="Partnership loop between EM and peer functions">
+      <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="250" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Partnership loop</text>
+        <circle cx="380" cy="130" r="42" fill="#3F8C87"/>
+        <text x="380" y="135" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">EM</text>
+        <rect x="60" y="90" width="140" height="70" rx="8" fill="#12172B"/>
+        <text x="130" y="130" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Product</text>
+        <rect x="560" y="90" width="140" height="70" rx="8" fill="#12172B"/>
+        <text x="630" y="130" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Security</text>
+        <rect x="300" y="30" width="160" height="50" rx="8" fill="#8f6f2c"/>
+        <text x="380" y="60" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Design</text>
+        <rect x="300" y="180" width="160" height="50" rx="8" fill="#1c2438"/>
+        <text x="380" y="210" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13">Peer EMs</text>
+        <text x="60" y="240" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Same facts, role-specific framing — not different “truths.”</text>
+      </svg>
+      <figcaption>
+        Figure 2. Influence scales when partners hear consistent facts in their dialect.
+      </figcaption>
+    </figure>
+
+    <h2>5. Conflict scripts — heat kam, signal zyada</h2>
+    <p>
+      Conflict script skeleton:
+    </p>
+    <pre><code>1) Intent: “I want us to hit [shared outcome].”
+2) Observation: “Here’s what I’m seeing [fact, not motive].”
+3) Impact: “If we continue, [risk/cost].”
+4) Options: A / B / C with tradeoffs.
+5) Ask: “Which do you want to sponsor — or what’s missing?”</code></pre>
+    <p>
+      Avoid: sarcasm on Slack, cc storms, “align offline” without calendar. Prefer:
+      short live call + decision log entry.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Cynicism (“sab politics hai”) aapko sharp nahi, predictable banata hai — log
+        aapse real info share karna band kar dete hain. Doosra extreme: naivety —
+        assume everyone has same incentives. Map incentives explicitly; stay warm,
+        stay clear.
+      </p>
+    </div>
+
+    <h2>6. Politics without cynicism — practical ethics</h2>
+    <ul>
+      <li>Credit publicly, critique privately (behavior, not identity).</li>
+      <li>Don’t trade in reputational gossip as currency.</li>
+      <li>Escalation = last tool after options shown, not first flex.</li>
+      <li>Document decisions so absentees aren’t “outmaneuvered.”</li>
+      <li>If you lost a call fairly, execute professionally — appeal with new data later.</li>
+    </ul>
+
+    <h2>7. Decision logs — org memory</h2>
+    <pre><code>## Decision log entry
+Date: 
+Decision: 
+Owner (A): 
+Context: 
+Options considered: 
+Choice + why: 
+Consequences / revisit trigger: 
+Link to RFC / ticket:</code></pre>
+    <p>
+      GenAI features pe decision logs especially valuable: model vendor, data retention,
+      human-in-loop — baad mein audit / incident pe yahi timeline bachati hai.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Playbook · 20-min conflict reset</span>
+      <p>
+        Invite only people with A/R/C. Share 5-line brief 24h prior. Meeting: 5 min
+        facts, 10 min options, 5 min decide + owner + log. If no decide: explicitly
+        park with date — “meeting ended in vibes” banned.
+      </p>
+    </div>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Main un EMs ko promote karta hoon jo cross-org trust build karte hain —
+        Product unki dates pe believe karti hai, Security unki designs pe early
+        engage karti hai. Influence demos se nahi, <em>kept promises + clean escalations</em>
+        se banta hai.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        I map stakeholders by influence and interest, keep a single Accountable on
+        each decision type, pre-wire my manager with asks, partner with Product/Design/
+        Security in their dialect, and write decision logs so conflict becomes memory
+        instead of mythology.
+      </p>
+    </div>
+
+    <h2>8. Further reading (external)</h2>
+    <ol>
+      <li>
+        Mind Tools — Stakeholder analysis —
+        <a href="https://www.mindtools.com/ab63a5v/stakeholder-analysis">mindtools.com/…/stakeholder-analysis</a>
+      </li>
+      <li>
+        RACI overview (teamgantt explainer) —
+        <a href="https://www.teamgantt.com/blog/raci-chart-definition-tips-and-example">teamgantt.com/blog/raci-chart-…</a>
+      </li>
+      <li>
+        First Round Review — influence &amp; communication essays —
+        <a href="https://review.firstround.com/">review.firstround.com</a>
+      </li>
+      <li>
+        Manager Tools — Working with your boss / peer management —
+        <a href="https://www.manager-tools.com/">manager-tools.com</a>
+      </li>
+      <li>
+        Harvard Business Review — managing up (search library) —
+        <a href="https://hbr.org/topic/subject/managing-up">hbr.org/topic/subject/managing-up</a>
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> RACI mein Accountable ke kitne log ideal hain?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Exactly one A per decision type — shared A usually means no A.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Upward update ka short spine?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Outcome → risk → ask; pre-wire before big rooms.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Conflict script ke paanch steps?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Intent, observation, impact, options, ask.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Decision log kyun?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Org memory, audit/incident readiness, aur “outmaneuvered absentee” pattern
+            kam karne ke liye.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — EM 607</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; transcript <code>data-current="em-607"</code></li>
+        <li>Stakeholder map · RACI · upward · partners · conflict · politics ethics · decision logs</li>
+        <li>≥2 SVG; Director-lens; reading URLs; playbooks</li>
+        <li>Quiz; DoD; lesson-nav Prev 606 / Next 608</li>
+        <li>Brand EM · Phase 2 Leadership; full script footer</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-606-roadmaps-delivery.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 606 · Roadmaps, OKRs &amp; Delivery</span>
+      </a>
+      <a class="next" href="em-608-technical-judgment.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 608 · Technical Judgment</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 607</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

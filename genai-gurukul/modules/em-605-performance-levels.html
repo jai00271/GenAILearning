@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 605 — Performance, Levels &amp; Comp Conversations · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="em-606-roadmaps-delivery.html">Next lesson</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-605"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 605 · Performance, Levels &amp; Comp Conversations</p>
+    <h1>Rating sheet pe number nahi — expectations pe agreement</h1>
+    <div class="lesson-meta">
+      <span>Track: EM · Phase 2</span>
+      <span>Audience: Technical Manager → EM</span>
+      <span>Prereq: EM 604 Hiring Bar · Phase 1 GenAI</span>
+      <span>Next: EM 606 Roadmaps &amp; Delivery</span>
+    </div>
+
+    <p>
+      Agar aap ~5 engineers lead karte ho — Koch-style delivery + mentoring mix — toh
+      performance season aapka “soft skill” nahi, aapka <em>operating system</em> hai.
+      Promo packet, PIP, calibration, aur comp conversation — yeh chaar rooms alag
+      dialects bolte hain. Same person, same quarter, galat dialect = trust break.
+    </p>
+    <p>
+      Yeh chapter leveling ko <strong>conceptual</strong> rakhta hai (kisi company ke
+      proprietary ladder ko copy nahi karta). Focus: expectations docs, coaching vs PIP,
+      calibration hygiene, promo evidence, aur compensation talks jo dignity preserve
+      karti hain. Aapka .NET / microservices / identity background yahan “tech depth
+      signal” banega — lekin EM bar pe depth tabhi count hoti hai jab impact + scope
+      clear ho.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 604 · CAP 502</span>
+      <p>
+        Hiring bar ne “what good looks like at entry” set kiya. CAP 502 ne evidence-first
+        narrative sikhaya. EM 605 wohi muscle andar ki taraf ghumata hai: team ke existing
+        logon ke liye bar, trajectory, aur pay conversation — bina surprise ke.
+      </p>
+    </div>
+
+    <h2>1. Levels conceptually — ladder nahi, three questions</h2>
+    <p>
+      Har badi org apna ladder rakhti hai (IC3/IC4, L5/L6, Senior/Staff — names vary).
+      Aapko un names ko rote karne ki zaroorat nahi. Director aur HR calibration mein
+      usually teen sawaal chalte hain:
+    </p>
+    <ol>
+      <li><strong>Scope</strong> — problem kitni badi? team / multi-team / org?</li>
+      <li><strong>Ambiguity</strong> — requirements clear the ya aapne shape kiya?</li>
+      <li><strong>Leverage</strong> — impact sirf aapke code se, ya doosron ke through?</li>
+    </ol>
+    <p>
+      Same title alag companies mein alag mean karta hai. Isliye cross-company title
+      matching dangerous hai. Apni org ke written level guide ko source of truth maano;
+      bahar ke blogs ko <em>intuition</em> ke liye padho, packet language ke liye nahi.
+    </p>
+
+    <figure class="diagram" aria-label="Scope ambiguity leverage triangle for leveling">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Leveling triangle (conceptual)</text>
+        <polygon points="380,55 160,230 600,230" fill="none" stroke="#12172B" stroke-width="2"/>
+        <circle cx="380" cy="55" r="28" fill="#3F8C87"/>
+        <text x="380" y="60" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="11" font-weight="700">Scope</text>
+        <circle cx="160" cy="230" r="28" fill="#12172B"/>
+        <text x="160" y="235" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11" font-weight="700">Ambiguity</text>
+        <circle cx="600" cy="230" r="28" fill="#8f6f2c"/>
+        <text x="600" y="235" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="11" font-weight="700">Leverage</text>
+        <text x="300" y="145" font-family="JetBrains Mono, monospace" font-size="12" fill="#4a5268">promo needs</text>
+        <text x="300" y="165" font-family="JetBrains Mono, monospace" font-size="12" fill="#4a5268">movement on ≥2 axes</text>
+        <text x="40" y="268" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Titles differ by company. Axes travel better than ladder names.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Promo packets that only cite “worked hard on tickets” fail the triangle test.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Director calibration mein “yeh banda smart hai” soft signal hai.
+        Hard signal: <em>kya yeh next-level problems already solve kar raha hai, without
+        title?</em> Agar aap wait kar rahe ho title ke baad responsibility dene ka —
+        aap already late ho. Title usually peeche aata hai, peeche nahi.
+      </p>
+    </div>
+
+    <h2>2. Expectations doc — surprise killer</h2>
+    <p>
+      Performance conversation tab toxic hoti hai jab Q4 mein pehli baar bar dikhti hai.
+      Expectations doc ek living one-pager hai — role + level ke hisaab se — jo 1:1s mein
+      update hota hai. Template (copy, customize):
+    </p>
+    <pre><code>## Expectations — [Name] · [Role/Level] · [Quarter]
+Outcomes (3–5 measurable or observable):
+- ...
+Behaviors (how we work: reviews, on-call, partnering):
+- ...
+Growth bets (1–2 skills this quarter):
+- ...
+Not in scope / parked:
+- ...
+Evidence we will look at in review:
+- PRs / designs / incident notes / partner feedback
+Last updated: [date] · Agreed in 1:1: [yes/no]</code></pre>
+    <p>
+      GenAI Phase 1 complete karne wale TM ke liye tip: “learn RAG” growth bet nahi —
+      “ship one evaluated retrieval path for X service with Recall@k documented” outcome
+      hai. Vague learning goals calibration mein melt ho jaate hain.
+    </p>
+
+    <h2>3. Coaching vs PIP — alag instruments</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Coaching</th>
+          <th>PIP / formal plan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Gap nature</td>
+          <td>Skill / context / priority miss</td>
+          <td>Sustained gap after clear expectations</td>
+        </tr>
+        <tr>
+          <td>Surprise?</td>
+          <td>Should be low — 1:1 trail exists</td>
+          <td>Must be zero — written trail required</td>
+        </tr>
+        <tr>
+          <td>Tone</td>
+          <td>Development + accountability</td>
+          <td>Clear bar, timeline, consequences</td>
+        </tr>
+        <tr>
+          <td>HR involvement</td>
+          <td>Optional early</td>
+          <td>Required per policy</td>
+        </tr>
+        <tr>
+          <td>Exit criterion</td>
+          <td>Visible improvement trajectory</td>
+          <td>Binary: meet written goals or exit path</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Sabse common EM mistake: PIP ko “harsh coaching” samajhna. PIP legal/HR process
+      hai — kindness ke saath, lekin ambiguity ke bina. Coaching loop short-circuit karke
+      seedha PIP = culture damage + process risk. Ulta: clear underperformance pe months
+      tak soft language = team pe tax, aur person ko unfair surprise.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Slack pe “need to step up” likh dena documentation nahi hai. Documentation =
+        date, expectation stated, example observed, support offered, next check-in.
+        Weaponizing notes (har mistake ka dossier bina coaching ke) trust kill karta hai.
+        Under-documenting (sirf memory) aapko aur employee dono ko unprotected chhodta hai.
+      </p>
+    </div>
+
+    <h2>4. Calibration meetings — room ka physics</h2>
+    <p>
+      Calibration mein aapka job advocate-or-prosecutor nahi — <strong>evidence curator</strong>
+      hai. Pehle se packet: outcomes, scope, peer/partner quotes (with permission),
+      counter-examples aapne already coached. Room norms jo EM control kar sakta hai:
+    </p>
+    <ul>
+      <li>Compare against level bar, against “who I like” nahi.</li>
+      <li>Recency bias check: last two weeks ≠ whole half.</li>
+      <li>Visibility bias check: quiet backend owner vs flashy demo owner.</li>
+      <li>Identity / affinity bias: similar background ≠ higher rating.</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Calibration flow from expectations to rating">
+      <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="250" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Evidence path into calibration</text>
+        <rect x="30" y="70" width="140" height="70" rx="8" fill="#12172B"/>
+        <text x="100" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">expectations</text>
+        <text x="100" y="120" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="10">1:1 trail</text>
+        <text x="180" y="105" fill="#3F8C87" font-size="18">→</text>
+        <rect x="205" y="70" width="140" height="70" rx="8" fill="#1c2438"/>
+        <text x="275" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">artifacts</text>
+        <text x="275" y="120" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="10">design · ops</text>
+        <text x="355" y="105" fill="#3F8C87" font-size="18">→</text>
+        <rect x="380" y="70" width="140" height="70" rx="8" fill="#3F8C87"/>
+        <text x="450" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12" font-weight="600">draft rating</text>
+        <text x="450" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="10">+ narrative</text>
+        <text x="530" y="105" fill="#3F8C87" font-size="18">→</text>
+        <rect x="555" y="70" width="170" height="70" rx="8" fill="#8f6f2c"/>
+        <text x="640" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">calibrated</text>
+        <text x="640" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="10">peer room</text>
+        <text x="30" y="180" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">If draft has no artifacts, calibration becomes storytelling contest.</text>
+        <text x="30" y="210" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Bring one counter-example you coached — shows honesty, not weakness.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Calibration trusts managers who show receipts, not volume.
+      </figcaption>
+    </figure>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Jab aap har report ko “exceeds” laate ho, aapki currency inflate ho jaati hai.
+        Jab aap kabhi kisi ko defend nahi karte, aap risk-averse dikhte ho. Healthy EM:
+        mostly fair distributions + 1–2 fights worth fighting with evidence. Directors
+        remember who wasted the room vs who clarified the bar.
+      </p>
+    </div>
+
+    <h2>5. Promo packets — evidence architecture</h2>
+    <p>
+      Promo packet ek sales deck nahi. Yeh case file hai. Recommended spine:
+    </p>
+    <ol>
+      <li><strong>Role / target level</strong> — org language exactly.</li>
+      <li><strong>Problem landscape</strong> — ambiguity + business stakes.</li>
+      <li><strong>What they owned</strong> — decisions, not only tickets closed.</li>
+      <li><strong>Outcomes</strong> — reliability, latency, cost, adoption, risk reduced.</li>
+      <li><strong>Leverage</strong> — mentorship, standards, unblocked teams.</li>
+      <li><strong>Growth edge</strong> — honest next bets (credibility booster).</li>
+    </ol>
+    <p>
+      Microservices / identity veterans ke liye trap: “I designed the auth flow” bina
+      “what broke, what we measured, who else could run it now”. Staff-shaped work =
+      system others can operate without you as single point of failure.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Playbook · 45-min promo draft</span>
+      <p>
+        Engineer ke saath shared doc: 5 bullets outcomes, 3 bullets leverage, 1 risk they
+        owned down. Aap add: scope framing + calibration vocabulary. Next 1:1: cut fluff,
+        add dates/metrics. Manager-only section: your recommendation + residual concerns.
+        Kabhi bhi engineer ko surprise “I don’t support yet” mat do promo week mein —
+        woh conversation months pehle honi chahiye thi.
+      </p>
+    </div>
+
+    <h2>6. Comp conversations — hygiene over theater</h2>
+    <p>
+      Comp talk mein aap often messenger ho, author nahi — bands, budgets, HR guidelines.
+      Hygiene checklist:
+    </p>
+    <ul>
+      <li>Separate performance narrative from budget constraints — conflate mat karo.</li>
+      <li>“Market” claims sirf jab aapke paas company-approved data ho; gossip bands mat quote karo.</li>
+      <li>Agar number disappoint kare: listen → restate facts → path (promo timing, scope, skills) → follow-up date.</li>
+      <li>Kabhi bhi “agar tum jaaoge toh…” matching promises mat do bina authority ke.</li>
+      <li>Private setting; no hallway comp comparisons.</li>
+    </ul>
+    <p>
+      Script seed (adapt, don’t recite):
+    </p>
+    <pre><code>Thanks for the work this cycle — here’s how I rated outcomes vs expectations.
+Compensation decision this round: [X]. Constraints I can share: [budget/band].
+What I control with you next: [scope, visibility, promo readiness criteria].
+What I will take upward: [specific ask]. Check-in date: [date].</code></pre>
+
+    <h2>7. Documenting without weaponizing</h2>
+    <p>
+      Notes ka ethical bar: <em>future-you aur future-them</em> dono ko fair trial do.
+      Practical rules:
+    </p>
+    <ul>
+      <li>Write observable behavior + impact, not character labels (“lazy”, “attitude”).</li>
+      <li>Include support offered and employee response when relevant.</li>
+      <li>Share themes in 1:1; secret shadow file of petty gripes = mismanagement.</li>
+      <li>Positive evidence bhi likho — calibration aur memory both biased toward drama.</li>
+    </ul>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        I keep a living expectations doc, coach before I formalize, bring artifacts not
+        anecdotes into calibration, build promo cases on scope–ambiguity–leverage, and
+        run comp talks that separate performance truth from budget constraints.
+      </p>
+    </div>
+
+    <h2>8. Further reading (external)</h2>
+    <ol>
+      <li>
+        Google re:Work — Guide: Managers —
+        <a href="https://rework.withgoogle.com/guides/managers-identify-what-makes-a-great-manager/steps/introduction/">rework.withgoogle.com/…/managers</a>
+      </li>
+      <li>
+        Lattice — Performance review resources —
+        <a href="https://lattice.com/library/performance-management">lattice.com/library/performance-management</a>
+      </li>
+      <li>
+        First Round Review — feedback &amp; management essays —
+        <a href="https://review.firstround.com/">review.firstround.com</a>
+      </li>
+      <li>
+        Manager Tools — Feedback and 1:1s (podcast/tools) —
+        <a href="https://www.manager-tools.com/">manager-tools.com</a>
+      </li>
+      <li>
+        SHRM — Performance improvement plans overview —
+        <a href="https://www.shrm.org/topics-tools/tools/toolkits/managing-employee-performance">shrm.org/…/managing-employee-performance</a>
+        (policy framing; follow your HR)
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Leveling ke teen conceptual axes kya hain?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Scope, ambiguity, leverage — titles company-specific hain; axes portable hain.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Coaching aur PIP mein pehla structural farq?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Coaching development + accountability; PIP formal written bar + timeline +
+            consequences with HR process — surprise zero hona chahiye.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Calibration mein EM ka primary role?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>Evidence curator — bar ke against artifacts, storytelling contest nahi.</p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Comp talk hygiene ka ek non-negotiable?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Performance narrative ko budget constraints se alag rakho; unauthorized
+            matching promises mat do.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — EM 605</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; transcript <code>data-current="em-605"</code></li>
+        <li>Levels conceptual · expectations · coaching vs PIP · calibration · promo · comp · docs ethics</li>
+        <li>≥2 SVG; Director-lens callouts; reading list with URLs; playbook/template</li>
+        <li>Quiz (details/summary); DoD; lesson-nav Prev 604 / Next 606</li>
+        <li>Brand tag EM · Phase 2 Leadership; scripts modules→tutor</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-604-hiring-bar.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 604 · Hiring Bar</span>
+      </a>
+      <a class="next" href="em-606-roadmaps-delivery.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 606 · Roadmaps, OKRs &amp; Delivery</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 605</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

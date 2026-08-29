@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 610 — Culture, Psychological Safety &amp; Inclusion · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../index.html#em">Phase 2</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-610"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 610 · Culture, Psychological Safety &amp; Inclusion</p>
+    <h1>Safety slogans nahi — dissent, learning, aur Mutual Benefit norms</h1>
+    <div class="lesson-meta">
+      <span>Track: EM · Phase 2</span>
+      <span>Audience: Technical Manager → Engineering Manager</span>
+      <span>Prereq: EM 609 GenAI Eng Teams</span>
+      <span>Next: EM 611 Incident Leadership</span>
+    </div>
+
+    <p>
+      Jai / Mritunjai jaisi TM journey mein culture often “soft topic” lagta hai — jab tak
+      GenAI ship pe golden-set miss, cost spike, ya identity-adjacent hallucination aata hai
+      aur koi bolne se darta hai. EM 610 ka job: <em>psychological safety</em> ko Amy Edmondson
+      ke research sense mein samajhna (paraphrase + cite, copy nahi), inclusion ko hiring
+      slogan se alag rakhna, aur Koch-style <strong>MBM Principle of Mutual Benefit</strong>
+      ko team norms mein translate karna.
+    </p>
+    <p>
+      Apple/Walmart-class EM loops pe “tell me about a time someone disagreed with you”
+      aur “how do you run blameless postmortems” common hain. Yeh lesson un answers ke
+      <em>operating system</em> pe focused hai — incidents ka mechanics EM 611 mein.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 609 · EM 603</span>
+      <p>
+        EM 609 ne eval ownership aur platform/app split rakha. EM 603 ne coaching scripts
+        diye. Safety ke bina eval owner “bad news” hide karega; coaching ke bina dissent
+        personal attack ban jayega. Culture = woh glue jo staffing + feedback ko honest
+        rakhti hai.
+      </p>
+    </div>
+
+    <h2>1. Psychological safety — paraphrase, not poster</h2>
+    <p>
+      Edmondson ka core idea (paraphrased): team members believe they can speak up about
+      mistakes, questions, and concerns <em>without</em> interpersonal punishment. Yeh
+      “being nice” nahi hai — yeh <strong>learning behavior</strong> enable karti hai:
+      ask for help, admit uncertainty, challenge a plan. Google’s Project Aristotle /
+      re:Work materials bhi team effectiveness mein psychological safety ko central
+      factor ke tor pe discuss karte hain — detail ke liye unke public pages padho,
+      yahan slogan paste nahi.
+    </p>
+    <p>
+      GenAI context: junior engineer ko kehna chahiye “golden set pe regression aa gayi”
+      bina fear ke ke “ship date todd diya”. Backend-strong IC ko kehna chahiye “vendor
+      eval opaque hai” bina “anti-innovation” label ke.
+    </p>
+
+    <figure class="diagram" aria-label="Psychological safety enables learning loops">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Safety → speak-up → learning → better GenAI outcomes</text>
+        <rect x="40" y="60" width="150" height="80" rx="8" fill="#12172B"/>
+        <text x="115" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Safety climate</text>
+        <text x="115" y="118" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">no punish speak-up</text>
+        <text x="205" y="105" fill="#3F8C87" font-size="22">→</text>
+        <rect x="230" y="60" width="150" height="80" rx="8" fill="#3F8C87"/>
+        <text x="305" y="95" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">Dissent / miss</text>
+        <text x="305" y="118" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">eval · cost · risk</text>
+        <text x="395" y="105" fill="#3F8C87" font-size="22">→</text>
+        <rect x="420" y="60" width="150" height="80" rx="8" fill="#1c2438"/>
+        <text x="495" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Learning loop</text>
+        <text x="495" y="118" text-anchor="middle" fill="#8a90a8" font-family="JetBrains Mono, monospace" font-size="11">fix · re-eval</text>
+        <text x="585" y="105" fill="#3F8C87" font-size="22">→</text>
+        <rect x="610" y="60" width="120" height="80" rx="8" fill="#B8923F"/>
+        <text x="670" y="95" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">Trust +</text>
+        <text x="670" y="118" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">ship quality</text>
+        <text x="40" y="190" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">Low safety: silent golden-set misses, hidden vendor risk, performative demos.</text>
+        <text x="40" y="215" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">High safety ≠ low standards. High safety + clear bar = honest rigor.</text>
+        <text x="40" y="245" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Cite: Edmondson work · Google re:Work psychological safety (public summaries).</text>
+      </svg>
+      <figcaption>
+        Figure 1. Psychological safety enables speak-up on GenAI misses; it does not replace
+        quality bars. Paraphrase Edmondson; link primary sources below.
+      </figcaption>
+    </figure>
+
+    <h2>2. Inclusion that is not a slogan wall</h2>
+    <p>
+      Inclusion EM ke liye operational hai: meeting airtime, design-review invitations,
+      on-call rotation fairness, language that doesn’t gatekeep (“real ML people only”),
+      aur hiring loops jo accent/school prestige pe shadow-score na karein. Poster pe
+      “diversity” likhna cheap hai; retro mein quiet voices ko explicitly invite karna
+      expensive — aur valuable.
+    </p>
+    <p>
+      ~5-person Koch team reality: agar ek hi “GenAI person” hai, unka overload + hero
+      culture inclusion fail hai. Spread literacy (office hours, pairing) taaki identity /
+      .NET veterans bhi eval language bol saken — EM 609 pairing theme yahan culture ban
+      jati hai.
+    </p>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Directors ask: “Who spoke last staff? Who owns bad news?” Agar same two names,
+        safety/inclusion theater hai. Jai-style answer: named facilitation habits +
+        documented decision logs (EM 607) + eval dashboards that anyone can challenge.
+      </p>
+    </div>
+
+    <h2>3. Dissent as a product feature</h2>
+    <p>
+      Healthy dissent protocols: (1) steelman the proposal first, (2) name the risk in
+      user/cost/compliance terms, (3) propose a cheaper test, (4) time-box the disagreement.
+      EM ka role: dissent ko personality fight se nikaal ke <em>decision record</em> mein
+      daalna. “I disagree and commit” tabhi ethical hai jab dissent actually heard ho.
+    </p>
+
+    <figure class="diagram" aria-label="Dissent protocol ladder">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Dissent ladder — from heat to decision log</text>
+        <rect x="50" y="55" width="160" height="55" rx="6" fill="#12172B"/>
+        <text x="130" y="88" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">1 · Steelman</text>
+        <rect x="230" y="55" width="160" height="55" rx="6" fill="#1c2438"/>
+        <text x="310" y="88" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="600">2 · Name risk</text>
+        <rect x="410" y="55" width="160" height="55" rx="6" fill="#3F8C87"/>
+        <text x="490" y="88" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12" font-weight="600">3 · Cheap test</text>
+        <rect x="590" y="55" width="130" height="55" rx="6" fill="#B8923F"/>
+        <text x="655" y="88" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12" font-weight="700">4 · Decide</text>
+        <text x="50" y="150" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">GenAI example: “RAG now vs eval harness first” — argue metrics, not ego.</text>
+        <text x="50" y="178" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Log: options considered, risks, owner, revisit date. Silence ≠ alignment.</text>
+        <text x="50" y="215" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">MBM Mutual Benefit: dissent that protects customers/employees/org beats status theater.</text>
+      </svg>
+      <figcaption>
+        Figure 2. A simple dissent ladder keeps GenAI trade-offs (eval vs feature) in the
+        open and ends in a decision log, not a hallway win.
+      </figcaption>
+    </figure>
+
+    <h2>4. Blameless culture — and its limits</h2>
+    <p>
+      Blameless postmortems (SRE tradition) systems pe focus karte hain: latent conditions,
+      missing alerts, unclear ownership. Limit yeh hai: willful negligence, harassment, ya
+      repeated reckless bypass of known gates “blameless” umbrella ke neeche nahi aate.
+      EM clearly bole: learning vs accountability tracks alag ho sakte hain — dono honest.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “Blameless” ko “consequences zero” mat banao. Doosra pitfall: safety theater —
+        retros mein sticky notes, lekin jo engineer cost spike raise kare usko “not a team
+        player” whisper. Measure speak-up by what changed after bad news, not by posters.
+      </p>
+    </div>
+
+    <h2>5. MBM Mutual Benefit → team norms</h2>
+    <p>
+      Koch’s Market-Based Management emphasizes Principle of Mutual Benefit: long-term
+      relationships where value is created for customers, employees, and the company —
+      not zero-sum heroics. Team norms draft (example, adapt — don’t invent company
+      policy): (a) ship gates beat demo applause, (b) credit shared on ServiceNow /
+      identity automation wins, (c) challenge ideas early, (d) no surprise exec decks —
+      bad news travels faster than good.
+    </p>
+    <p>
+      Interview narrative tip (EM 612 preview): jab aap ~95% on-time delivery claim
+      mention karo, frame as <em>your stated operating claim to verify with evidence</em>,
+      aur culture angle add karo — on-time pressure ne safety ko crush kiya ya nahi?
+      Fake metrics mat ghado; STAR mein process + trade-off dikhao.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · 30-min norms workshop</span>
+      <p>
+        Apni 5-person team ke saath 5 norms draft karo (1 page). Har norm ke saath ek
+        <em>anti-pattern</em> likho (“what we will not do”). Include one GenAI-specific
+        norm (e.g. “no production prompt change without eval note”). Share in next 1:1.
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Safety climate stub</span>
+      <p>
+        Write a half-page note: How I will detect low psychological safety on a GenAI
+        squad (signals), one facilitation habit I will run weekly, and how Mutual Benefit
+        shows up when vendor cost and engineer career growth conflict. Link your reading;
+        do not paste copyrighted excerpts.
+      </p>
+    </div>
+
+    <h2>6. Further reading (external)</h2>
+    <ul>
+      <li><a href="https://www.amazon.com/Fearless-Organization-Psychological-Workplace-Innovation/dp/1119477247" rel="noopener">Amy Edmondson — The Fearless Organization</a> (book; paraphrase only in your notes)</li>
+      <li><a href="https://rework.withgoogle.com/intl/en/guides/understanding-team-effectiveness/" rel="noopener">Google re:Work — Understand team effectiveness</a></li>
+      <li><a href="https://rework.withgoogle.com/intl/en/guides/creating-a-culture-of-learning/" rel="noopener">Google re:Work — Learning culture themes</a></li>
+      <li><a href="https://sre.google/sre-book/postmortem-culture/" rel="noopener">Google SRE — Postmortem culture</a> (blameless + limits)</li>
+      <li><a href="https://www.kochinc.com/about/market-based-management" rel="noopener">Koch — Market-Based Management overview</a> (Mutual Benefit context)</li>
+    </ul>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Psychological safety ka practical meaning?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Belief that speak-up (misses, questions, dissent) won’t bring interpersonal
+            punishment — enables learning, not “be soft on quality.”
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Inclusion slogan se kaise alag?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Airtime, review access, on-call fairness, anti-gatekeeping language, fair
+            loops — behaviors + systems, not wall posters.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Blameless culture ki limit?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Systems learning yes; willful harm / harassment / reckless gate-bypass still
+            need accountability tracks.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Mutual Benefit → team norm example?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            e.g. bad news faster than good; eval gates beat demo applause; shared credit
+            on automation wins — customer/employee/org value, not heroics.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — EM 610</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; brand EM · Phase 2 Leadership; <code>data-current="em-610"</code></li>
+        <li>Edmondson paraphrase + re:Work / SRE / MBM links; inclusion beyond slogans</li>
+        <li>Dissent ladder; blameless limits; Mutual Benefit norms; ≥2 SVG; quiz</li>
+        <li>Hands-on norms workshop; Prev → 609; Next → 611</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-609-genai-eng-teams.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 609 · Building GenAI Engineering Teams</span>
+      </a>
+      <a class="next" href="em-611-incident-leadership.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 611 · Incident Leadership &amp; Operational Excellence</span>
+      </a>
+    </nav>
+  </article>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 610</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

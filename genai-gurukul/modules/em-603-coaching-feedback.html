@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 603 — Coaching, Feedback &amp; Growth · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../index.html#em">Phase 2</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-603"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 603 · Coaching &amp; Feedback · Phase 2 Leadership</p>
+    <h1>Feedback der se dena kindness nahi — coaching OS se growth plans aur hard truths dono chal’te hain</h1>
+    <div class="lesson-meta">
+      <span>Track: EM</span>
+      <span>Prereq: EM 602 operating system</span>
+      <span>Focus: SBI · coaching vs directing · growth · safety</span>
+      <span>Next: EM 604 · Hiring Bar</span>
+    </div>
+
+    <p>
+      Jai, mentoring aap pehle se karte ho. EM 603 mentoring ko
+      <em>enterprise-grade people development</em> mein upgrade karta hai: observable
+      feedback, situational coaching, documented growth, aur psychological safety
+      jo “nice team” se alag — <strong>high standards + high support</strong> combo.
+    </p>
+    <p>
+      Large-org directors yeh sun’na chahte hain: aapne kab kisi ko clearly bataya
+      ki level miss ho raha hai, aur kab kisi ko stretch assignment se promote-ready
+      banaya — bina surprise annual review ke.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 602</span>
+      <p>
+        1:1s feedback ke liye natural slot hain. Agar cadence stable nahi, coaching
+        random pep talks ban jaati hai. Pehle OS, phir conversation craft.
+      </p>
+    </div>
+
+    <h2>1. Coaching vs directing — situational leadership lite</h2>
+    <p>
+      Har moment pe “Socratic coach” banna slow aur fake lagta hai. Har moment pe
+      “main bataata hoon” banna atrophy banata hai. Situation dekho:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Report state</th>
+          <th>Your mode</th>
+          <th>Example (identity / services context)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>New to problem, high stakes (prod auth outage)</td>
+          <td>Direct + teach</td>
+          <td>“Pehle cert rollbacks check karo; main bridge pe rahunga.”</td>
+        </tr>
+        <tr>
+          <td>Capable, ambiguous design choice</td>
+          <td>Coach (questions)</td>
+          <td>“OAuth callback failure pe tumhare 2 options — tradeoffs kya hain?”</td>
+        </tr>
+        <tr>
+          <td>Senior, owns domain</td>
+          <td>Delegate + consult</td>
+          <td>“Tum decide karo; mujhe risk summary kal tak.”</td>
+        </tr>
+        <tr>
+          <td>Motivation dip, skills OK</td>
+          <td>Support / listen</td>
+          <td>“Load / meaning / conflict — kahan ghisai hai?”</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout intuition">
+      <span class="callout-label">Intuition</span>
+      <p>
+        Coaching = unke dimaag ko strong banana. Directing = abhi sahi outcome
+        ensure karna. EM maturity: consciously choose, default habit se nahi.
+      </p>
+    </div>
+
+    <h2>2. SBI feedback — Situation · Behavior · Impact</h2>
+    <p>
+      Vague feedback (“be more proactive”) se log confuse hote hain. SBI concrete
+      rakhta hai:
+    </p>
+    <ul>
+      <li><strong>Situation:</strong> kab / kahan (context)</li>
+      <li><strong>Behavior:</strong> observable action (not personality diagnosis)</li>
+      <li><strong>Impact:</strong> team / customer / system pe asar</li>
+    </ul>
+
+    <p><strong>Critique example (Hinglish rehearsal → English delivery):</strong></p>
+    <blockquote>
+      <p>
+        “Tuesday ke incident bridge pe (S), jab SRE ne queue lag pucha, tumne 4 minute
+        tak guess kiya bina metrics dashboard khole (B). Isse bridge pe duplicate
+        hypotheses chalín aur MTTR roughly 15 min extra gaya (I). Agli baar pehle
+        dashboard link paste, phir hypothesis — chalega?”
+      </p>
+    </blockquote>
+
+    <p><strong>Praise example (specific, not fluff):</strong></p>
+    <blockquote>
+      <p>
+        “Friday ke design review mein (S), tumne SAML assertion skew ke liye clock
+        drift failure mode explicitly likha (B). Security partner ne seedha approve
+        kiya — ek follow-up meeting bach gayi (I). Yeh bar-raising detail thi.”
+      </p>
+    </blockquote>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall · personality labels</span>
+      <p>
+        “Tum defensive ho” / “tum quiet ho” — yeh feedback nahi, diagnosis hai.
+        Behavior: “jab challenge aaya, tumne meeting mein response cut kar diya.”
+        Impact: “team ne risk raise karna band kar diya.” Fixable.
+      </p>
+    </div>
+
+    <h2>3. Praise / critique ratio myths</h2>
+    <p>
+      Internet pe “5:1 positive” magic ratio ghumta hai. Reality: mechanical sandwich
+      (praise–hit–praise) log detect kar lete hain — trust toot’ta hai. Better model:
+    </p>
+    <ul>
+      <li>Frequent small feedback both ways — ratio naturally healthy rehta hai.</li>
+      <li>Hard feedback alone bhi valid hai; fake praise se mat wrap karo.</li>
+      <li>Positive feedback bhi SBI — “great job” empty calorie hai.</li>
+      <li>Public praise, private critique — default; exceptions rare (safety issues).</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Feedback quality vs sandwich">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="280" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Sandwich theater vs clean SBI</text>
+        <rect x="40" y="60" width="300" height="160" rx="8" fill="#12172B"/>
+        <text x="190" y="95" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="13">Feedback sandwich</text>
+        <text x="190" y="125" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">praise → critique → praise</text>
+        <text x="190" y="155" text-anchor="middle" fill="#D4AF5F" font-family="Inter, sans-serif" font-size="12">signal: “critique is coming”</text>
+        <text x="190" y="185" text-anchor="middle" fill="#B8923F" font-family="Inter, sans-serif" font-size="12">trust ↓ over time</text>
+        <rect x="400" y="60" width="320" height="160" rx="8" fill="#3F8C87"/>
+        <text x="560" y="95" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="700">Clean SBI + ask</text>
+        <text x="560" y="125" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">situation · behavior · impact</text>
+        <text x="560" y="155" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">request / next experiment</text>
+        <text x="560" y="185" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">separate genuine praise days</text>
+        <text x="40" y="250" fill="#4a5268" font-family="Inter, sans-serif" font-size="13">
+          Frequency beats ratio theater — weekly crumbs &gt; annual bombs
+        </text>
+      </svg>
+      <figcaption>
+        Figure 1. Drop the sandwich. Deliver clear SBI; keep praise real and separate.
+      </figcaption>
+    </figure>
+
+    <h2>4. Growth plans jo promotion fairy tales nahi</h2>
+    <p>
+      Enterprise EM growth plan = living doc, quarterly refresh:
+    </p>
+    <ol>
+      <li><strong>Current level evidence</strong> — projects, scope, complexity.</li>
+      <li><strong>Target skills / next level behaviors</strong> — org ladder language.</li>
+      <li><strong>2–3 stretch assignments</strong> — owned outcomes, not shadowing forever.</li>
+      <li><strong>Support you will provide</strong> — intros, air cover, course time.</li>
+      <li><strong>Check-in dates</strong> — evidence review, not vibes.</li>
+    </ol>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · one growth plan this month</span>
+      <p>
+        Apne 5 mein se ek report ke saath 45-min session: ladder se 3 behaviors pick
+        karo, ek stretch outcome define karo (e.g., “own identity incident retros for
+        Q”), success metrics likho. Aapka role: unblock + feedback, unka role: drive.
+      </p>
+    </div>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Promo packet mein EM ka letter tab strong hota hai jab pehle se written growth
+        evidence ho. Last-week scramble (“they’re ready, trust me”) calibration mein
+        weak padta hai — especially Walmart/Apple-class rigor pe.
+      </p>
+    </div>
+
+    <h2>5. Psychological safety — intro for EMs (not therapy cosplay)</h2>
+    <p>
+      Amy Edmondson sense mein safety: interpersonal risk lene ka comfort —
+      “main galat ho sakta hoon,” “main bad news laata hoon,” “main junior hoker
+      challenge karta hoon.” Safety ≠ low standards. High-performing teams:
+      <strong>safe to speak + accountable for outcomes</strong>.
+    </p>
+    <ul>
+      <li>Blameless postmortems with owned actions (person pe nahi, system pe).</li>
+      <li>Aap pehle vulnerability model karo: “Maine yeh call galat kiya…”</li>
+      <li>Shoot-the-messenger punish mat karo — kabhi, publicly.</li>
+      <li>Safety ke naam pe chronic underperformance ignore mat karo (EM 605 territory).</li>
+    </ul>
+
+    <figure class="diagram" aria-label="Safety and standards quadrant">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="28" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Standards × safety</text>
+        <line x1="120" y1="260" x2="120" y2="50" stroke="#2A3348" stroke-width="2"/>
+        <line x1="120" y1="260" x2="680" y2="260" stroke="#2A3348" stroke-width="2"/>
+        <text x="400" y="285" text-anchor="middle" fill="#4a5268" font-family="Inter, sans-serif" font-size="12">psychological safety →</text>
+        <text x="40" y="160" fill="#4a5268" font-family="Inter, sans-serif" font-size="12" transform="rotate(-90 40 160)">standards →</text>
+        <rect x="140" y="160" width="200" height="80" rx="6" fill="#1c2438"/>
+        <text x="240" y="195" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">anxiety zone</text>
+        <text x="240" y="215" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">high bar, low safety</text>
+        <rect x="140" y="60" width="200" height="80" rx="6" fill="#12172B"/>
+        <text x="240" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">apathy</text>
+        <text x="240" y="115" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">low bar, low safety</text>
+        <rect x="420" y="160" width="220" height="80" rx="6" fill="#2a3348"/>
+        <text x="530" y="195" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12">comfort club</text>
+        <text x="530" y="215" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">low bar, high safety</text>
+        <rect x="420" y="60" width="220" height="80" rx="6" fill="#B8923F"/>
+        <text x="530" y="95" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">learning high-perf</text>
+        <text x="530" y="115" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="11">high bar + high safety</text>
+      </svg>
+      <figcaption>
+        Figure 2. Aim for the gold quadrant — not “nice” and not “fear-driven heroics.”
+      </figcaption>
+    </figure>
+
+    <h2>6. Conversation scripts (rehearse aloud)</h2>
+    <p><strong>A. Early performance concern</strong></p>
+    <blockquote>
+      <p>
+        “Main tumhare saath early baat karna chahta hoon, surprise review nahi.
+        Last 3 on-call handoffs mein runbook updates miss hue — impact yeh ki next
+        engineer ne same failure dobara debug kiya. Main chahta hoon next 4 weeks
+        har Sev-2 ke baad 24h mein notes update. Main kaise support karun — pairing
+        time? Template?”
+      </p>
+    </blockquote>
+    <p><strong>B. Stretch invite</strong></p>
+    <blockquote>
+      <p>
+        “Next quarter identity migration ka tech brief tum lead karo. Success =
+        written RFC + two stakeholder aligns + rollback section. Main air cover
+        dunga product date pressure pe. Interested?”
+      </p>
+    </blockquote>
+    <p><strong>C. Upward feedback invite (you model safety)</strong></p>
+    <blockquote>
+      <p>
+        “Meri ek habit jo team slow karti ho — ek example do. Main defensive nahi
+        hounga; main note karke next 1:1 mein follow-up dunga.”
+      </p>
+    </blockquote>
+
+    <h2>7. Anti-patterns checklist</h2>
+    <ul>
+      <li>Feedback hoard until calibration week</li>
+      <li>Praise only extroverts / demo heroes; quiet reliability ignore</li>
+      <li>Coach forever without ever directing on safety/compliance</li>
+      <li>Growth plan = course catalog shopping list, no owned outcome</li>
+      <li>“Family” rhetoric se hard truths avoid</li>
+    </ul>
+
+    <div class="callout paid">
+      <span class="callout-label">Optional paid</span>
+      <p>
+        Manager Tools or similar feedback/coaching audio libraries — useful drills.
+        Free path bhi kaafi: weekly SBI practice + one recorded mock (self) with a peer EM.
+      </p>
+    </div>
+
+    <h2>Reading list</h2>
+    <ul>
+      <li>
+        <a href="https://www.manager-tools.com/2006/01/giving-effective-feedback">Manager Tools — Effective Feedback</a>
+        — Frequency and delivery fundamentals.
+      </li>
+      <li>
+        <a href="https://rework.withgoogle.com/guides/managers-coach-managers-to-coach/steps/introduction/">Google re:Work — Managers coach</a>
+        — Org-scale coaching expectations.
+      </li>
+      <li>
+        <a href="https://hbr.org/2019/03/the-feedback-fallacy">HBR — The Feedback Fallacy</a>
+        — Challenge lazy praise/critique folklore; pair critically with SBI practice (don’t abandon feedback).
+      </li>
+      <li>
+        <a href="https://lattice.com/library/how-to-give-employee-feedback">Lattice — How to give employee feedback</a>
+        — HR-compatible language for enterprise settings.
+      </li>
+      <li>
+        <a href="https://hbr.org/2017/01/high-performing-teams-need-psychological-safety-heres-how-to-create-it">HBR — Psychological safety (Edmondson lineage)</a>
+        — Concepts; pair with high standards, don’t stop at vibes.
+      </li>
+      <li>
+        <a href="https://www.kenblanchard.com/Products-Services/Situational-Leadership-II">Situational Leadership overview</a>
+        — Directive vs supportive styles map (use lightly, don’t dogma).
+      </li>
+    </ul>
+
+    <section class="quiz">
+      <h2>Check yourself</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> SBI ke teen parts kya hain — aur personality label kyun avoid?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Situation, Behavior, Impact. Personality labels un-observable aur un-fixable
+            feel karte hain; behaviors change ho sakte hain.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Kab direct karo, kab coach?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            High stakes / low familiarity → direct; capable + ambiguous → coach;
+            expert owner → delegate; motivation issue → support.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Feedback sandwich kyun weak tool hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Log pattern detect karke praise ko fake treat karte hain; trust erodes.
+            Clean SBI + separate genuine praise better.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Psychological safety ka matlab low bar nahi — explain.</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Safety = interpersonal risk OK (bad news, challenge, mistakes). High-perf
+            teams iske saath high standards + accountability rakhte hain.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done</h2>
+      <ul class="dod-checklist">
+        <li>Is hafte 2 SBI feedbacks diye (1 praise, 1 critique) — written notes rakho</li>
+        <li>Ek report ke saath living growth plan co-authored</li>
+        <li>Situational mode consciously choose kiya at least once (noted in 1:1 doc)</li>
+        <li>Team se upward feedback invite kiya; ek change commit kiya</li>
+        <li>Safety vs standards quadrant pe self-assess: team kahan hai?</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-602-operating-system.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 602 · The EM Operating System</span>
+      </a>
+      <a class="next" href="em-604-hiring-bar.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 604 · Hiring Bar &amp; Interview Loops</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 603</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

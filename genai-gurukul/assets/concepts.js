@@ -609,4 +609,70 @@ window.GURUKUL_CONCEPTS = {
       "</svg>" +
       "<figcaption>Figure. Three states. Open ≠ “retry harder”.</figcaption></figure>",
   },
+
+  "one-on-one": {
+    title: "1:1 (one-on-one)",
+    track: "EM",
+    aliases: ["1:1", "1:1s", "one-on-one", "one on one", "skip-level"],
+    blurb: "Manager–report private rhythm — career, blockers, feedback — standup nahi.",
+    related: ["feedback", "psychological-safety", "hiring-bar"],
+    body:
+      "<p><strong>1:1</strong> report ka meeting hai, tumhara status update nahi. Agenda mostly unka: blockers, growth, feedback, working agreements. Skip-levels (tumhare skip manager ke saath) trust aur context ke liye alag tool hain — 1:1 replace nahi karte.</p>" +
+      "<div class='callout pitfall'><span class='callout-label'>Pitfall</span><p>1:1 cancel karna “busy” signal nahi — neglect signal hai. Reschedule same week. EM 602.</p></div>",
+  },
+
+  feedback: {
+    title: "Feedback (SBI / coaching)",
+    track: "EM",
+    aliases: ["feedback", "SBI", "coaching", "radical candor"],
+    blurb: "Situation–Behavior–Impact: observable facts pe feedback, character pe nahi.",
+    related: ["one-on-one", "psychological-safety", "performance"],
+    body:
+      "<p><strong>SBI</strong>: Situation (kab/kahan), Behavior (kya observe hua), Impact (team/product pe kya padha). Coaching = questions se soch badhao; directing = clear ask jab urgency/safety ho. Dono tools hain — default coaching, escalate directing.</p>" +
+      "<div class='callout intuition'><span class='callout-label'>Intuition</span><p>Praise bhi specific hona chahiye — “great job” se zyada “us RFC ne risk early surface kiya”. EM 603.</p></div>",
+  },
+
+  "hiring-bar": {
+    title: "Hiring bar",
+    track: "EM",
+    aliases: ["hiring bar", "bar raiser", "interview loop", "scorecard"],
+    blurb: "Hire sirf “can do the job” nahi — “raises the median of the team”.",
+    related: ["one-on-one", "feedback", "performance"],
+    body:
+      "<p><strong>Hiring bar</strong> = explicit scorecard + structured loops + debrief before offer. False positive (hire wrong) team pe months ka tax; false negative (miss good) opportunity cost. Large orgs calibrated debriefs se bias kam karte hain — gut feel loop nahi.</p>" +
+      "<div class='callout pitfall'><span class='callout-label'>Pitfall</span><p>“Culture fit” bina rubric ke often similarity bias hota hai. EM 604.</p></div>",
+  },
+
+  performance: {
+    title: "Performance & leveling",
+    track: "EM",
+    aliases: ["performance", "leveling", "calibration", "PIP", "promo"],
+    blurb: "Expectations clear → evidence → calibration; surprise year-end illegal hai (morally).",
+    related: ["feedback", "one-on-one", "hiring-bar"],
+    body:
+      "<p>Level = scope of impact + independence + ambiguity handled. Performance = against written expectations. Calibration = same evidence, peer managers, reduce grade inflation. PIP = time-boxed improvement with support — surprise punishment nahi.</p>" +
+      "<div class='callout pitfall'><span class='callout-label'>Pitfall</span><p>Comp conversation mein promises mat karo jo HR/budget control nahi karte. EM 605.</p></div>",
+  },
+
+  "psychological-safety": {
+    title: "Psychological safety",
+    track: "EM",
+    aliases: ["psychological safety", "psych safety", "blameless", "inclusion"],
+    blurb: "Team mein risk leke bolna safe lage — dissent without career fear.",
+    related: ["feedback", "one-on-one", "incident-commander"],
+    body:
+      "<p>Amy Edmondson’s framing (paraphrase): safety = interpersonal risk lene ki willingness. Yeh “nice” nahi — learning systems ke liye zaroori. Blameless postmortem process pe lagta hai, accountability outcomes pe. Inclusion = who gets heard + sponsored, not only who is invited.</p>" +
+      "<p>Read: <a href='https://rework.withgoogle.com/guides/understanding-team-effectiveness/' target='_blank' rel='noopener'>Google re:Work — team effectiveness</a>.</p>",
+  },
+
+  "incident-commander": {
+    title: "Incident commander (IC)",
+    track: "EM",
+    aliases: ["incident commander", "incident leadership", "postmortem", "SEV"],
+    blurb: "Incident pe ek clear owner — diagnose chaos, communicate, resolve, learn.",
+    related: ["psychological-safety", "performance", "circuit-breaker"],
+    body:
+      "<p>EM often IC nahi hota — lekin severity, customer/exec comms, staffing the bridge, aur postmortem quality EM ownership hoti hai. SLO/error budget conversation product ke saath shared language banati hai.</p>" +
+      "<div class='callout intuition'><span class='callout-label'>Intuition</span><p>Heroic 3am fixes culture nahi — sustainable on-call + learnings se reliability aati hai. EM 611.</p></div>",
+  },
 };

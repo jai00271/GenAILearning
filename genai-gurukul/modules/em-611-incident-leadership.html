@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 611 — Incident Leadership &amp; Operational Excellence · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../index.html#em">Phase 2</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-611"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 611 · Incident Leadership &amp; Operational Excellence</p>
+    <h1>Incident pe EM = IC + communicator — panic theater nahi</h1>
+    <div class="lesson-meta">
+      <span>Track: EM · Phase 2</span>
+      <span>Audience: Technical Manager → Engineering Manager</span>
+      <span>Prereq: EM 610 Culture &amp; Safety</span>
+      <span>Next: EM 612 EM Interview Narrative</span>
+    </div>
+
+    <p>
+      Microservices + identity scale (Dell-era themes) aur ServiceNow automation se aap
+      already “ops serious” ho. GenAI add karta hai naye failure modes: prompt regression,
+      retrieval poisoning vibes, cost runaway, hallucinated auth guidance. EM 611: severity,
+      IC role for managers, exec updates, postmortems, on-call health, SLO conversations —
+      Google SRE / public incident guides ke links ke saath, copyrighted text copy kiye bina.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · EM 610 · PROD 404</span>
+      <p>
+        Safety climate (610) bina postmortem theater ban jati hai. Observability/cost
+        (PROD 404) metrics deti hai — EM un metrics ko <em>people + process</em> se
+        connect karta hai: kaun IC hai, kab page, kab customer notify.
+      </p>
+    </div>
+
+    <h2>1. Manager as Incident Commander (when needed)</h2>
+    <p>
+      IC role: coordinate, prioritize, clear airtime, protect deep workers, track actions,
+      decide escalate. Kabhi IC engineer hota hai; kabhi EM — especially jab stakeholder
+      noise IC ke focus ko tod rahi ho. Rule of thumb: agar aap typing fix kar rahe ho aur
+      koi coordinate nahi kar raha, role flip karo.
+    </p>
+
+    <figure class="diagram" aria-label="Incident roles swimlane">
+      <svg viewBox="0 0 760 290" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="290" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Incident roles — IC · Comms · Fixers</text>
+        <rect x="40" y="55" width="200" height="100" rx="8" fill="#12172B"/>
+        <text x="140" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Incident Commander</text>
+        <text x="140" y="115" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="11">priority · escalate</text>
+        <rect x="280" y="55" width="200" height="100" rx="8" fill="#3F8C87"/>
+        <text x="380" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">Comms / EM</text>
+        <text x="380" y="115" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="11">exec · customers</text>
+        <rect x="520" y="55" width="200" height="100" rx="8" fill="#B8923F"/>
+        <text x="620" y="90" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="14" font-weight="700">Fixers</text>
+        <text x="620" y="115" text-anchor="middle" fill="#12172B" font-family="JetBrains Mono, monospace" font-size="11">deep work protected</text>
+        <text x="40" y="200" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">GenAI Sev: wrong identity advice ≠ same as latency blip — classify impact first.</text>
+        <text x="40" y="228" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">EM may hold Comms or IC; never both if channel is chaotic — pick one primary.</text>
+        <text x="40" y="256" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">See Google SRE Managing Incidents / public incident response guides.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Separate IC, communications, and fixers so GenAI incidents get coordinated
+        response instead of everyone pasting into the same Slack thread.
+      </figcaption>
+    </figure>
+
+    <h2>2. Severity — impact first, ego later</h2>
+    <p>
+      Draft a simple Sev matrix for GenAI surfaces: user harm (bad advice in auth/HR),
+      data exposure risk, widespread vs single-tenant, cost burn rate, regulatory path.
+      Identity-adjacent GenAI wrongness often warrants higher Sev than “chat tone weird.”
+      Document once; train the team; don’t invent Sev in the heat of the night.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        Sev inflate for exec theater, ya Sev deflate to “avoid looking bad.” Mutual Benefit
+        angle: customers + employees deserve accurate severity. Hidden Sev-1s destroy trust
+        faster than an honest bridge call.
+      </p>
+    </div>
+
+    <h2>3. Exec communication cadence</h2>
+    <p>
+      Template (adapt): What we know / don’t know / next check-in / customer impact /
+      mitigation in flight / ask (decision or air cover). Short. Timestamped. No blame.
+      Jai-style credibility: ServiceNow automation + delivery discipline se aaya trust —
+      incident updates usi crispness se likho, metrics fabricate mat karo.
+    </p>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Exec update stub</span>
+      <p>
+        Draft a 8–10 line Sev-2 update for a GenAI assistant that started citing stale
+        identity policy. Include knowns, unknowns, mitigation, next update time, and one
+        explicit ask. Keep it usable for a VP skim.
+      </p>
+    </div>
+
+    <h2>4. Postmortems that change systems</h2>
+    <p>
+      Timeline, contributing factors, what went well, action items with owners + dates.
+      Link to blameless culture (EM 610) but track action completion. GenAI-specific
+      actions often: freeze prompt, restore previous prompt hash, expand golden set,
+      add cost anomaly alert, clarify eval owner (EM 609).
+    </p>
+
+    <figure class="diagram" aria-label="Incident to SLO feedback loop">
+      <svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="270" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Detect → Mitigate → Learn → SLO / error budget talk</text>
+        <rect x="36" y="60" width="150" height="70" rx="8" fill="#12172B"/>
+        <text x="111" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Detect</text>
+        <text x="200" y="100" fill="#3F8C87" font-size="20">→</text>
+        <rect x="230" y="60" width="150" height="70" rx="8" fill="#3F8C87"/>
+        <text x="305" y="100" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="13" font-weight="600">Mitigate</text>
+        <text x="395" y="100" fill="#3F8C87" font-size="20">→</text>
+        <rect x="425" y="60" width="150" height="70" rx="8" fill="#1c2438"/>
+        <text x="500" y="100" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="13" font-weight="600">Postmortem</text>
+        <text x="590" y="100" fill="#3F8C87" font-size="20">→</text>
+        <rect x="620" y="60" width="110" height="70" rx="8" fill="#B8923F"/>
+        <text x="675" y="100" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="13" font-weight="700">SLO talk</text>
+        <text x="36" y="175" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">On-call health: rotation size, quiet hours, follow-the-sun, toil budget.</text>
+        <text x="36" y="205" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">SLO conversation: availability vs quality (eval pass rate) — name both.</text>
+        <text x="36" y="235" font-family="Inter, sans-serif" font-size="12" fill="#4a5268">Refs: SRE book chapters on incidents, postmortems, error budgets (public).</text>
+      </svg>
+      <figcaption>
+        Figure 2. Incidents should feed SLO and error-budget conversations, not only a
+        slide deck that dies in Confluence.
+      </figcaption>
+    </figure>
+
+    <h2>5. On-call health &amp; SLO conversations</h2>
+    <p>
+      Unsustainable pages = attrition + silent risk. EM owns staffing for coverage and
+      toil reduction (automation — aapke ServiceNow themes yahan authentic story hain:
+      reduce human toil, don’t invent fake MTTR numbers). SLO talks with product: which
+      GenAI quality/latency targets are customer-promised vs internal stretch.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · Mini severity card</span>
+      <p>
+        Ek page Sev card likho: Sev-1..3 definitions for your GenAI + identity-adjacent
+        surfaces, IC/Comms defaults, and exec update cadence. Review with one peer.
+      </p>
+    </div>
+
+    <div class="callout intuition">
+      <span class="callout-label">Director lens</span>
+      <p>
+        Directors score: calm updates, clear ownership, learning that ships. Panic Slack
+        + no action owners = junior signal. Jai path: reuse delivery/ops credibility;
+        GenAI failures pe same operational excellence.
+      </p>
+    </div>
+
+    <h2>6. Further reading (external)</h2>
+    <ul>
+      <li><a href="https://sre.google/sre-book/managing-incidents/" rel="noopener">Google SRE — Managing Incidents</a></li>
+      <li><a href="https://sre.google/sre-book/postmortem-culture/" rel="noopener">Google SRE — Postmortem Culture</a></li>
+      <li><a href="https://sre.google/sre-book/embracing-risk/" rel="noopener">Google SRE — Embracing Risk / error budgets</a></li>
+      <li><a href="https://response.pagerduty.com/concepts/" rel="noopener">PagerDuty Incident Response — Concepts</a> (public guide)</li>
+      <li><a href="https://www.atlassian.com/incident-management" rel="noopener">Atlassian Incident Management resources</a></li>
+    </ul>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> IC vs fixer conflict kab hota hai?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Jab coordination missing ho aur managers/ICs deep debugging mein lose ho
+            jayein — explicit IC protect karta hai fixers ka airtime.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> GenAI severity mein kya alag socho?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Harmful advice (esp. identity/security), data risk, blast radius, cost burn —
+            not only HTTP 500 counts.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> Exec update mein kya hona chahiye?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Knowns, unknowns, impact, mitigation, next check-in, explicit ask — short,
+            timestamped, no blame theater.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Postmortem success signal?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Owned actions with dates that land (alerts, eval gates, prompt freeze) — not
+            only a well-written doc.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — EM 611</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; brand EM · Phase 2 Leadership; <code>data-current="em-611"</code></li>
+        <li>IC role; severity; exec cadence; postmortems; on-call; SLO talk</li>
+        <li>≥2 SVG; SRE/public incident links; quiz; hands-on Sev card</li>
+        <li>Prev → 610; Next → 612</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-610-culture-safety.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 610 · Culture, Psychological Safety &amp; Inclusion</span>
+      </a>
+      <a class="next" href="em-612-em-interview-narrative.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 612 · EM Interview &amp; Leadership Narrative</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 611</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

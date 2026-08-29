@@ -22,5 +22,18 @@ window.GURUKUL_MODULES = [
   {"id": "prod-405", "code": "PROD 405", "slug": "prod-405-deploy-scale", "title": "Deploying GenAI Apps at Scale", "status": "available", "href": "modules/prod-405-deploy-scale.html", "track": "PROD"},
   {"id": "prod-406", "code": "PROD 406", "slug": "prod-406-prompt-model-cicd", "title": "Prompt & Model CI/CD", "status": "available", "href": "modules/prod-406-prompt-model-cicd.html", "track": "PROD"},
   {"id": "cap-501", "code": "CAP 501", "slug": "cap-501-capstone", "title": "Capstone: Production RAG + Agent", "status": "available", "href": "modules/cap-501-capstone.html", "track": "CAP"},
-  {"id": "cap-502", "code": "CAP 502", "slug": "cap-502-portfolio-interview", "title": "Portfolio & GenAI Interview Prep", "status": "available", "href": "modules/cap-502-portfolio-interview.html", "track": "CAP"}
+  {"id": "cap-502", "code": "CAP 502", "slug": "cap-502-portfolio-interview", "title": "Portfolio & GenAI Interview Prep", "status": "available", "href": "modules/cap-502-portfolio-interview.html", "track": "CAP"},
+  {"id": "em-601", "code": "EM 601", "slug": "em-601-role-shift", "title": "From Technical Manager to Engineering Manager", "status": "available", "href": "modules/em-601-role-shift.html", "track": "EM", "phase": 2},
+  {"id": "em-602", "code": "EM 602", "slug": "em-602-operating-system", "title": "The EM Operating System", "status": "available", "href": "modules/em-602-operating-system.html", "track": "EM", "phase": 2},
+  {"id": "em-603", "code": "EM 603", "slug": "em-603-coaching-feedback", "title": "Coaching, Feedback & Growth", "status": "available", "href": "modules/em-603-coaching-feedback.html", "track": "EM", "phase": 2},
+  {"id": "em-604", "code": "EM 604", "slug": "em-604-hiring-bar", "title": "Hiring Bar & Interview Loops", "status": "available", "href": "modules/em-604-hiring-bar.html", "track": "EM", "phase": 2},
+  {"id": "em-605", "code": "EM 605", "slug": "em-605-performance-levels", "title": "Performance, Levels & Comp Conversations", "status": "available", "href": "modules/em-605-performance-levels.html", "track": "EM", "phase": 2},
+  {"id": "em-606", "code": "EM 606", "slug": "em-606-roadmaps-delivery", "title": "Roadmaps, OKRs & Delivery Ownership", "status": "available", "href": "modules/em-606-roadmaps-delivery.html", "track": "EM", "phase": 2},
+  {"id": "em-607", "code": "EM 607", "slug": "em-607-stakeholders-influence", "title": "Stakeholders, Influence & Org Reality", "status": "available", "href": "modules/em-607-stakeholders-influence.html", "track": "EM", "phase": 2},
+  {"id": "em-608", "code": "EM 608", "slug": "em-608-technical-judgment", "title": "Technical Judgment for Engineering Managers", "status": "available", "href": "modules/em-608-technical-judgment.html", "track": "EM", "phase": 2},
+  {"id": "em-609", "code": "EM 609", "slug": "em-609-genai-eng-teams", "title": "Building GenAI Engineering Teams", "status": "available", "href": "modules/em-609-genai-eng-teams.html", "track": "EM", "phase": 2},
+  {"id": "em-610", "code": "EM 610", "slug": "em-610-culture-safety", "title": "Culture, Psychological Safety & Inclusion", "status": "available", "href": "modules/em-610-culture-safety.html", "track": "EM", "phase": 2},
+  {"id": "em-611", "code": "EM 611", "slug": "em-611-incident-leadership", "title": "Incident Leadership & Operational Excellence", "status": "available", "href": "modules/em-611-incident-leadership.html", "track": "EM", "phase": 2},
+  {"id": "em-612", "code": "EM 612", "slug": "em-612-em-interview-narrative", "title": "EM Interview & Leadership Narrative", "status": "available", "href": "modules/em-612-em-interview-narrative.html", "track": "EM", "phase": 2},
+  {"id": "em-challenge", "code": "EM CHALLENGE", "slug": "em-challenge", "title": "EM Track Challenge", "status": "available", "href": "modules/em-challenge.html", "track": "EM", "phase": 2}
 ];

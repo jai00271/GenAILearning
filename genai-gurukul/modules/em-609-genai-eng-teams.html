@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EM 609 — Building GenAI Engineering Teams · GenAI Gurukul</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body data-base="modules">
+  <header class="site-header">
+    <a class="brand" href="../index.html">
+      <span class="brand-name">GenAI Gurukul</span>
+      <span class="brand-tag">EM · Phase 2 Leadership</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../index.html">Catalog</a>
+      <a href="../index.html#em">Phase 2</a>
+    </nav>
+  </header>
+
+  <div data-transcript data-current="em-609"></div>
+
+  <article class="lesson">
+    <p class="lesson-kicker">EM 609 · Building GenAI Engineering Teams</p>
+    <h1>GenAI team staff karna = “ML hire kar do” nahi — ownership map pehle</h1>
+    <div class="lesson-meta">
+      <span>Track: EM · Phase 2</span>
+      <span>Audience: Technical Manager → Engineering Manager</span>
+      <span>Prereq: EM 608 Technical Judgment · Phase 1 FOUND→CAP</span>
+      <span>Next: EM 610 Culture &amp; Safety</span>
+    </div>
+
+    <p>
+      Aap abhi Koch pe ~5 engineers ke Technical Manager ho — strong .NET, microservices,
+      identity. GenAI Phase 1 complete (ya near-complete) hai. EM 609 sawaal yeh hai:
+      jab org “we need GenAI capacity” bole, aap <em>kis shape</em> mein log lagate ho?
+      Platform team alag? Har product squad mein “AI person”? Vendor wrap? Ya ek ML PhD
+      hire karke hope?
+    </p>
+    <p>
+      Large-org EM interviews (Apple/Walmart-class) is topic pe depth maangte hain: kaun
+      eval owns karta hai, cost/risk kahan baithta hai, aur backend-strong managers ML
+      specialists ke saath kaise pair hote hain. Yeh lesson staffing + sequencing + hiring
+      bar pe focused hai — culture EM 610, incidents EM 611, interview narrative EM 612.
+    </p>
+
+    <div class="callout recall">
+      <span class="callout-label">Recall · Phase 1 sequencing · EM 608</span>
+      <p>
+        Gurukul ne Phase 1 mein order force kiya: prompts/APIs → <strong>eval</strong> →
+        RAG → agents → prod cost/guardrails → fine-tune later. EM 608 ne technical judgment
+        sikhaya: build/buy, RAG vs FT, when not to ship. EM 609 wohi sequencing
+        <em>org design</em> mein translate karta hai — pehle eval ownership assign karo,
+        phir RAG/FT headcount freeze.
+      </p>
+    </div>
+
+    <h2>1. Platform team vs application squads</h2>
+    <p>
+      Do common shapes. <strong>Platform / enablement</strong>: shared model gateway, prompt
+      registry, eval harness, cost meters, guardrail libraries, vector infra contracts.
+      <strong>App / product squads</strong>: domain RAG, agent workflows, UX, business
+      SLOs. Platform bina app = empty kitchen. App bina platform = har team apna gateway,
+      apna cost surprise, apna “we’ll eval later”.
+    </p>
+    <p>
+      5-person TM reality se scale karte hue: shuru mein <em>thin platform slice</em>
+      (1–2 engineers part-time + EM ownership of standards) + 1–2 app use-cases. 12-person
+      world (EM Challenge) mein explicit split zaroori ho jata hai — warna “everyone does
+      everything” mein koi eval owner nahi rehta.
+    </p>
+
+    <figure class="diagram" aria-label="Platform versus app GenAI ownership">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="300" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 1 · Platform enables · apps own outcomes</text>
+        <rect x="40" y="55" width="320" height="200" rx="8" fill="#12172B"/>
+        <text x="200" y="90" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="14" font-weight="700">Platform / enablement</text>
+        <text x="200" y="120" text-anchor="middle" fill="#D4AF5F" font-family="JetBrains Mono, monospace" font-size="12">gateway · meters · eval harness</text>
+        <text x="200" y="145" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">prompt/model CI · guardrail libs</text>
+        <text x="200" y="170" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="12">vector/infra contracts</text>
+        <text x="200" y="205" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">Owns: standards + cost floor</text>
+        <rect x="400" y="55" width="320" height="200" rx="8" fill="#3F8C87"/>
+        <text x="560" y="90" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">App / product squads</text>
+        <text x="560" y="120" text-anchor="middle" fill="#e8d5a3" font-family="JetBrains Mono, monospace" font-size="12">domain RAG · agents · UX</text>
+        <text x="560" y="145" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">golden sets · product SLOs</text>
+        <text x="560" y="170" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12">incident severity for users</text>
+        <text x="560" y="205" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="12">Owns: quality + ship risk</text>
+        <text x="40" y="285" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">EM job: name owners on both sides — “AI team” alone is not an ownership map.</text>
+      </svg>
+      <figcaption>
+        Figure 1. Split platform enablement from app outcomes. Shared “AI team” without
+        named owners collapses into demo theater.
+      </figcaption>
+    </figure>
+
+    <h2>2. Eval ownership pehle — RAG / fine-tune baad mein</h2>
+    <p>
+      Phase 1 sequencing leadership pe bhi apply hoti hai. Agar aap pehle RAG headcount aur
+      FT GPU budget approve karte ho, aur <em>eval owner</em> blank chhodte ho, team
+      “shipped a chatbot” celebrate karegi jab metrics protocol missing hoga.
+    </p>
+    <p>
+      Practical rule for EMs: hire / assign <strong>eval + golden-set owner</strong> (can be
+      a strong backend engineer with APP 304 muscle) before you staff a dedicated retrieval
+      or fine-tune lane. Platform can own the harness; app owns labels and pass/fail for
+      their domain. Fine-tune (PROD 402) tab discuss karo jab eval beat clear ho aur RAG /
+      prompt path exhaust ho.
+    </p>
+
+    <div class="callout pitfall">
+      <span class="callout-label">Pitfall</span>
+      <p>
+        “We’ll hire an ML scientist, then decide the product.” Order ulta hai. Pehle
+        problem + eval beat + data residency constraints; phir skills mix. Doosra:
+        har squad ko alag vector DB + alag gateway — cost aur incident blast radius explode.
+      </p>
+    </div>
+
+    <h2>3. Hiring: GenAI glitter vs fundamentals</h2>
+    <p>
+      GenAI hiring mein do false poles. Pole A: “must have published LLM papers” for every
+      IC who will wire RAG to ServiceNow. Pole B: “anyone who did a ChatGPT demo is AI.”
+      EM bar (EM 604 extended): fundamentals pehle — systems design, APIs, observability,
+      security, testing — phir GenAI layer: eval literacy, prompt/version discipline, tool
+      allowlists, cost awareness.
+    </p>
+    <p>
+      Aapke background se advantage: identity (SAML/OAuth), microservices, RabbitMQ —
+      yeh GenAI copilots ke <em>hard edges</em> hain. Interview loops mein “tell me about
+      transformers” se zyada weight do: “how would you evaluate retrieval for runbooks?”
+      aur “where does the agent halt?”
+    </p>
+
+    <div class="callout source">
+      <span class="callout-label">Further reading · hiring &amp; org design</span>
+      <p>
+        First Round Review on building teams and hiring managers —
+        <a href="https://review.firstround.com/">review.firstround.com</a> (search hiring /
+        engineering management essays). Google re:Work hiring guides —
+        <a href="https://rework.withgoogle.com/">rework.withgoogle.com</a>. Use as
+        frameworks; do not paste their text into your interview packet.
+      </p>
+    </div>
+
+    <h2>4. Vendor vs build — EM owns the decision frame</h2>
+    <p>
+      Build = own gateway, eval, RAG stack, maybe model hosting. Buy = managed model API,
+      managed vector, copilot SaaS. Hybrid = buy model inference, build orchestration +
+      eval + tenancy. EM judgment: lock-in, data residency, latency, unit economics,
+      exit plan. “Vendor is faster” true ho sakta hai — lekin eval aur cost attribution
+      abhi bhi <em>your</em> job hai. SaaS ke andar soft budgets (PROD 404 lesson) tumhare
+      finance surprise nahi rokengi.
+    </p>
+
+    <h2>5. Cost and risk ownership — named humans</h2>
+    <p>
+      Spreadsheet pe “AI budget” se incident response nahi hota. Name karo:
+      <strong>cost owner</strong> (meters, budgets, circuit policy), <strong>safety /
+      guardrail owner</strong>, <strong>eval owner</strong>, <strong>on-call owner</strong>
+      for the GenAI surface. Early stage mein ek person multiple hats pehen sakta hai —
+      hats invisible nahi hone chahiye. Exec updates mein “we’re exploring GenAI” ki jagah
+      “eval beat X, monthly token ceiling Y, residual risk Z” bolo.
+    </p>
+
+    <figure class="diagram" aria-label="Staffing sequence for GenAI capacity">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="760" height="260" fill="#fffdf8"/>
+        <text x="24" y="32" font-family="Inter, sans-serif" font-size="13" fill="#b8923f" font-weight="700">FIG. 2 · Staff in Phase 1 order — not hype order</text>
+        <rect x="30" y="60" width="120" height="90" rx="8" fill="#12172B"/>
+        <text x="90" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="700">1 · Problem</text>
+        <text x="90" y="118" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">+ constraints</text>
+        <text x="160" y="110" fill="#3F8C87" font-size="18">→</text>
+        <rect x="185" y="60" width="120" height="90" rx="8" fill="#3F8C87"/>
+        <text x="245" y="95" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="12" font-weight="700">2 · Eval</text>
+        <text x="245" y="118" text-anchor="middle" fill="#e8d5a3" font-family="Inter, sans-serif" font-size="11">owner + golden</text>
+        <text x="315" y="110" fill="#3F8C87" font-size="18">→</text>
+        <rect x="340" y="60" width="120" height="90" rx="8" fill="#1c2438"/>
+        <text x="400" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="700">3 · RAG/App</text>
+        <text x="400" y="118" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">thin platform</text>
+        <text x="470" y="110" fill="#3F8C87" font-size="18">→</text>
+        <rect x="495" y="60" width="120" height="90" rx="8" fill="#1c2438"/>
+        <text x="555" y="95" text-anchor="middle" fill="#F5F1E6" font-family="Inter, sans-serif" font-size="12" font-weight="700">4 · Agents</text>
+        <text x="555" y="118" text-anchor="middle" fill="#8a90a8" font-family="Inter, sans-serif" font-size="11">halt + cost</text>
+        <text x="625" y="110" fill="#3F8C87" font-size="18">→</text>
+        <rect x="650" y="60" width="90" height="90" rx="8" fill="#B8923F"/>
+        <text x="695" y="95" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="12" font-weight="700">5 · FT?</text>
+        <text x="695" y="118" text-anchor="middle" fill="#12172B" font-family="Inter, sans-serif" font-size="11">if needed</text>
+        <text x="30" y="200" font-family="Inter, sans-serif" font-size="13" fill="#1a1f2e">Parallel hire of “ML only” before steps 1–2 is how you get demos without owners.</text>
+        <text x="30" y="230" font-family="Inter, sans-serif" font-size="13" fill="#4a5268">Pair backend-strong EM + ML specialist: EM owns delivery/risk; specialist owns model science depth.</text>
+      </svg>
+      <figcaption>
+        Figure 2. Mirror Phase 1: problem and eval before RAG/agents/FT headcount.
+      </figcaption>
+    </figure>
+
+    <h2>6. Pairing backend-strong managers with ML specialists</h2>
+    <p>
+      Aap ML researcher nahi banoge overnight — aur EM role mein woh requirement bhi nahi.
+      Healthy pattern: <strong>you</strong> own roadmap, staffing, eval gates, cost/risk,
+      stakeholder truth; <strong>ML specialist</strong> (staff/principal IC or shared
+      platform scientist) owns model selection depth, training/PEFT feasibility, eval
+      science edge cases. Weekly joint review: “does the metric move?” not “which paper
+      dropped.”
+    </p>
+    <p>
+      Conflict signal: specialist wants FT week-1; you want golden set. Resolve with EM 608
+      judgment + this lesson’s sequencing. Mutual benefit (Koch MBM flavor, detail EM 610):
+      specialist gets serious data/problems; org gets production discipline instead of lab
+      vanity.
+    </p>
+
+    <div class="callout handson">
+      <span class="callout-label">Hands-on · staffing sketch (no code)</span>
+      <p>
+        One page: current 5-person map → proposed GenAI platform slice + one app squad.
+        Columns: role, % GenAI, owns (eval/cost/safety/delivery), hire vs upskill.
+        Bring this into EM Challenge later (5→12 redesign).
+      </p>
+    </div>
+
+    <div class="callout source" lang="en">
+      <span class="callout-label">Portfolio-facing English · Decision stub</span>
+      <p>
+        Staff GenAI capacity as platform enablement plus app outcome owners, not a single
+        unlabeled “AI team.” Assign eval ownership before RAG or fine-tune headcount.
+        Hire for systems fundamentals first, then GenAI literacy (eval, halt, cost). Keep
+        build-vs-buy framed by residency, lock-in, and unit economics — and name humans for
+        cost and residual risk. Pair backend-strong managers with ML specialists so delivery
+        discipline and model depth both exist.
+      </p>
+    </div>
+
+    <h2>7. Citations &amp; further reading</h2>
+    <ol>
+      <li>
+        Google re:Work — guides for managers and hiring —
+        <a href="https://rework.withgoogle.com/">rework.withgoogle.com</a>
+      </li>
+      <li>
+        First Round Review — engineering management &amp; team building essays —
+        <a href="https://review.firstround.com/">review.firstround.com</a>
+      </li>
+      <li>
+        OWASP Top 10 for LLM Applications — risk vocabulary for staffing safety owners —
+        <a href="https://genai.owasp.org/">genai.owasp.org</a>
+      </li>
+      <li>
+        Phase 1 Gurukul: APP 304 eval · PROD 402 FT · PROD 404 cost — sequencing source of
+        truth inside this course.
+      </li>
+    </ol>
+
+    <section class="quiz" id="quiz">
+      <h2>Self-check · formative only</h2>
+      <div class="quiz-item">
+        <p class="q"><strong>1.</strong> Platform vs app — ownership farq?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Platform: shared standards, gateway, harness, meters. App: domain quality,
+            golden sets, user-facing ship risk. Dono named owners chahiye.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>2.</strong> Eval pehle kyun, RAG/FT baad?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Bina beat ke RAG/FT headcount demos produce karti hai, production confidence
+            nahi. Phase 1 sequencing org design pe bhi apply hota hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>3.</strong> GenAI hire mein fundamentals ka role?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            Systems, security, testing, APIs pehle; GenAI layer (eval, halt, cost) uske
+            upar. Glitter-only hire platform risk badhata hai.
+          </p>
+        </details>
+      </div>
+      <div class="quiz-item">
+        <p class="q"><strong>4.</strong> Backend EM + ML specialist pairing ka point?</p>
+        <details>
+          <summary>Reveal answer</summary>
+          <p>
+            EM: delivery, risk, stakeholders, gates. Specialist: model science depth.
+            Joint review on metrics, not paper hype.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="dod">
+      <h2>Definition of Done — EM 609</h2>
+      <ul class="dod-checklist">
+        <li>Hinglish book lesson; brand EM · Phase 2 Leadership; <code>data-current="em-609"</code></li>
+        <li>Platform vs app; eval-before-RAG/FT; hiring fundamentals; vendor/build; cost/risk owners</li>
+        <li>Backend EM + ML specialist pairing; ≥2 SVG diagrams; quiz; citations</li>
+        <li>Hands-on staffing sketch noted; Prev → 608; Next → 610</li>
+      </ul>
+    </section>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="em-608-technical-judgment.html">
+        <span class="dir">Prev</span>
+        <span class="label">EM 608 · Technical Judgment for Engineering Managers</span>
+      </a>
+      <a class="next" href="em-610-culture-safety.html">
+        <span class="dir">Next</span>
+        <span class="label">EM 610 · Culture, Psychological Safety &amp; Inclusion</span>
+      </a>
+    </nav>
+  </article>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-brand">GenAI Gurukul · EM 609</div>
+      <a href="../index.html">Back to catalog</a>
+    </div>
+  </footer>
+
+  <script src="../assets/modules.js"></script>
+  <script src="../assets/transcript.js"></script>
+  <script src="../assets/links.js"></script>
+  <script src="../assets/concepts.js"></script>
+  <script src="../assets/sidepanel.js"></script>
+  <script src="../assets/tutor.js"></script>
+</body>
+</html>

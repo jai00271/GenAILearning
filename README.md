@@ -1,11 +1,20 @@
 # GenAI Gurukul
 
-Job-ready practitioner course in Generative AI — production RAG, agents, evaluation, safety, and delivery. Rigor comes from rubrics, track gates, and capstone acceptance criteria (not a masters-equivalent claim).
+Job-ready practitioner course in Generative AI — production RAG, agents, evaluation, safety, and delivery — plus **Phase 2: Engineering Manager** for Technical Managers moving to EM roles at large orgs. Rigor comes from rubrics, track gates, and written acceptance criteria (not a masters-equivalent claim).
 
 | Path | What |
 |------|------|
 | [`genai-gurukul/`](genai-gurukul/) | Static course site (Hinglish lessons) |
 | [`genai-gurukul-labs/`](genai-gurukul-labs/) | Labs, checkpoints, challenges, capstone |
+
+## Phases
+
+| Phase | Track codes | Intent |
+|-------|-------------|--------|
+| **1 · GenAI practitioner** | FOUND → CORE → APP → PROD → CAP | Ship production GenAI with eval, cost, and failure modes |
+| **2 · Engineering Manager** | EM 601–612 (+ track challenge) | People systems, hiring bar, delivery ownership, GenAI team design, EM interview narrative |
+
+Phase 2 does **not** replace Phase 1. Start EM after (or alongside) GenAI depth if you already lead engineers as a Technical Manager.
 
 ## Serve
 
@@ -21,6 +30,7 @@ python serve.py
 ```
 
 - Course site: http://127.0.0.1:8080/genai-gurukul/  *(Windows: `localhost` mat use karo — `::1` empty response de sakta hai)*
+- Phase 2 entry: http://127.0.0.1:8080/genai-gurukul/modules/em-601-role-shift.html
 - Example lab folder: http://127.0.0.1:8080/genai-gurukul-labs/found-101/
 - Chat health: http://127.0.0.1:8080/api/tutor/health
 
@@ -30,7 +40,7 @@ Lesson pages auto-link key terms (dashed teal). Click → right **concept sidepa
 
 Bottom-right **chat icon** opens Ask Gurukul (Cursor agent, current lesson as context). Key stays in `.env`, never in the browser.
 
-**All 24 modules are available**, plus CORE/APP/PROD track-challenge pages.
+**Phase 1:** 24 GenAI modules + CORE/APP/PROD track challenges. **Phase 2:** EM 601–612 + EM track challenge.
 
 ## Labs
 
@@ -47,5 +57,6 @@ GURUKUL_LAB=solution pytest found-*/tests core-20*/tests app-30*/tests prod-40*/
 2. PROD 401 Advanced eval **before** PROD 402 Fine-tuning  
 3. Track challenges after CORE 204, APP 308, PROD 406  
 4. Capstone must meet written acceptance criteria (generic “chat with docs on Lambda” fails)
+5. EM track: role-shift → operating system → coaching → hiring → performance → delivery → stakeholders → tech judgment → GenAI teams → culture → incidents → interview narrative → EM challenge
 
 Portfolio artifacts (challenge memos, capstone writeups, interview one-pagers) are **English**. Lesson pages are Hinglish.
