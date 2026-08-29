@@ -89,6 +89,9 @@ a:hover {
   color: var(--paper);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(212, 175, 95, 0.28);
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
 .site-header .brand {
@@ -128,7 +131,8 @@ a:hover {
   font-weight: 500;
 }
 
-.site-header nav a:hover {
+.site-header nav a:hover,
+.site-header nav a[aria-current="page"] {
   color: var(--brass-light);
 }
 
@@ -136,14 +140,16 @@ a:hover {
 .transcript-strip,
 [data-transcript] {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.5rem;
   align-items: center;
-  overflow-x: auto;
-  padding: 0.55rem 1.25rem;
+  overflow: hidden;
+  padding: 0.45rem 1.25rem;
   min-height: var(--transcript-h);
   background: var(--navy-soft);
   border-bottom: 1px solid rgba(184, 146, 63, 0.25);
-  scrollbar-width: thin;
+  position: sticky;
+  top: var(--header-h);
+  z-index: 39;
 }
 
 .transcript-strip a,
@@ -194,6 +200,102 @@ a:hover {
   color: rgba(245, 241, 230, 0.25);
   padding: 0 0.15rem;
   font-size: 0.7rem;
+}
+
+.phase-switch {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.25rem;
+  padding-right: 0.75rem;
+  margin-right: 0.15rem;
+  border-right: 1px solid rgba(245, 241, 230, 0.18);
+}
+
+.phase-switch-btn {
+  appearance: none;
+  cursor: pointer;
+  border: 1px solid rgba(245, 241, 230, 0.16);
+  background: transparent;
+  color: rgba(245, 241, 230, 0.72);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.phase-switch-btn:hover {
+  color: var(--brass-light);
+  border-color: var(--brass-light);
+}
+
+.phase-switch-btn[aria-selected="true"] {
+  background: rgba(184, 146, 63, 0.22);
+  border-color: var(--brass);
+  color: var(--brass-light);
+}
+
+.transcript-modules {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  overflow-x: auto;
+  min-width: 0;
+  flex: 1 1 auto;
+  scrollbar-width: thin;
+}
+
+.phase-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.phase-tab {
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+  min-width: 180px;
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--paper-deep);
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--ink);
+}
+
+.phase-tab:hover {
+  border-color: var(--brass);
+}
+
+.phase-tab[aria-selected="true"] {
+  background: var(--navy);
+  border-color: var(--brass);
+  color: var(--paper);
+}
+
+.phase-tab-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.phase-tab-hint {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.catalog-start {
+  margin: 0.75rem 0 0;
 }
 
 /* ——— Catalog / Hero ——— */

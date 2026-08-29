@@ -12,7 +12,18 @@
     },
   };
 
-  var TRACK_ORDER = ["FOUND", "CORE", "APP", "PROD", "CAP", "EM"];
+  var INTRO = {
+    1: {
+      title: "Phase 1 · GenAI practitioner",
+      body:
+        "FOUND → CORE → APP → PROD → CAP. Twenty-four lessons plus track challenges. Eval before RAG, eval before fine-tune, capstone under written acceptance. Phase 2 sits on top — it does not replace this path.",
+    },
+    2: {
+      title: "Phase 2 · Engineering Manager",
+      body:
+        "Director lens: hiring managers at Apple/Walmart-class orgs hire EMs who raise the bar on people, delivery, and judgment — not just the strongest coder on the team. Start at EM 601 after (or alongside) your GenAI portfolio work.",
+    },
+  };
 
   function resolveHref(mod, base) {
     if (!mod.href) return null;
@@ -22,11 +33,64 @@
     return mod.href;
   }
 
+  function phaseApi() {
+    return window.GURUKUL_PHASE;
+  }
+
+  function currentPhase() {
+    var api = phaseApi();
+    return api ? api.resolve({}) : 1;
+  }
+
+  function setPhase(phase) {
+    var api = phaseApi();
+    if (api) api.write(phase);
+    var hash = phase === 2 ? "#em" : "#catalog";
+    if ((location.hash || "") !== hash) {
+      if (history.replaceState) history.replaceState(null, "", hash);
+      else location.hash = hash;
+    }
+    window.dispatchEvent(new Event("gurukul:phase"));
+  }
+
+  function renderPhaseTabs(selected) {
+    var tabs = document.createElement("div");
+    tabs.className = "phase-tabs";
+    tabs.setAttribute("role", "tablist");
+    tabs.setAttribute("aria-label", "Course phase");
+
+    [
+      { phase: 1, label: "Phase 1 · GenAI", hint: "FOUND → CAP" },
+      { phase: 2, label: "Phase 2 · EM", hint: "EM 601–612" },
+    ].forEach(function (item) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "phase-tab";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", selected === item.phase ? "true" : "false");
+      btn.setAttribute("id", item.phase === 2 ? "em" : "phase-1");
+      btn.innerHTML =
+        "<span class=\"phase-tab-label\">" +
+        item.label +
+        "</span><span class=\"phase-tab-hint\">" +
+        item.hint +
+        "</span>";
+      btn.addEventListener("click", function () {
+        setPhase(item.phase);
+      });
+      tabs.appendChild(btn);
+    });
+    return tabs;
+  }
+
   function renderCatalog(root) {
     var modules = window.GURUKUL_MODULES || [];
     var base = document.body.getAttribute("data-base") || "";
-    var byTrack = {};
+    var api = phaseApi();
+    var selected = currentPhase();
+    if (api) api.write(selected);
 
+    var byTrack = {};
     modules.forEach(function (mod) {
       var t = mod.track || "OTHER";
       if (!byTrack[t]) byTrack[t] = [];
@@ -34,26 +98,23 @@
     });
 
     var frag = document.createDocumentFragment();
+    frag.appendChild(renderPhaseTabs(selected));
 
+    var introMeta = INTRO[selected] || INTRO[1];
     var intro = document.createElement("div");
     intro.className = "catalog-intro";
-    intro.innerHTML =
-      "<h2>Course catalog</h2>" +
-      "<p><strong>Phase 1</strong> — GenAI practitioner path (FOUND → CAP), twenty-four modules. " +
-      "<strong>Phase 2</strong> — Engineering Manager track (EM 601–612) for leaders who already ship systems and want the people + org muscle of an EM at scale. " +
-      "Phase 1 stays intact; Phase 2 builds on top.</p>";
+    intro.innerHTML = "<h2>" + introMeta.title + "</h2><p>" + introMeta.body + "</p>";
+    if (selected === 2) {
+      var start = document.createElement("p");
+      start.className = "catalog-start";
+      start.innerHTML = 'Start at <a href="modules/em-601-role-shift.html">EM 601 · Role Shift</a>.';
+      intro.appendChild(start);
+    }
     frag.appendChild(intro);
 
-    var phase2 = document.createElement("div");
-    phase2.className = "catalog-intro";
-    phase2.id = "em";
-    phase2.innerHTML =
-      "<h2>Phase 2 · Engineering Manager</h2>" +
-      "<p>Director lens: hiring managers at Apple/Walmart-class orgs hire EMs who raise the bar on people, delivery, and judgment — not just the strongest coder on the team. " +
-      "Start at <a href=\"modules/em-601-role-shift.html\">EM 601</a> after (or alongside) your GenAI portfolio work.</p>";
-    frag.appendChild(phase2);
+    var trackOrder = api ? api.tracks(selected) : ["FOUND", "CORE", "APP", "PROD", "CAP"];
 
-    TRACK_ORDER.forEach(function (trackKey) {
+    trackOrder.forEach(function (trackKey) {
       var list = byTrack[trackKey];
       if (!list || !list.length) return;
       var meta = TRACK_META[trackKey] || { title: trackKey, blurb: "" };
@@ -113,6 +174,12 @@
 
   function init() {
     document.querySelectorAll("[data-catalog]").forEach(renderCatalog);
+    window.addEventListener("hashchange", function () {
+      document.querySelectorAll("[data-catalog]").forEach(renderCatalog);
+    });
+    window.addEventListener("gurukul:phase", function () {
+      document.querySelectorAll("[data-catalog]").forEach(renderCatalog);
+    });
   }
 
   if (document.readyState === "loading") {

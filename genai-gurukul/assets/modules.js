@@ -6,6 +6,7 @@ window.GURUKUL_MODULES = [
   {"id": "core-202", "code": "CORE 202", "slug": "core-202-transformer", "title": "The Transformer Architecture", "status": "available", "href": "modules/core-202-transformer.html", "track": "CORE"},
   {"id": "core-203", "code": "CORE 203", "slug": "core-203-llm-training", "title": "How LLMs Are Trained", "status": "available", "href": "modules/core-203-llm-training.html", "track": "CORE"},
   {"id": "core-204", "code": "CORE 204", "slug": "core-204-embeddings", "title": "Embeddings & Vector Semantics", "status": "available", "href": "modules/core-204-embeddings.html", "track": "CORE"},
+  {"id": "core-challenge", "code": "CORE CHALLENGE", "slug": "core-challenge", "title": "CORE Track Challenge", "status": "available", "href": "modules/core-challenge.html", "track": "CORE"},
   {"id": "app-301", "code": "APP 301", "slug": "app-301-prompt-engineering", "title": "Prompt Engineering Mastery", "status": "available", "href": "modules/app-301-prompt-engineering.html", "track": "APP"},
   {"id": "app-302", "code": "APP 302", "slug": "app-302-llm-apis", "title": "LLM APIs & SDKs", "status": "available", "href": "modules/app-302-llm-apis.html", "track": "APP"},
   {"id": "app-303", "code": "APP 303", "slug": "app-303-context-memory", "title": "Context & Memory Engineering", "status": "available", "href": "modules/app-303-context-memory.html", "track": "APP"},
@@ -15,12 +16,14 @@ window.GURUKUL_MODULES = [
   {"id": "app-307", "code": "APP 307", "slug": "app-307-agents", "title": "Agents & Tool Use", "status": "available", "href": "modules/app-307-agents.html", "track": "APP"},
   {"id": "app-308", "code": "APP 308", "slug": "app-308-multi-agent", "title": "Multi-Agent Systems & Orchestration", "status": "available", "href": "modules/app-308-multi-agent.html", "track": "APP"},
   {"id": "app-309", "code": "APP 309", "slug": "app-309-multimodal", "title": "Multimodal GenAI (survey)", "status": "available", "href": "modules/app-309-multimodal.html", "track": "APP"},
+  {"id": "app-challenge", "code": "APP CHALLENGE", "slug": "app-challenge", "title": "APP Track Challenge", "status": "available", "href": "modules/app-challenge.html", "track": "APP"},
   {"id": "prod-401", "code": "PROD 401", "slug": "prod-401-eval-production", "title": "Evaluation in Production", "status": "available", "href": "modules/prod-401-eval-production.html", "track": "PROD"},
   {"id": "prod-402", "code": "PROD 402", "slug": "prod-402-fine-tuning", "title": "Fine-Tuning & PEFT", "status": "available", "href": "modules/prod-402-fine-tuning.html", "track": "PROD"},
   {"id": "prod-403", "code": "PROD 403", "slug": "prod-403-guardrails", "title": "Guardrails, Safety & Responsible AI", "status": "available", "href": "modules/prod-403-guardrails.html", "track": "PROD"},
   {"id": "prod-404", "code": "PROD 404", "slug": "prod-404-observability-cost", "title": "Observability & Cost Optimization", "status": "available", "href": "modules/prod-404-observability-cost.html", "track": "PROD"},
   {"id": "prod-405", "code": "PROD 405", "slug": "prod-405-deploy-scale", "title": "Deploying GenAI Apps at Scale", "status": "available", "href": "modules/prod-405-deploy-scale.html", "track": "PROD"},
   {"id": "prod-406", "code": "PROD 406", "slug": "prod-406-prompt-model-cicd", "title": "Prompt & Model CI/CD", "status": "available", "href": "modules/prod-406-prompt-model-cicd.html", "track": "PROD"},
+  {"id": "prod-challenge", "code": "PROD CHALLENGE", "slug": "prod-challenge", "title": "PROD Track Challenge", "status": "available", "href": "modules/prod-challenge.html", "track": "PROD"},
   {"id": "cap-501", "code": "CAP 501", "slug": "cap-501-capstone", "title": "Capstone: Production RAG + Agent", "status": "available", "href": "modules/cap-501-capstone.html", "track": "CAP"},
   {"id": "cap-502", "code": "CAP 502", "slug": "cap-502-portfolio-interview", "title": "Portfolio & GenAI Interview Prep", "status": "available", "href": "modules/cap-502-portfolio-interview.html", "track": "CAP"},
   {"id": "em-601", "code": "EM 601", "slug": "em-601-role-shift", "title": "From Technical Manager to Engineering Manager", "status": "available", "href": "modules/em-601-role-shift.html", "track": "EM", "phase": 2},
@@ -37,3 +40,81 @@ window.GURUKUL_MODULES = [
   {"id": "em-612", "code": "EM 612", "slug": "em-612-em-interview-narrative", "title": "EM Interview & Leadership Narrative", "status": "available", "href": "modules/em-612-em-interview-narrative.html", "track": "EM", "phase": 2},
   {"id": "em-challenge", "code": "EM CHALLENGE", "slug": "em-challenge", "title": "EM Track Challenge", "status": "available", "href": "modules/em-challenge.html", "track": "EM", "phase": 2}
 ];
+
+window.GURUKUL_PHASE = (function () {
+  var STORAGE_KEY = "gurukul-phase";
+  var TRACKS = {
+    1: ["FOUND", "CORE", "APP", "PROD", "CAP"],
+    2: ["EM"],
+  };
+
+  function ofModule(mod) {
+    if (!mod) return 1;
+    if (mod.phase === 2 || mod.track === "EM") return 2;
+    return 1;
+  }
+
+  function findModule(id) {
+    if (!id) return null;
+    var modules = window.GURUKUL_MODULES || [];
+    for (var i = 0; i < modules.length; i++) {
+      if (modules[i].id === id || modules[i].code === id) return modules[i];
+    }
+    return null;
+  }
+
+  function ofId(id) {
+    return ofModule(findModule(id));
+  }
+
+  function fromHash() {
+    var h = (location.hash || "").replace(/^#/, "").toLowerCase();
+    if (h === "em" || h === "phase-2" || h === "phase2") return 2;
+    if (h === "catalog" || h === "phase-1" || h === "phase1") return 1;
+    return 0;
+  }
+
+  function readStored() {
+    try {
+      var v = sessionStorage.getItem(STORAGE_KEY);
+      if (v === "2") return 2;
+      if (v === "1") return 1;
+    } catch (e) {}
+    return 0;
+  }
+
+  function write(phase) {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, String(phase));
+    } catch (e) {}
+  }
+
+  function resolve(opts) {
+    opts = opts || {};
+    if (opts.currentId) return ofId(opts.currentId) || 1;
+    return fromHash() || readStored() || 1;
+  }
+
+  function tracks(phase) {
+    return TRACKS[phase] || TRACKS[1];
+  }
+
+  function catalogHref(phase, base) {
+    var hash = phase === 2 ? "#em" : "#catalog";
+    if (base === "modules") return "../index.html" + hash;
+    return "index.html" + hash;
+  }
+
+  return {
+    STORAGE_KEY: STORAGE_KEY,
+    ofModule: ofModule,
+    ofId: ofId,
+    findModule: findModule,
+    fromHash: fromHash,
+    readStored: readStored,
+    write: write,
+    resolve: resolve,
+    tracks: tracks,
+    catalogHref: catalogHref,
+  };
+})();
